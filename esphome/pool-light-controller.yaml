@@ -1,0 +1,242 @@
+
+substitutions:
+  short_delay_ms: "250ms"
+  rgb_led_brightness: "80%"
+
+esphome:
+  name: pool-light-controller
+  friendly_name: Pool light controller
+  comment: ESP32 Pool Light Controller on QinLED external antenna
+  on_boot:
+    priority: -100
+    then:
+      # - light.turn_on:
+      #     id: rgb_led 
+      #     effect: 'Rainbow'
+      #     brightness: 100%
+      # - delay: 10s
+      - light.turn_on:
+          id: rgb_led
+          effect: 'None'
+          color_brightness: ${rgb_led_brightness}
+          red: 0%
+          green: 100%
+          blue: 0%
+      - delay: 300ms
+      - light.turn_off:
+          id: rgb_led
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "3yS67Auqrhw9w2tp0rLKsxEKaBg0cw1DmY/cGDcMpU8="
+
+ota:
+  password: "d4ed959c53af8cc90f7bcf2fc6c5ddff"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  manual_ip:
+    static_ip: 192.168.20.112
+    gateway: 192.168.20.1
+    subnet: 255.255.255.0
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Pool-Light-Controller"
+    password: "SphGlsH8P1FG"
+
+captive_portal:
+
+light:
+  - platform: neopixelbus
+    id: rgb_led
+    internal: false
+    variant: SK6812
+    pin: GPIO16
+    num_leds: 1
+    type: GRB
+    # restore_mode: ALWAYS_OFF
+    default_transition_length: 100ms
+    effects:
+      - addressable_rainbow:
+          name: Rainbow
+          width: 1
+  - platform: binary
+    id: pool_lights
+    name: Pool lights
+    output: relay
+
+output:
+  - platform: gpio
+    pin: GPIO15
+    id: relay
+
+button:
+  - platform: restart
+    name: ESP32 restart
+
+  - platform: template
+    name: "Enter Brightness Mode"
+    on_press:
+      - script.execute: synchronise_lights
+      - script.wait: synchronise_lights
+      - script.execute: enter_brightness_mode
+      - script.wait: enter_brightness_mode
+
+  - platform: template
+    name: "Exit Brightness Mode"
+    on_press:
+      - logger.log:
+          level: WARN
+          format: "Exiting set pool light brightness level"
+      - script.wait: enter_brightness_mode
+      - repeat:
+          count: 2
+          then:
+            - light.turn_off: pool_lights
+            - delay: ${short_delay_ms}
+            - light.turn_on: pool_lights
+            - delay: ${short_delay_ms}
+    
+select:
+  - platform: template
+    name: Pool light colour
+    id: pool_light_colour
+    optimistic: True
+    options:
+      - Select a colour...
+      - Blue
+      - Magenta
+      - Red
+      - Orange
+      - Green
+      - Aqua
+      - White
+      - Custom colour
+      - Custom pattern
+      - Rainbow
+      - Ocean
+      - Disco
+    on_value:
+      - logger.log:
+          format: "User chose pool colour: %s which is index %d"
+          args: ["x.c_str()", "i"]
+      - if:
+          condition:
+            lambda: 'return i > 0;'
+          then:
+            - script.execute: synchronise_lights
+            - script.wait: synchronise_lights
+            - script.execute:
+                id: set_lights_colour
+                colour_index: !lambda "return i;"
+            - script.wait: set_lights_colour
+
+script:
+  - id: synchronise_lights
+    mode: restart
+    then:
+      - logger.log:
+          level: WARN
+          format: "Synchronising pool lights"
+      - light.turn_on:
+          id: rgb_led
+          color_brightness: ${rgb_led_brightness}
+          red: 100%
+          green: 0%
+          blue: 100%
+      - light.turn_on: pool_lights
+      - delay: 1s
+      - light.turn_off: pool_lights
+      - delay: 3s
+      - repeat:
+          count: 2
+          then:
+            - light.turn_off: pool_lights
+            - light.turn_off: rgb_led
+            - delay: ${short_delay_ms}
+            - light.turn_on: pool_lights
+            - light.turn_on:
+                id: rgb_led
+                color_brightness: ${rgb_led_brightness}
+                red: 100%
+                green: 0%
+                blue: 100%
+            - delay: ${short_delay_ms}
+      - logger.log:
+          level: WARN
+          format: "Finished synchronising pool lights"
+      - light.turn_off: rgb_led
+
+  - id: set_lights_colour
+    mode: restart
+    parameters:
+      colour_index: int
+    then:
+      - logger.log:
+          level: INFO
+          format: "Setting colour to %d"
+          args: ["colour_index"]
+      - repeat:
+          count: !lambda |-
+            //ESP_LOGW("debug text", "colour_index= %d", colour_index);
+            return colour_index;
+          then:
+            - light.turn_off: pool_lights
+            - light.turn_off:
+                id: rgb_led
+            - delay: ${short_delay_ms}
+            - light.turn_on: pool_lights
+            - light.turn_on:
+                id: rgb_led
+                red: 100%
+                green: 100%
+                blue: 0%
+            - delay: ${short_delay_ms}
+      - logger.log:
+          level: INFO
+          format: "Finished setting colour"
+      - light.turn_off: rgb_led
+
+  - id: enter_brightness_mode
+    mode: restart
+    then:
+      - logger.log:
+          level: WARN
+          format: "Entering set pool light brightness mode"
+      - repeat:
+          count: 7 # set colour to white first
+          then:
+            - light.turn_off: pool_lights
+            - light.turn_off:
+                id: rgb_led
+            - delay: ${short_delay_ms}
+            - light.turn_on: pool_lights
+            - light.turn_on:
+                id: rgb_led
+                red: 0%
+                green: 0%
+                blue: 100%
+            - delay: ${short_delay_ms}
+      - light.turn_off: pool_lights
+      - delay: 4s
+      - light.turn_on: pool_lights
+      - delay: 500ms
+      - light.turn_off: pool_lights
+      - delay: 500ms
+      - light.turn_on: pool_lights
+      - delay: 500ms
+      - light.turn_off: rgb_led
+      - logger.log:
+          level: WARN
+          format: "Finished entering set pool light brightness mode"

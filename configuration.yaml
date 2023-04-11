@@ -1,0 +1,366 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
+logbook:
+  exclude:
+    entities:
+      - sensor.symo_10_0_3_m_1_error_code
+      - sensor.symo_10_0_3_m_1_status_code
+
+recorder:
+  purge_keep_days: 14 # default is 10 days
+  exclude:
+    entities:
+      - sensor.symo_10_0_3_m_1_error_code
+      - sensor.symo_10_0_3_m_1_status_code
+
+notify:
+  - name: "patrick and kathleen"
+    platform: group
+    services:
+      - service: mobile_app_patricks_iphone_13
+      - service: mobile_app_kathleens_iphone
+
+sensor:
+  - platform: statistics
+    name: "Max daily solar production over last year"
+    entity_id: sensor.symo_10_0_3_m_1_energy_day
+    state_characteristic: value_max
+    # sampling_size: 3153600 # With HA 2022.12, this is now optional
+    max_age:
+      days: 365
+  - platform: statistics
+    name: "Date of max daily solar production over last year"
+    entity_id: sensor.symo_10_0_3_m_1_energy_day
+    state_characteristic: datetime_value_max
+    # sampling_size: 3153600 # With HA 2022.12, this is now optional
+    max_age:
+      days: 365
+  - platform: filter
+    name: "Filtered pool pump power"
+    entity_id: sensor.pool_pump_current_power
+    filters:
+      # - filter: time_simple_moving_average
+      - filter: lowpass
+        time_constant: 20
+        precision: 2
+
+counter:
+  cat_door_counter:
+    name: Cat door counter
+    icon: mdi:cat
+
+cover:
+  - platform: template
+    covers:
+      garage_door:
+        unique_id: id_garage_door
+        device_class: garage
+        friendly_name: "Garage Door"
+        value_template: >-
+          {% if is_state('sensor.garage_door_state','open') %}
+            Open
+          {% elif is_state('sensor.garage_door_state','closed') %}
+            Closed
+          {% elif is_state('sensor.garage_door_state','opening') %}
+            Opening
+          {% else %}
+            Closing
+          {% endif %}
+        open_cover:
+          - condition: state
+            entity_id: binary_sensor.garage_door_bottom_magnet
+            state: "off"
+          - service: switch.turn_on
+            target:
+              entity_id: switch.garage_door
+        close_cover:
+          - condition: state
+            entity_id: binary_sensor.garage_door_top_magnet
+            state: "off"
+          - service: switch.turn_on
+            target:
+              entity_id: switch.garage_door
+        stop_cover:
+          - service: switch.turn_on
+            target:
+              entity_id: switch.garage_door
+  - platform: template
+    covers:
+      driveway_gate:
+        unique_id: id_driveway_gate
+        device_class: gate
+        friendly_name: "Driveway Gate"
+        value_template: >-
+          {% if is_state('sensor.driveway_gate_state','open') %}
+            Open
+          {% elif is_state('sensor.driveway_gate_state','closed') %}
+            Closed
+          {% elif is_state('sensor.driveway_gate_state','opening') %}
+            Opening
+          {% else %}
+            Closing
+          {% endif %}
+        open_cover:
+          - condition: state
+            entity_id: binary_sensor.driveway_gate_closed
+            state: "on"
+          - service: switch.turn_on
+            target:
+              entity_id: switch.driveway_gate
+        close_cover:
+          - condition: state
+            entity_id: binary_sensor.driveway_gate_open
+            state: "on"
+          - service: switch.turn_on
+            target:
+              entity_id: switch.driveway_gate
+        stop_cover:
+          - service: switch.turn_on
+            target:
+              entity_id: switch.driveway_gate
+
+template:
+  - trigger:
+      - platform: state
+        entity_id:
+          - binary_sensor.garage_door_top_magnet
+          - binary_sensor.garage_door_bottom_magnet
+    sensor:
+      - name: Garage door state
+        state: >
+          {# garage_door: on means open, off means closed #}
+          {% set close_on = is_state('binary_sensor.garage_door_bottom_magnet','off') %}
+          {% set open_on = is_state('binary_sensor.garage_door_top_magnet','off') %}
+          {% if open_on and not close_on %}
+            open
+          {% elif not open_on and close_on %}
+            closed
+          {% elif open_on and close_on %}
+            sensor error
+          {% else %}
+            {% if trigger.entity_id == 'binary_sensor.garage_door_bottom_magnet' %}
+              opening
+            {% else %}
+              closing
+            {% endif %}
+          {% endif %}
+  - trigger:
+      - platform: state
+        entity_id:
+          - binary_sensor.driveway_gate_closed
+          - binary_sensor.driveway_gate_open
+    sensor:
+      - name: Driveway gate state
+        state: >
+          {# driveway gate state: on means open, off means closed #}
+          {% set close_on = is_state('binary_sensor.driveway_gate_closed','on') %}
+          {% set open_on = is_state('binary_sensor.driveway_gate_open','on') %}
+          {% if open_on and not close_on %}
+            open
+          {% elif not open_on and close_on %}
+            closed
+          {% elif open_on and close_on %}
+            sensor error
+          {% else %}
+            {% if trigger.entity_id == 'binary_sensor.driveway_gate_closed' %}
+              opening
+            {% else %}
+              closing
+            {% endif %}
+          {% endif %}
+
+  - sensor:
+      - name: "Number of lights on"
+        state: "{{ expand(state_attr('light.all_lights', 'entity_id'))| selectattr('state','eq','on')|map(attribute='entity_id')|list|count }}"
+
+  - sensor:
+      - name: "Workshop temperature from AC"
+        device_class: temperature
+        state_class: measurement
+        unit_of_measurement: "°C" # or F
+        state: "{{ state_attr('climate.ac_workshop', 'current_temperature') }}"
+        availability: "{{ state_attr('climate.ac_workshop', 'current_temperature')|is_number }}"
+      - name: "Back Lounge temperature from AC"
+        device_class: temperature
+        state_class: measurement
+        unit_of_measurement: "°C" # or F
+        state: "{{ state_attr('climate.ac_back_lounge', 'current_temperature') }}"
+        availability: "{{ state_attr('climate.ac_back_lounge', 'current_temperature')|is_number }}"
+
+  - sensor:
+      # pool pump power:
+      # High 937W
+      # Med 350W
+      # Low 155W
+      - name: "Pool pump status"
+        unique_id: pool_pump_status
+        icon: mdi:water-pump
+        device_class: power
+        state: >
+          {% set pool_power = states('sensor.pool_pump_current_power')|float %}
+          {% if pool_power < 50 %}
+            Pump OFF
+          {% elif 100 <= pool_power < 600 %}
+            Low speed
+          {% elif 600 <= pool_power < 900 %}
+            Medium speed
+          {% elif pool_power >= 900 %}
+            High speed
+          {% else %}
+            Unsure?
+          {% endif %}
+
+  - binary_sensor:
+      - name: "Debounced cat door"
+        device_class: door
+        delay_off:
+          milliseconds: 1500
+        state: >
+          {{ states('binary_sensor.cat_door_contact') }}
+
+# logger:
+#   logs:
+#     pyhik.hikvision: debug
+#     homeassistant.components.binary_sensor.hikvision: debug
+
+binary_sensor:
+  # Motion events from all cameras via the NVR login
+  - platform: hikvision
+    host: 192.168.20.88
+    port: 80
+    name: hikvision_nvr
+    ssl: false
+    # username: homeassistant
+    # password: "fDdui()5;"
+    username: admin
+    password: "@W8-23VJU8"
+
+    # https://www.home-assistant.io/integrations/workday/
+  - platform: workday
+    country: AU
+    province: SA
+
+  - platform: group
+    name: "Shelly overheating sensors"
+    entities:
+      - binary_sensor.alfresco_and_pool_perimeter_overheating
+      - binary_sensor.back_lounge_downlights_overheating
+      - binary_sensor.stairs_and_dining_overheating
+      - binary_sensor.dining_pendant_and_spare_overheating
+      - binary_sensor.front_hall_lower_overheating
+      - binary_sensor.front_hall_upper_overheating
+      - binary_sensor.front_lounge_overheating
+      - binary_sensor.kitchen_downlights_overheating
+      - binary_sensor.kitchen_pendant_and_spare_overheating
+      - binary_sensor.laundry_and_laundry_path_overheating
+      - binary_sensor.rear_flood_and_garden_lights_overheating
+      - binary_sensor.wir_downlight_overheating
+
+light:
+  - platform: group
+    name: "All Lights"
+    entities:
+      # Get this list from developer tools / template
+      # - {{ states.light|map(attribute='entity_id')|join('\n- ') }}
+
+      # Group: Front yard lights
+      - light.front_stone_up_down
+      - light.front_porch
+      - light.front_garden_lights
+      - light.meterbox_bunker
+      - light.front_north_side_flood
+
+      # Group: Front lounge lights
+      - light.front_lounge_downlight
+      - light.front_lounge_pendant
+      - light.front_hall_lamp
+
+      - light.garage_downlights
+      - light.workshop_downlight
+      - light.workshop_rgb_light
+      - light.led_strip_workshop_shelf_dimmer
+
+      - light.courtyard_flood_light
+
+      - light.wir_downlight
+      - light.wiz_bedsside_lamp_1
+      - light.jess_wled_mk2
+
+      - light.laundry_downlight
+      - light.laundry_path_bunker_light
+
+      # Group: Kitchen lights
+      - light.kitchen_downlights
+      - light.kitchen_hall_downlights
+      - light.kitchen_pendant
+      - light.led_strip_kitchen_kicker
+      - light.stairs_light
+
+      - light.dining_downlight
+
+      - light.butlers_downlight
+      - light.led_strip_butlers_overhead_cupboards
+
+      # Group: Back lounge lights (+laundry_path_bunker_light)
+      - light.back_lounge_downlights
+      - light.back_lounge_pendant
+      - light.back_lounge_sideboard_lamp
+      - light.lamp_rhs_fireplace
+
+      # Group: Back yard lights
+      - light.alfresco_downlights
+      - light.pool_perimeter_downlights
+      - light.rear_flood_light
+      - light.rear_garden_lights
+      - light.led_strip_fire_pit_dimmer
+      - light.pool_light_controller_pool_lights
+
+  - platform: group
+    name: "Front yard lights"
+    entities:
+      - light.front_stone_up_down
+      - light.front_porch
+      - light.front_garden_lights
+      - light.meterbox_bunker
+      - light.front_north_side_flood
+  - platform: group
+    name: "Front lounge lights"
+    entities:
+      - light.front_lounge_downlight
+      - light.front_lounge_pendant
+      - light.front_hall_lamp
+  - platform: group
+    name: "Kitchen lights"
+    entities:
+      - light.kitchen_downlights
+      - light.kitchen_hall_downlights
+      - light.kitchen_pendant
+      - light.led_strip_kitchen_kicker
+      - light.stairs_light
+  - platform: group
+    name: "Back lounge lights"
+    entities:
+      - light.back_lounge_downlights
+      - light.back_lounge_pendant
+      - light.back_lounge_sideboard_lamp
+      - light.lamp_rhs_fireplace
+  - platform: group
+    name: "Back yard lights"
+    entities:
+      - light.alfresco_downlights
+      - light.pool_perimeter_downlights
+      - light.rear_flood_light
+      - light.rear_garden_lights
+      - light.led_strip_fire_pit_dimmer
+      - light.pool_light_controller_pool_lights
+
+# Text to speech
+tts:
+  - platform: google_translate
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+homekit: !include homekit_entities.yaml
+cloud: !include google_home_entities.yaml

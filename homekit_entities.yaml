@@ -1,0 +1,70 @@
+# https://www.home-assistant.io/integrations/homekit/
+- filter:
+    # include_domains:
+    #   - alarm_control_panel
+    #   - light
+    #   - media_player
+    # include_entity_globs:
+    #   - binary_sensor.*_occupancy
+    include_entities:
+      - script.open_gate_and_garage
+      - script.close_gate_and_garage
+      - script.sunset_lights
+      - cover.garage_door
+      - cover.driveway_gate
+      - cover.pedestrian_gate
+      - cover.all_blinds
+      - cover.blind_1
+      - cover.blind_2
+      - cover.blind_3
+      - cover.blind_4
+      - cover.blind_5
+      - cover.interior_roller_blind # workshop blind
+      - fan.19_rack_fans
+      - fan.workshop_ceiling_fan
+      - switch.workshop_power_strip
+      - switch.gas_heater
+      - light.all_lights
+      - light.alfresco_downlights
+      - light.back_lounge_downlights
+      - light.back_lounge_pendant
+      - light.back_lounge_sideboard_lamp
+      - light.butlers_downlight
+      - light.courtyard_flood_light
+      - light.dining_downlight
+      - light.front_hall_lamp
+      - light.front_lounge_downlight
+      - light.front_lounge_pendant
+      - light.front_north_side_flood
+      - light.front_porch
+      - light.front_garden_lights
+      - light.front_stone_up_down
+      - light.garage_downlights
+      - light.kitchen_downlights
+      - light.kitchen_hall_downlights
+      - light.kitchen_pendant
+      - light.lamp_rhs_fireplace
+      - light.laundry_downlight
+      - light.laundry_path_bunker_light
+      - light.led_strip_butlers_overhead_cupboards
+      - light.led_strip_kitchen_kicker
+      - light.meterbox_bunker
+      - light.pool_perimeter_downlights
+      - light.rear_flood_light
+      - light.rear_garden_lights
+      - light.stairs_light
+      - light.wir_downlight
+      - light.wiz_bedsside_lamp_1
+      - light.workshop_downlight
+      - light.workshop_rgb_light
+      - light.led_strip_workshop_shelf_dimmer
+      - light.jess_wled_mk2
+      - light.led_strip_fire_pit_dimmer
+      - light.pool_light_controller_pool_lights
+  entity_config:
+    fan.19_rack_fans:
+      name: Rack fans
+    light.pool_light_controller_pool_lights:
+      name: Swimming Pool Lights
+    switch.workshop_power_strip:
+      name: Soldering iron

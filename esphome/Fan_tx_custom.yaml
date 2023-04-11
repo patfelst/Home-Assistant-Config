@@ -1,0 +1,308 @@
+esphome:
+  name: fantxcustom
+  # include a custom switch from the file 'custom_fan.h' see code below
+  includes:
+    - custom_fan.h
+  # include the "real" rcswitch library
+  libraries:
+    - "rc-switch"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+#captive_portal:
+
+globals:
+  - id: backlight_timeout
+    type: int
+    restore_value: no
+    initial_value: '15'
+
+switch:
+  - platform: gpio
+    pin: GPIO4
+    name: "Backlight"
+    id: backlight
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          if (id(backlight_timeout) > 0) {
+            id(backlight_timeout)--;
+            if (id(backlight_timeout) == 0)
+              id(backlight).turn_off();
+          }
+
+font:
+  - file: "arial.ttf"
+    id: arial_40
+    size: 40
+    
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO19
+
+display:
+  - platform: st7789v
+    id: tft_display
+    rotation: 90
+    brightness: 30%
+    backlight_pin: GPIO4
+    cs_pin: GPIO5
+    dc_pin: GPIO16
+    reset_pin: GPIO23
+    lambda: |-
+      if (id(fan_input).state) {
+        if (id(fan_input).speed < 4)
+          it.image(0, 0, id(gauge_low));
+        else if (id(fan_input).speed == 4)
+          it.image(0, 0, id(gauge_med));
+        else if (id(fan_input).speed > 4)
+          it.image(0, 0, id(gauge_high));
+      }
+      else
+        it.printf(it.get_width() / 2, it.get_height() / 2, id(arial_40), TextAlign::CENTER, "Fan OFF");
+
+image:
+  - file: "fangauge_low.png"
+    id: gauge_low
+    resize: 240x135
+    type: RGB24
+  - file: "fangauge_med.png"
+    id: gauge_med
+    resize: 240x135
+    type: RGB24
+  - file: "fangauge_hi.png"
+    id: gauge_high
+    resize: 240x135
+    type: RGB24
+
+light:
+  - platform: fastled_clockless
+    chipset: WS2812
+    pin: GPIO27
+    num_leds: 1
+    rgb_order: GRB
+    internal: true
+    default_transition_length: 0s
+    id: rgb_led
+
+# Button to allow user to sync the fan power back with Home Assistant front end
+button:
+  - platform: template
+    name: Sync Fan Power
+    id: sync_fan_power
+    icon: "mdi:mdi-fan-alert"
+    on_press:
+      - lambda: |-
+          id(fan_float).set_level(0.90); // Toggle fan power
+
+fan:
+  - platform: speed
+    id: fan_input
+    output: fan_nothing
+    restore_mode: NO_RESTORE
+    name: "Custom Fan"
+    speed_count: 6
+    # The id of the output to use for the direction state of the fan
+    direction_output: fan_value_map
+    on_speed_set:
+      # Sometimes this is called twice when the fan control in the Home Assistant front end is changed
+      # so inlcuded some code to compare against the previous speed and only send RF code if the speed was
+      # actually changed
+      - lambda: |-
+          // Turn on display backlight
+          id(backlight).turn_on();
+          id(backlight_timeout) = 15;
+          
+          static int last_speed = 0;
+          int this_speed = id(fan_input).speed;
+          ESP_LOGE("fan", "Fan speed = %d", this_speed);
+
+          // Turn on RGB LED to indicate fan speed
+          auto led = id(rgb_led).turn_on();
+          led.set_brightness(1.0);
+          if (this_speed < 4)
+            led.set_rgb(1.0, 0.0, 0.0); // Red
+          else if (this_speed == 4)
+            led.set_rgb(1.0, 0.75, 0.0); // Orange
+          else if (this_speed > 4)
+            led.set_rgb(0.0, 1.0, 0.0); // Green
+          led.perform();
+
+          if (this_speed == last_speed) {
+            ESP_LOGI("fan", "Fan speed didn't change - NO ACTION");
+            return;
+          }
+          last_speed = this_speed;
+          id(fan_float).set_level(this_speed / 100.0);
+      - component.update: tft_display # Force an immediate display refresh (otherwise next 5 sec update)
+      - delay: 1.5 s
+      - light.turn_off: rgb_led
+    on_turn_on:
+      - lambda: |-
+          id(fan_float).set_level(0.90); // Toggle fan power
+    on_turn_off:
+      - lambda: |-
+          id(fan_float).set_level(0.91); // Toggle fan power
+    
+output:
+  # This output does nothing. Required because the fan "speed" component demands a float output
+  - platform: template
+    id: fan_nothing
+    type: float
+    write_action:
+      - lambda: ""
+
+  # Need a custom component because the ESPHome RF Transmitter is not working properly, see
+  # https://github.com/esphome/issues/issues/1370
+  - platform: custom
+    type: float
+    lambda: |-
+      auto my_custom_float_output = new MyCustomFan(21); // 433MHz transmitter data pin is on ESP32 GPIO21
+      App.register_component(my_custom_float_output);
+      return {my_custom_float_output};
+    outputs:
+      id: fan_float
+
+  # An output which acts an intermediary between the fan direction output, and the custom float fan component
+  # It effectively maps between the fan direction states of 1.0 and 0.0 to a float value of 0.92 which is
+  # an arbitary value used in the custom component to send the direction toggle RF code
+  # This gets called / executed every time the fan control in the Home Assistant front end is changed in ANY way
+  # so only sends a code if the direction was actually changed, vs some other setting on the fan control.
+  - platform: template
+    id: fan_value_map
+    type: float
+    write_action:
+      - lambda: |-
+          static float last_direction = 0.0;
+
+          if (id(fan_input).direction == FanDirection::FORWARD)
+            ESP_LOGI("fan_value_map", "Fan direction FORWARD");
+          else
+            ESP_LOGI("fan_value_map", "Fan direction REVERSE");
+
+          if (state == last_direction) {
+            ESP_LOGI("fan_value_map", "Fan direction didn't change - NO ACTION");
+            return;
+          }
+          last_direction = state;
+          id(fan_float).set_level(0.92); // Toggle the fan direction
+
+# LIGHT: Decimal: 10296346
+# POWER: Decimal: 10296320
+# CHANGE DIRECTION: Decimal: 10296334
+# NATURAL WIND: Decimal: 10296378
+# SPEED 1: Decimal: 10296326
+# SPEED 2: Decimal: 10296325
+# SPEED 3: Decimal: 10296324
+# SPEED 4: Decimal: 10296323
+# SPEED 5: Decimal: 10296322
+# SPEED 6: Decimal: 10296321
+
+# LIGHT
+# =====
+# Decimal: 10296346
+# (24Bit) Binary: 100111010001110000011010
+# Tri-State: not applicable
+# PulseLength: 452 microseconds
+# Protocol: 6
+# Raw data: 10397,353,762,351,347,767,346,768,765,349,760,353,761,353,344,768,762,352,346,768,347,766,348,765,766,348,760,353,763,351,346,767,348,766,345,768,348,763,352,761,765,350,762,351,348,765,764,350,349,
+
+# POWER
+# =====
+# Decimal: 10296320
+# (24Bit) Binary: 100111010001110000000000
+# Tri-State: not applicable
+# PulseLength: 446 microseconds
+# Protocol: 6
+# Raw data: 10268,351,764,348,352,763,348,764,769,345,766,348,766,347,352,763,763,348,351,763,351,762,353,760,768,344,768,346,767,347,355,759,352,760,353,759,354,760,353,760,350,763,353,760,352,761,356,756,354,
+
+# CHANGE DIRECTION
+# =====
+# Decimal: 10296334
+# (24Bit) Binary: 100111010001110000001110
+# Tri-State: not applicable
+# PulseLength: 451 microseconds
+# Protocol: 6
+# Raw data: 10395,356,761,353,344,767,348,766,761,354,760,353,761,352,345,768,761,353,345,768,345,768,347,766,759,355,757,356,762,351,348,766,350,763,348,765,348,764,349,767,345,766,762,350,762,352,765,349,348,
+
+# NATURAL WIND
+# =====
+# Decimal: 10296378
+# (24Bit) Binary: 100111010001110000111010
+# Tri-State: not applicable
+# PulseLength: 438 microseconds
+# Protocol: 6
+# Raw data: 10092,354,762,352,348,766,346,766,762,351,761,352,761,354,345,768,759,355,348,764,347,766,348,765,764,349,763,350,764,351,349,763,353,761,349,764,348,766,765,348,761,352,763,351,348,764,766,349,348,
+
+# SPEED 1
+# =====
+# Decimal: 10296326
+# (24Bit) Binary: 100111010001110000000110
+# Tri-State: not applicable
+# PulseLength: 452 microseconds
+# Protocol: 6
+# Raw data: 10398,352,762,350,349,764,348,766,762,352,761,353,761,352,348,765,762,351,351,763,345,768,349,764,765,348,766,348,765,348,349,763,349,766,350,762,350,764,350,762,350,763,350,762,766,349,762,351,350,
+
+# SPEED 2
+# =====
+# Decimal: 10296325
+# (24Bit) Binary: 100111010001110000000101
+# Tri-State: not applicable
+# PulseLength: 450 microseconds
+# Protocol: 6
+# Raw data: 10401,350,763,351,349,764,350,764,765,349,763,351,760,355,344,768,762,350,349,766,348,765,347,765,764,351,767,344,764,351,348,766,348,764,351,763,350,762,352,761,352,762,351,762,764,350,351,762,765,
+
+# SPEED 3
+# =====
+# Decimal: 10296324
+# (24Bit) Binary: 100111010001110000000100
+# Tri-State: not applicable
+# PulseLength: 452 microseconds
+# Protocol: 6
+# Raw data: 10402,351,761,350,350,765,349,763,762,349,765,349,763,352,348,765,764,349,348,764,350,765,349,764,763,351,767,346,764,351,349,761,354,761,353,760,351,762,354,759,353,761,352,760,767,346,353,761,354,
+
+# SPEED 4
+# =====
+# Decimal: 10296323
+# (24Bit) Binary: 100111010001110000000011
+# Tri-State: not applicable
+# PulseLength: 452 microseconds
+# Protocol: 6
+# Raw data: 10398,353,763,350,348,765,347,766,764,352,763,349,767,345,351,765,765,346,354,761,350,762,349,764,767,346,769,345,773,342,350,760,354,761,350,762,353,760,354,760,352,760,355,759,352,761,767,346,768,
+
+# SPEED 5
+# =====
+# Decimal: 10296322
+# (24Bit) Binary: 100111010001110000000010
+# Tri-State: not applicable
+# PulseLength: 442 microseconds
+# Protocol: 6
+# Raw data: 10203,346,767,346,353,761,352,762,767,346,766,349,764,349,351,763,765,347,350,765,350,761,351,764,765,347,767,346,768,346,354,759,352,760,355,760,353,760,354,759,354,760,356,755,356,759,769,345,355,
+
+# SPEED 6
+# =====
+# Decimal: 10296321
+# (24Bit) Binary: 100111010001110000000001
+# Tri-State: not applicable
+# PulseLength: 452 microseconds
+# Protocol: 6
+# Raw data: 10396,351,763,351,349,764,349,765,761,352,760,353,763,351,350,763,762,351,347,765,352,761,346,767,763,350,764,350,764,350,351,760,350,765,349,762,351,764,349,763,349,765,348,764,351,762,349,764,764,
+
+# */

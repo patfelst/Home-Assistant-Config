@@ -1,0 +1,178 @@
+pool_light_synchronise:
+  alias: Pool light synchronise
+  sequence:
+  - service: light.turn_off
+    data: {}
+    target:
+      entity_id: light.pool_lights
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 4
+      milliseconds: 0
+  - service: light.turn_on
+    data: {}
+    target:
+      entity_id: light.pool_lights
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 0
+      milliseconds: 500
+  - repeat:
+      count: 2
+      sequence:
+      - service: light.turn_off
+        data: {}
+        target:
+          entity_id: light.pool_lights
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 0
+          milliseconds: 500
+      - service: light.turn_on
+        data: {}
+        target:
+          entity_id: light.pool_lights
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 0
+          milliseconds: 500
+  mode: single
+pool_light_set_colour:
+  alias: Pool light set colour
+  sequence:
+  - service: script.pool_light_synchronise
+    data: {}
+  - repeat:
+      count: '{{ colour_number|int - 1 }}'
+      sequence:
+      - service: light.turn_off
+        data: {}
+        target:
+          entity_id: light.pool_lights
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 0
+          milliseconds: 500
+      - service: light.turn_on
+        data: {}
+        target:
+          entity_id: light.pool_lights
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 0
+          milliseconds: 500
+  mode: single
+pool_light_set_intensity:
+  alias: Pool light set intensity
+  sequence:
+  - service: script.pool_light_synchronise
+    data: {}
+  - repeat:
+      count: '6'
+      sequence:
+      - service: light.turn_off
+        data: {}
+        target:
+          entity_id: light.pool_lights
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 0
+          milliseconds: 500
+      - service: light.turn_on
+        data: {}
+        target:
+          entity_id: light.pool_lights
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 0
+          milliseconds: 500
+  - service: light.turn_off
+    data: {}
+    target:
+      entity_id: light.pool_lights
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 4
+      milliseconds: 0
+  - service: light.turn_on
+    data: {}
+    target:
+      entity_id: light.pool_lights
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 0
+      milliseconds: 500
+  - service: light.turn_off
+    data: {}
+    target:
+      entity_id: light.pool_lights
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 0
+      milliseconds: 500
+  - service: light.turn_on
+    data: {}
+    target:
+      entity_id: light.pool_lights
+  - stop: Now do single swich (off-on) on pool light and wait 3 sec to see next intensity
+      level. Do a doulbe switch to save and exit.
+    error: true
+    enabled: true
+  mode: single
+open_gate_and_garage:
+  alias: Open Gate and Garage
+  sequence:
+  - service: cover.open_cover
+    data: {}
+    target:
+      entity_id:
+      - cover.driveway_gate
+      - cover.garage_door
+  mode: single
+  icon: mdi:gate-open
+close_gate_and_garage:
+  alias: Close Gate and Garage
+  sequence:
+  - repeat:
+      count: '6'
+      sequence:
+      - service: light.toggle
+        data: {}
+        target:
+          entity_id:
+          - light.front_porch
+          - light.garage_downlights
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 0
+          milliseconds: 500
+  - service: cover.close_cover
+    data: {}
+    target:
+      entity_id:
+      - cover.driveway_gate
+      - cover.garage_door
+  mode: single
+  icon: mdi:gate-arrow-right
+sunset_lights:
+  alias: Sunset Lights
+  sequence:
+  - service: automation.trigger
+    data:
+      skip_condition: true
+    target:
+      entity_id: automation.lights_on_at_sunset
+  mode: single
+  icon: mdi:sun-wireless-outline
