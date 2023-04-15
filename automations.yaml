@@ -1038,7 +1038,7 @@
           sound:
             name: default
             critical: 1
-            volume: 1
+            volume: 0.5
   mode: single
 - id: '1670040126536'
   alias: Notify - Garage door closed
@@ -1627,13 +1627,16 @@
         is above trigger temperature of {{ trigger.above }}°C
   mode: single
 - id: '1677320260752'
-  alias: Lights - garden lights off 1.5hours after sunset (EL < 17deg)
+  alias: Lights - garden lights off (first ~8pm)
   description: ''
   trigger:
   - platform: numeric_state
     entity_id: sun.sun
     attribute: elevation
     below: input_number.lights_off_sun_elevation_1
+    enabled: false
+  - platform: time
+    at: input_datetime.lights_off_time_1
   condition: []
   action:
   - service: light.turn_off
@@ -1799,13 +1802,16 @@
           milliseconds: 0
   mode: restart
 - id: '1678699026931'
-  alias: Lights - pool & fire-pit lights off 2.0 hours after sunset (EL < 23deg)
+  alias: Lights - pool & fire-pit lights off (second ~8:30pm)
   description: ''
   trigger:
   - platform: numeric_state
     entity_id: sun.sun
     attribute: elevation
     below: input_number.lights_off_sun_elevation_2
+    enabled: false
+  - platform: time
+    at: input_datetime.lights_off_time_2
   condition: []
   action:
   - service: light.turn_off
