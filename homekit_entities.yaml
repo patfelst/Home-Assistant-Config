@@ -7,8 +7,6 @@
     # include_entity_globs:
     #   - binary_sensor.*_occupancy
     include_entities:
-      - script.open_gate_and_garage
-      - script.close_gate_and_garage
       - script.sunset_lights
       - cover.garage_door
       - cover.driveway_gate
