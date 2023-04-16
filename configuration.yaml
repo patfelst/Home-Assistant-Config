@@ -37,13 +37,29 @@ sensor:
     max_age:
       days: 365
   - platform: filter
-    name: "Filtered pool pump power"
+    name: Filtered pool pump power Lowpass Filter
+    unique_id: id_pool_pump_power_lowpass_filter
     entity_id: sensor.pool_pump_current_power
     filters:
       # - filter: time_simple_moving_average
       - filter: lowpass
         time_constant: 20
         precision: 2
+  - platform: statistics
+    name: Filtered pool pump power Average Linear 6mins
+    unique_id: id_pool_pump_power_ave_linear
+    entity_id: sensor.pool_pump_current_power
+    state_characteristic: average_linear
+    max_age:
+      minutes: 6
+  - platform: statistics
+    # From https://community.home-assistant.io/t/quick-bathroom-fan-humidity-switch-control/421996
+    name: Ensuite Humidity Average Linear 24h
+    unique_id: id_ensuite_humidity_average
+    entity_id: sensor.ensuite_environmental_humidity
+    state_characteristic: average_linear
+    max_age:
+      hours: 24
 
 counter:
   cat_door_counter:

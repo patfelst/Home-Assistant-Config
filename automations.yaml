@@ -383,11 +383,6 @@
   trigger:
   - platform: state
     entity_id:
-    - binary_sensor.workshop_sensor_occupancy
-    to: 'on'
-    from: 'off'
-  - platform: state
-    entity_id:
     - binary_sensor.workshop_ceiling_motion_occupancy
     from: 'off'
     to: 'on'
@@ -401,11 +396,6 @@
       - light.workshop_downlight
       - light.led_strip_workshop_shelf_dimmer
   - wait_for_trigger:
-    - platform: state
-      entity_id:
-      - binary_sensor.workshop_sensor_occupancy
-      from: 'on'
-      to: 'off'
     - platform: state
       entity_id:
       - binary_sensor.workshop_ceiling_motion_occupancy
@@ -586,7 +576,7 @@
   trigger:
   - platform: state
     entity_id:
-    - binary_sensor.workshop_sensor_occupancy
+    - binary_sensor.workshop_ceiling_motion_occupancy
     to: 'off'
     for:
       hours: 0
@@ -1298,7 +1288,7 @@
     above: 28
   condition:
   - condition: state
-    entity_id: binary_sensor.workshop_sensor_occupancy
+    entity_id: binary_sensor.workshop_ceiling_motion_occupancy
     state: 'off'
     for:
       hours: 0
@@ -1432,7 +1422,7 @@
   mode: single
 - id: '1674447619148'
   alias: Notify - Washing machine finished
-  description: ''
+  description: Based on vibration sensor
   trigger:
   - platform: state
     entity_id:
@@ -2034,4 +2024,69 @@
         | as_timestamp | timestamp_custom(''%I:%M:%S %p'') }})
 
         '
+  mode: single
+- id: '1681603029589'
+  alias: Notify - Washing machine actions
+  description: Notify start/finish based on electrical power
+  use_blueprint:
+    path: sbyx/notify-or-do-something-when-an-appliance-like-a-dishwasher-or-washing-machine-finishes.yaml
+    input:
+      power_sensor: sensor.washing_machine_power
+      starting_threshold: 5
+      actions:
+      - service: tts.cloud_say
+        data:
+          cache: false
+          entity_id:
+          - media_player.back_longe_speaker
+          - media_player.workshop_speaker
+          message: Washing machine finished, please hang out the washing
+      - service: notify.patrick_and_kathleen
+        data:
+          title: Washing machine finish
+          message: 'Washing machine finished - please hang out ({{ (now()) | as_timestamp
+            | timestamp_custom(''%I:%M %p'') }})
+
+            '
+      - delay:
+          hours: 0
+          minutes: 10
+          seconds: 0
+          milliseconds: 0
+      - service: tts.cloud_say
+        data:
+          cache: false
+          entity_id:
+          - media_player.back_longe_speaker
+          - media_player.workshop_speaker
+          message: Washing machine finished, please hang out the washing
+      pre_actions:
+      - service: notify.patrick_and_kathleen
+        data:
+          title: Washing machine started
+          message: Sit back and relax while the machines do your work!
+- id: '1681615571224'
+  alias: Notify - Ensuite shower is on
+  description: Based on humidity sensor
+  trigger:
+  - platform: template
+    value_template: '{% set humid = states(''sensor.ensuite_environmental_humidity'')|int
+      %}
+
+      {% set humid_ave = states(''sensor.ensuite_humidity_average_linear_24h'')|int
+      %}
+
+      {{ humid > humid_ave + 5 }}'
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 30
+  condition: []
+  action:
+  - service: notify.mobile_app_patricks_iphone_13
+    data:
+      title: Ensuite shower
+      message: Shower is now on because ensuite humidity is 5% above 24hr average
+        of {{ states('sensor.ensuite_humidity_average_linear_24h', with_unit=True)
+        }}
   mode: single
