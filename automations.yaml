@@ -303,7 +303,7 @@
       entity_id: light.led_strip_kitchen_kicker
   - service: light.turn_on
     data:
-      brightness_pct: 50
+      brightness_pct: 35
     target:
       entity_id: light.led_strip_fire_pit_dimmer
   - service: light.turn_on
@@ -1595,19 +1595,21 @@
     data: {}
     target:
       entity_id: climate.ac
+  - service: climate.set_temperature
+    data:
+      temperature: 24
+      hvac_mode: cool
+    target:
+      entity_id: climate.ac
   - service: climate.set_hvac_mode
     data:
       hvac_mode: cool
     target:
       entity_id: climate.ac
+    enabled: false
   - service: climate.set_fan_mode
     data:
       fan_mode: medium
-    target:
-      entity_id: climate.ac
-  - service: climate.set_temperature
-    data:
-      temperature: 24
     target:
       entity_id: climate.ac
   - service: notify.mobile_app_patricks_iphone_13
@@ -2061,7 +2063,7 @@
           - media_player.workshop_speaker
           message: Washing machine finished, please hang out the washing
       pre_actions:
-      - service: notify.patrick_and_kathleen
+      - service: notify.mobile_app_patricks_iphone_13
         data:
           title: Washing machine started
           message: Sit back and relax while the machines do your work!
