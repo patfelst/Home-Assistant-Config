@@ -193,11 +193,13 @@ template:
   - sensor:
       - name: "Workshop temperature from AC"
         device_class: temperature
+        unique_id: id_workshop_temperature
         state_class: measurement
         unit_of_measurement: "°C" # or F
         state: "{{ state_attr('climate.ac_workshop', 'current_temperature') }}"
         availability: "{{ state_attr('climate.ac_workshop', 'current_temperature')|is_number }}"
       - name: "Back Lounge temperature from AC"
+        unique_id: id_back_lounge_temperature
         device_class: temperature
         state_class: measurement
         unit_of_measurement: "°C" # or F
