@@ -1,0 +1,294 @@
+substitutions:
+  alfresco_door_led: "1"
+  workshop_window_led: "2"
+  front_door_led: "3"
+  front_doorlock_led: "4"
+  garage_door_led: "5"
+  driveway_gate_led: "6"
+
+esphome:
+  name: home-security-visualiser-pcb
+  friendly_name: Home security visualiser PCB
+  on_boot:
+    priority: -100
+    then:
+      - script.wait: set_led_brightness
+      - script.execute: set_led_brightness
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "w3YSvgs8whfWMbP1CEZmd4qR1/PTaNnO163bW0xfe78="
+
+ota:
+  password: "ec2f051026400eeadcdcc81daff20a59"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Home-Security-Visualiser-Pcb"
+    password: "pPEYAhrqq25y"
+
+captive_portal:
+
+button:
+  - platform: restart
+    name: ESP32 restart
+
+script:
+  # Set RGB LED to indicate open / closed state of binary sensors from HA
+  - id: set_openclosed_led
+    mode: single
+    parameters:
+      led_state: boolean
+      index: int
+    then:
+      - if:
+          condition:
+            lambda: 'return (led_state);'
+          then:
+            - light.addressable_set:
+                id: led_strip
+                color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+                range_from: !lambda 'return index - 1;'
+                range_to: !lambda 'return index - 1;'
+                red: 100%
+                green: 0%
+                blue: 0%
+          else:
+            - light.addressable_set:
+                id: led_strip
+                color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+                range_from: !lambda 'return index - 1;'
+                range_to: !lambda 'return index - 1;'
+                red: 0%
+                green: 100%
+                blue: 0%
+
+  # Update all LED brightness values
+  - id: set_led_brightness
+    mode: single
+    then:
+      - script.execute:
+          id: set_openclosed_led
+          led_state: !lambda 'return id(workshop_window).state;'
+          index: !lambda return ${workshop_window_led};
+      - script.execute:
+          id: set_openclosed_led
+          led_state: !lambda 'return id(alfresco_door).state;'
+          index: !lambda return ${alfresco_door_led};
+      - script.execute:
+          id: set_openclosed_led
+          led_state: !lambda 'return id(front_door).state;'
+          index: !lambda return ${front_door_led};
+      - script.execute:
+          id: set_openclosed_led
+          led_state: !lambda 'return id(front_doorlock).state == "unlocked";'
+          index: !lambda return ${front_doorlock_led};
+      - script.execute:
+          id: set_cover_led
+          led_state_str: !lambda 'return id(garage_door).state;'
+          index: !lambda return ${garage_door_led};
+      - script.execute:
+          id: set_cover_led
+          led_state_str: !lambda 'return id(driveway_gate).state;'
+          index: !lambda return ${driveway_gate_led};
+
+  # Set RGB LED to indicate state of covers (garage door and driveway gate) from HA
+  - id: set_cover_led
+    mode: single
+    parameters:
+      led_state_str: string
+      index: int
+    then:
+      - if:
+          condition:
+            or:
+              - lambda: 'return (led_state_str == "opening");'
+              - lambda: 'return (led_state_str == "closing");'
+          then:
+            - light.addressable_set:
+                id: led_strip
+                color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+                range_from: !lambda 'return index - 1;'
+                range_to: !lambda 'return index - 1;'
+                red: 100%
+                green: 100%
+                blue: 0%
+      - if:
+          condition:
+            - lambda: 'return (led_state_str == "open");'
+          then:
+            - light.addressable_set:
+                id: led_strip
+                color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+                range_from: !lambda 'return index - 1;'
+                range_to: !lambda 'return index - 1;'
+                red: 100%
+                green: 0%
+                blue: 0%
+      - if:
+          condition:
+            - lambda: 'return (led_state_str == "closed");'
+          then:
+            - light.addressable_set:
+                id: led_strip
+                color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+                range_from: !lambda 'return index - 1;'
+                range_to: !lambda 'return index - 1;'
+                red: 0%
+                green: 100%
+                blue: 0%
+
+text_sensor:
+  - platform: homeassistant
+    internal: true
+    id: garage_door
+    entity_id: cover.garage_door
+    on_value:
+      then:
+        - script.execute:
+            id: set_cover_led
+            led_state_str: !lambda 'return x;'
+            index: !lambda return ${garage_door_led};
+  - platform: homeassistant
+    internal: true
+    id: driveway_gate
+    entity_id: cover.driveway_gate
+    on_value:
+      then:
+        - script.execute:
+            id: set_cover_led
+            led_state_str: !lambda 'return x;'
+            index: !lambda return ${driveway_gate_led};
+  - platform: homeassistant
+    internal: true
+    id: front_doorlock
+    entity_id: lock.front_door
+    on_value:
+      then:
+        - script.execute:
+            id: set_openclosed_led
+            led_state: !lambda 'return (x == "unlocked");'
+            index: !lambda return ${front_doorlock_led};
+
+binary_sensor:
+  - platform: homeassistant
+    internal: true
+    id: workshop_window
+    entity_id: binary_sensor.workshop_window_contact
+    on_state:
+      then:
+        - script.execute:
+            id: set_openclosed_led
+            led_state: !lambda 'return x;'
+            index: !lambda return ${workshop_window_led}; // This syntax is a bug, Jesserockz looking into it
+
+  - platform: homeassistant
+    internal: true
+    id: alfresco_door
+    entity_id: binary_sensor.alfresco_door_contact
+    on_state:
+      then:
+        - script.execute:
+            id: set_openclosed_led
+            led_state: !lambda 'return x;'
+            index: !lambda return ${alfresco_door_led};
+
+  - platform: homeassistant
+    internal: true
+    id: front_door
+    entity_id: binary_sensor.front_door_aqara_contact
+    on_state:
+      then:
+        - script.execute:
+            id: set_openclosed_led
+            led_state: !lambda 'return x;'
+            index: !lambda return ${front_door_led};
+
+  - platform: gpio
+    id: push_button
+    internal: True
+    pin:
+      number: GPIO4
+      inverted: True
+      mode: INPUT_PULLUP
+    filters:
+      - delayed_on: 20ms
+    on_press:
+      then:
+        # LED test pattern, set all LEDs to yellow for 2 seconds
+        - light.addressable_set:
+            id: led_strip
+            color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+            range_from: 0
+            range_to: 19
+            red: 100%
+            green: 100%
+            blue: 0%
+        - delay: 2s
+        # Set LEDs back to show security status values
+        - script.wait: set_led_brightness # 
+        - script.execute: set_led_brightness
+
+light:
+  - platform: neopixelbus
+    id: led_strip
+    name: LED strip
+    internal: False
+    variant: WS2812
+    pin: GPIO1
+    num_leds: 20
+    type: GRB
+    restore_mode: ALWAYS_OFF
+    default_transition_length: 200ms
+    effects:
+      - addressable_rainbow:
+          name: Rainbow width 3
+          speed: 10
+          width: 5
+
+number:
+  - platform: template
+    name: LED strip brightness
+    id: led_strip_brightness
+    initial_value: 90
+    optimistic: True
+    min_value: 0
+    max_value: 100
+    step: 5
+    mode: slider
+    set_action:
+      then:
+        - logger.log:
+            level: INFO
+            format: "Setting brightness to %.1f"
+            args: ["x"]
+        - delay: 100ms
+        - script.wait: set_led_brightness
+        - script.execute: set_led_brightness
+        # - light.addressable_set:
+        #     id: led_strip
+        #     color_brightness: !lambda 'return x / 100.0;'
+        #     range_from: 0
+        #     range_to: 7
+        #     red: 0%
+        #     green: 0%
+        #     blue: 100%
+        # - light.turn_on:
+        #     id: led_strip
+        #     brightness: !lambda 'return x / 100.0;'
+        #     red: 0%
+        #     green: 5%
+        #     blue: 0%
