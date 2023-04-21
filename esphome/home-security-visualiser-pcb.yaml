@@ -1,17 +1,49 @@
 substitutions:
-  alfresco_door_led: "1"
-  workshop_window_led: "2"
-  front_door_led: "3"
-  front_doorlock_led: "4"
-  garage_door_led: "5"
-  driveway_gate_led: "6"
+  driveway_gate_led: "1"
+  front_yard_motion_led: "2"
+  garage_door_led: "3"
+  porch_motion_led: "4"
+  front_doorlock_led: "5"
+  front_door_led: "6"
+  roller_door_led: "7"
+  workshop_window_led: "8"
+  courtyard_motion_led: "9"
+  cat_door_led: "10"
+  laundry_window_led: "11"
+  butlers_window_led: "12"
+  alfresco_door_led: "13"
+  backyard_motion_led: "14"
+  pool_pump_led: "15"
+  alfresco_motion_led: "16"
+  spare1_led: "17"
+  spare2_led: "18"
+  pool_motion_led: "19"
+  frontyard_motion_led: "20"
 
 esphome:
   name: home-security-visualiser-pcb
   friendly_name: Home security visualiser PCB
   on_boot:
-    priority: -100
+    priority: 600
     then:
+      - light.addressable_set:
+          id: led_strip
+          color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+          range_from: 0
+          range_to: 19
+          red: 75%
+          green: 0%
+          blue: 100%
+      - delay: 2s
+      - light.addressable_set:
+          id: led_strip
+          color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+          range_from: 0
+          range_to: 19
+          red: 0%
+          green: 0%
+          blue: 0%
+      # Set LEDs back to show security status values
       - script.wait: set_led_brightness
       - script.execute: set_led_brightness
 
@@ -84,6 +116,10 @@ script:
           id: set_openclosed_led
           led_state: !lambda 'return id(workshop_window).state;'
           index: !lambda return ${workshop_window_led};
+      - script.execute:
+          id: set_openclosed_led
+          led_state: !lambda 'return id(cat_door).state;'
+          index: !lambda return ${cat_door_led};
       - script.execute:
           id: set_openclosed_led
           led_state: !lambda 'return id(alfresco_door).state;'
@@ -182,7 +218,52 @@ text_sensor:
             id: set_openclosed_led
             led_state: !lambda 'return (x == "unlocked");'
             index: !lambda return ${front_doorlock_led};
-
+  - platform: homeassistant
+    internal: true
+    id: pool_pump_power
+    entity_id: sensor.pool_pump
+    on_value:
+      then:
+        - if:
+            condition:
+              or:
+                - lambda: 'return (x == "Pump OFF");'
+            then:
+              - light.addressable_set:
+                  id: led_strip
+                  color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+                  range_from: !lambda 'return ${pool_pump_led} - 1;'
+                  range_to: !lambda 'return ${pool_pump_led} - 1;'
+                  red: 0%
+                  green: 0%
+                  blue: 0%
+        - if:
+            condition:
+              - lambda: 'return (x == "Low speed");'
+            then:
+              - light.addressable_set:
+                  id: led_strip
+                  color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+                  range_from: !lambda 'return ${pool_pump_led} - 1;'
+                  range_to: !lambda 'return ${pool_pump_led} - 1;'
+                  red: 0%
+                  green: 100%
+                  blue: 100%
+        - if:
+            condition:
+              or:
+                - lambda: 'return (x == "Medium speed");'
+                - lambda: 'return (x == "High speed");'
+            then:
+              - light.addressable_set:
+                  id: led_strip
+                  color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+                  range_from: !lambda 'return ${pool_pump_led} - 1;'
+                  range_to: !lambda 'return ${pool_pump_led} - 1;'
+                  red: 0%
+                  green: 0%
+                  blue: 100%
+        
 binary_sensor:
   - platform: homeassistant
     internal: true
@@ -217,6 +298,17 @@ binary_sensor:
             led_state: !lambda 'return x;'
             index: !lambda return ${front_door_led};
 
+  - platform: homeassistant
+    internal: true
+    id: cat_door
+    entity_id: binary_sensor.cat_door_contact
+    on_state:
+      then:
+        - script.execute:
+            id: set_openclosed_led
+            led_state: !lambda 'return x;'
+            index: !lambda return ${cat_door_led};
+
   - platform: gpio
     id: push_button
     internal: True
@@ -225,21 +317,29 @@ binary_sensor:
       inverted: True
       mode: INPUT_PULLUP
     filters:
-      - delayed_on: 20ms
+      - delayed_on: 50ms
     on_press:
       then:
         # LED test pattern, set all LEDs to yellow for 2 seconds
         - light.addressable_set:
             id: led_strip
             color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
-            range_from: 0
-            range_to: 19
+            # range_from: 0
+            # range_to: 19
             red: 100%
             green: 100%
             blue: 0%
-        - delay: 2s
+        - delay: 10s
+        - light.addressable_set:
+            id: led_strip
+            color_brightness: 5%
+            # range_from: 0
+            # range_to: 19
+            red: 0%
+            green: 0%
+            blue: 0%
         # Set LEDs back to show security status values
-        - script.wait: set_led_brightness # 
+        - script.wait: set_led_brightness
         - script.execute: set_led_brightness
 
 light:
@@ -251,13 +351,8 @@ light:
     pin: GPIO1
     num_leds: 20
     type: GRB
-    restore_mode: ALWAYS_OFF
+    restore_mode: ALWAYS_ON
     default_transition_length: 200ms
-    effects:
-      - addressable_rainbow:
-          name: Rainbow width 3
-          speed: 10
-          width: 5
 
 number:
   - platform: template
