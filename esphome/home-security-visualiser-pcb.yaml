@@ -20,34 +20,38 @@ substitutions:
   pool_motion_led: "19"
   frontyard_motion_led: "20"
   cctv_motion_off_delay: "1.5min" # How long to leave CCTV motion LED red for
+  brightness_sleep_mode: "35"
+  brightness_awake_mode: "80"
 
 esphome:
   name: home-security-visualiser-pcb
   friendly_name: Home security visualiser PCB
   on_boot:
-    priority: 600
-    then:
-      - light.addressable_set:
-          id: led_strip
-          color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
-          range_from: 0
-          range_to: 19
-          # Orange
-          red: 100%
-          green: 75%
-          blue: 0%
-      - delay: 2s
-      - light.addressable_set:
-          id: led_strip
-          color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
-          range_from: 0
-          range_to: 19
-          red: 0%
-          green: 0%
-          blue: 0%
-      # Set LEDs back to show security status values
-      - script.wait: set_led_brightness
-      - script.execute: set_led_brightness
+    - priority: 600
+      then:
+        - light.addressable_set:
+            id: led_strip
+            color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+            range_from: 0
+            range_to: 19
+            # Orange
+            red: 100%
+            green: 75%
+            blue: 0%
+        - delay: 2s
+        - light.addressable_set:
+            id: led_strip
+            color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+            range_from: 0
+            range_to: 19
+            red: 0%
+            green: 0%
+            blue: 0%
+    - priority: -200
+      then:
+        # Set LEDs back to show security status values
+        - script.wait: set_led_brightness
+        - script.execute: set_led_brightness
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -81,9 +85,9 @@ button:
     name: ESP32 restart
 
 script:
-  # *****************************************************************
-  # *************** BINARY SENSOR - OPEN/CLOSE SCRIPT ***************
-  # *****************************************************************
+  # *********************************************************************
+  # *************** BINARY SENSOR - OPEN/CLOSE LED SCRIPT ***************
+  # *********************************************************************
   # Set RGB LED to indicate open / closed state of binary sensors from HA
   - id: set_openclosed_led
     mode: single
@@ -115,9 +119,43 @@ script:
                 green: 100%
                 blue: 0%
 
-  # *******************************************************************
-  # *************** BINARY SENSOR - MOTION ALERT SCRIPT ***************
-  # *******************************************************************
+  # *********************************************************************
+  # ********************** SLEEP MODE LED SCRIPT ************************
+  # *********************************************************************
+  # Set RGB LED to indicate open / closed state of binary sensors from HA
+  - id: set_sleep_led
+    mode: single
+    parameters:
+      led_state: boolean
+      index: int
+    then:
+      - if:
+          condition:
+            lambda: 'return (led_state);'
+          then:
+            - light.addressable_set:
+                id: led_strip
+                color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+                range_from: !lambda 'return index - 1;'
+                range_to: !lambda 'return index - 1;'
+                # purple
+                red: 75%
+                green: 0%
+                blue: 100%
+          else:
+            - light.addressable_set:
+                id: led_strip
+                color_brightness: 0%
+                range_from: !lambda 'return index - 1;'
+                range_to: !lambda 'return index - 1;'
+                # off
+                red: 0%
+                green: 0%
+                blue: 0%
+
+  # *********************************************************************
+  # *************** BINARY SENSOR - MOTION ALERT SCRIPT *****************
+  # *********************************************************************
   # Set RGB LED RED to indicate motion, then turn it off
   - id: set_motion_led
     mode: single
@@ -149,9 +187,9 @@ script:
                 green: 0%
                 blue: 0%
 
-  # ****************************************************
-  # **************** BRIGHTNESS SCRIPT **********************
-  # ****************************************************
+  # *********************************************************************
+  # *********************** BRIGHTNESS SCRIPT ***************************
+  # *********************************************************************
   # Update all LED brightness values
   - id: set_led_brightness
     mode: restart
@@ -212,10 +250,14 @@ script:
           id: set_pool_led
           led_state_str: !lambda 'return id(pool_pump_power).state;'
           index: !lambda return ${pool_pump_led};
+      - script.execute:
+          id: set_sleep_led
+          led_state: !lambda 'return id(sleep_mode).state;'
+          index: !lambda return ${spare1_led};
 
-  # **********************************************************************
-  # ************ COVER SCRIPT - GARGE DOOR AND DRIVEWAY GATE *************
-  # **********************************************************************
+  # *********************************************************************
+  # ************ COVER SCRIPT - GARGE DOOR AND DRIVEWAY GATE ************
+  # *********************************************************************
   # Set RGB LED to indicate state of covers (garage door and driveway gate) from HA
   - id: set_cover_led
     mode: single
@@ -265,9 +307,9 @@ script:
                 green: 100%
                 blue: 0%
 
-  # ***************************************************************
-  # **************** POOL SCRIPT - POOL PUMP SPEED ****************
-  # ***************************************************************
+  # *********************************************************************
+  # ****************** POOL SCRIPT - POOL PUMP SPEED ********************
+  # *********************************************************************
   # Set RGB LED to indicate state of covers (garage door and driveway gate) from HA
   - id: set_pool_led
     mode: single
@@ -318,9 +360,9 @@ script:
                 blue: 100%
 
 
-# ****************************************************************
-# *********** TEXT SENSORS - COVERS, LOCKS, PPOL PUMP ************
-# ****************************************************************
+# ***********************************************************************
+# *************** TEXT SENSORS - COVERS, LOCKS, PPOL PUMP ***************
+# ***********************************************************************
 text_sensor:
   - platform: homeassistant
     internal: true
@@ -363,9 +405,9 @@ text_sensor:
             led_state_str: !lambda 'return x;'
             index: !lambda return ${pool_pump_led};
 
-# ******************************************************************
-# **************** BINARY SENSORS - OPEN/CLOSED ********************
-# ******************************************************************
+# ***********************************************************************
+# ********************* BINARY SENSORS - OPEN/CLOSED ********************
+# ***********************************************************************
 binary_sensor:
   - platform: homeassistant
     internal: true
@@ -398,9 +440,9 @@ binary_sensor:
             led_state: !lambda 'return x;'
             index: !lambda return ${front_door_led};
 
-  # *******************************************************************
-  # *************** BINARY SENSOR - MOTION ALERT **********************
-  # *******************************************************************
+  # *********************************************************************
+  # ******************* BINARY SENSOR - MOTION ALERT ********************
+  # *********************************************************************
   - platform: homeassistant
     internal: true
     id: cat_door
@@ -473,41 +515,48 @@ binary_sensor:
             id: set_motion_led
             led_state: !lambda 'return x;'
             index: !lambda return ${courtyard_motion_led};
-  # *******************************************************************
-  # *************** INPUT BOOLEAN - SLEEP MODE ************************
-  # *******************************************************************
+  
+  # *********************************************************************
+  # ********************* INPUT BOOLEAN - SLEEP MODE ********************
+  # *********************************************************************
   - platform: homeassistant
     internal: true
     id: sleep_mode
     entity_id: input_boolean.sleep_mode
     on_press:
       then:
-        - light.addressable_set:
-            id: led_strip
-            color_brightness: 30%
-            range_from: !lambda 'return ${spare1_led} - 1;'
-            range_to: !lambda 'return ${spare1_led} - 1;'
-            # faint purple
-            red: 75%
-            green: 0%
-            blue: 100%
-    on_release:
-      then:
-        - light.addressable_set:
-            id: led_strip
-            color_brightness: 0%
-            range_from: !lambda 'return ${spare1_led} - 1;'
-            range_to: !lambda 'return ${spare1_led} - 1;'
-            # off
-            red: 0%
-            green: 0%
-            blue: 0%
+        - script.wait: set_sleep_led
+        - script.execute:
+            id: set_sleep_led
+            led_state: True
+            index: !lambda return ${spare1_led};
 
-  # ****************************************************
-  # **************** BUTTON SENSOR *********************
-  # ****************************************************
+        - number.set:
+            id: led_strip_brightness
+            value: ${brightness_sleep_mode}
+        - script.wait: set_led_brightness
+        - script.execute: set_led_brightness
+    
+    on_release: 
+      then:
+        - script.wait: set_sleep_led
+        - script.execute:
+            id: set_sleep_led
+            led_state: False
+            index: !lambda return ${spare1_led};
+
+        - number.set:
+            id: led_strip_brightness
+            value: ${brightness_awake_mode}
+        - script.wait: set_led_brightness
+        - script.execute: set_led_brightness
+
+  # *********************************************************************
+  # ********************** BINARY SENSOR - BUTTON 3 *********************
+  # *********************************************************************
+  # Do all LEDs test, then set brightness to AWAKE mode (bright)
   - platform: gpio
-    id: push_button
+    id: button_3
     internal: True
     pin:
       number: GPIO4
@@ -516,30 +565,72 @@ binary_sensor:
     filters:
       - delayed_on: 50ms
     on_press:
+      # toggle LED brightness levels between dim and bright
       then:
-        # LED test pattern, set all LEDs to yellow for 2 seconds
+        - if:
+            condition:
+              lambda: 'return id(led_strip_brightness).state == ${brightness_awake_mode};'
+            then:
+              - number.set:
+                  id: led_strip_brightness
+                  value: ${brightness_sleep_mode}
+            else:
+              - number.set:
+                  id: led_strip_brightness
+                  value: ${brightness_awake_mode}
         - light.addressable_set:
             id: led_strip
             color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
-            # yellow
-            red: 100%
-            green: 100%
+            # off
+            red: 0%
+            green: 0%
             blue: 0%
-        - delay: 7s
-        - light.addressable_set:
-            id: led_strip
-            color_brightness: 25%
-            # faint yellow
-            red: 100%
-            green: 100%
-            blue: 0%
-        # Set LEDs back to show security status values
         - script.wait: set_led_brightness
         - script.execute: set_led_brightness
 
-# ****************************************************
-# **************** RGB LED LIGHTS *********************
-# ****************************************************
+  # *********************************************************************
+  # ***************** BINARY SENSOR - BUTTON "BOOT" (GPIO0) *************
+  # *********************************************************************
+  # Set brightness to dim for night mode
+  - platform: gpio
+    id: button_boot
+    internal: True
+    pin:
+      number: GPIO0
+      inverted: True
+      mode: INPUT_PULLUP
+    filters:
+      - delayed_on: 50ms
+    on_press:
+      # toggle LED test mode - all LEDs on yellow
+      then:
+        - if:
+            condition:
+              lambda: |-
+                static boolean test_mode = false;
+                test_mode = !test_mode;
+                if (test_mode)
+                  return true;
+                else
+                  return false;
+            then:
+              - light.addressable_set:
+                  id: led_strip
+                  # yellow
+                  red: 100%
+                  green: 100%
+                  blue: 0%
+            else:
+              - light.addressable_set:
+                  id: led_strip
+                  # off
+                  red: 0%
+                  green: 0%
+                  blue: 0%
+
+# ***********************************************************************
+# ************************ RGB LED LIGHTS *******************************
+# ***********************************************************************
 light:
   - platform: neopixelbus
     id: led_strip
@@ -552,11 +643,14 @@ light:
     restore_mode: ALWAYS_ON
     default_transition_length: 200ms
 
+# ***********************************************************************
+# ************* NUMBER - BRIGHTNESS FOR RGB LEDS LIGHTS *****************
+# ***********************************************************************
 number:
   - platform: template
     name: LED strip brightness
     id: led_strip_brightness
-    initial_value: 90
+    initial_value: ${brightness_awake_mode}
     optimistic: True
     min_value: 0
     max_value: 100
