@@ -20,7 +20,7 @@ substitutions:
   pool_motion_led: "19"
   frontyard_motion_led: "20"
   cctv_motion_off_delay: "1.5min" # How long to leave CCTV motion LED red for
-  brightness_sleep_mode: "35"
+  brightness_sleep_mode: "30"
   brightness_awake_mode: "80"
 
 esphome:
@@ -627,6 +627,9 @@ binary_sensor:
                   red: 0%
                   green: 0%
                   blue: 0%
+              # Restore display of home security status
+              - script.wait: set_led_brightness
+              - script.execute: set_led_brightness
 
 # ***********************************************************************
 # ************************ RGB LED LIGHTS *******************************
@@ -640,8 +643,10 @@ light:
     pin: GPIO1
     num_leds: 20
     type: GRB
-    restore_mode: ALWAYS_ON
-    default_transition_length: 200ms
+    # restore_mode: ALWAYS_ON
+    # default_transition_length: 200ms
+    # method:
+    #   type: esp32_rmt
 
 # ***********************************************************************
 # ************* NUMBER - BRIGHTNESS FOR RGB LEDS LIGHTS *****************
