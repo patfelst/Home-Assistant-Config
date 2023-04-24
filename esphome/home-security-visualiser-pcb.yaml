@@ -36,20 +36,12 @@ esphome:
             range_to: 19
             # Orange
             red: 100%
-            green: 75%
+            green: 65%
             blue: 0%
-        - delay: 2s
-        - light.addressable_set:
-            id: led_strip
-            color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
-            range_from: 0
-            range_to: 19
-            red: 0%
-            green: 0%
-            blue: 0%
-    - priority: -200
+    - priority: -100
       then:
-        # Set LEDs back to show security status values
+        - delay: 5s
+        # Restore display of home security status
         - script.wait: set_led_brightness
         - script.execute: set_led_brightness
 
@@ -387,7 +379,7 @@ text_sensor:
   - platform: homeassistant
     internal: true
     id: front_doorlock
-    entity_id: lock.front_door
+    entity_id: lock.yale_smartlock_front_door
     on_value:
       then:
         - script.execute:
@@ -534,6 +526,7 @@ binary_sensor:
         - number.set:
             id: led_strip_brightness
             value: ${brightness_sleep_mode}
+        # Restore display of home security status
         - script.wait: set_led_brightness
         - script.execute: set_led_brightness
     
@@ -548,6 +541,7 @@ binary_sensor:
         - number.set:
             id: led_strip_brightness
             value: ${brightness_awake_mode}
+        # Restore display of home security status
         - script.wait: set_led_brightness
         - script.execute: set_led_brightness
 
@@ -585,6 +579,7 @@ binary_sensor:
             red: 0%
             green: 0%
             blue: 0%
+        # Restore display of home security status
         - script.wait: set_led_brightness
         - script.execute: set_led_brightness
 
@@ -643,10 +638,12 @@ light:
     pin: GPIO1
     num_leds: 20
     type: GRB
-    # restore_mode: ALWAYS_ON
-    # default_transition_length: 200ms
-    # method:
-    #   type: esp32_rmt
+  - platform: partition
+    name: "Ensuite fan indicator"
+    segments:
+      - id: led_strip
+        from: 17 # Spare LED 2, i.e. LED 18
+        to: 17
 
 # ***********************************************************************
 # ************* NUMBER - BRIGHTNESS FOR RGB LEDS LIGHTS *****************
@@ -668,19 +665,6 @@ number:
             format: "Setting brightness to %.1f"
             args: ["x"]
         - delay: 100ms
+        # Restore display of home security status
         - script.wait: set_led_brightness
         - script.execute: set_led_brightness
-        # - light.addressable_set:
-        #     id: led_strip
-        #     color_brightness: !lambda 'return x / 100.0;'
-        #     range_from: 0
-        #     range_to: 7
-        #     red: 0%
-        #     green: 0%
-        #     blue: 100%
-        # - light.turn_on:
-        #     id: led_strip
-        #     brightness: !lambda 'return x / 100.0;'
-        #     red: 0%
-        #     green: 5%
-        #     blue: 0%

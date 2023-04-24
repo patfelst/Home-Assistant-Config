@@ -2,8 +2,6 @@ google_actions:
   filter:
     include_entities:
       - climate.ac
-      - sensor.back_lounge_temperature_from_ac
-      - sensor.alfresco_environmental_temperature
       - cover.all_blinds
       - cover.blind_1
       - cover.blind_2

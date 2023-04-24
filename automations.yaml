@@ -319,10 +319,6 @@
   trigger:
   - platform: state
     entity_id:
-    - binary_sensor.front_door_open
-    to: 'on'
-  - platform: state
-    entity_id:
     - binary_sensor.hikvision_nvr_driveway_line_crossing
     to: 'on'
   - platform: state
@@ -367,10 +363,8 @@
         entity_id: sun.sun
         attribute: rising
         state: true
-      - condition: numeric_state
-        entity_id: sun.sun
-        attribute: elevation
-        below: input_number.lights_off_sun_elevation_1
+      - condition: time
+        after: input_datetime.lights_off_time_1
     then:
     - service: light.turn_off
       data: {}
@@ -483,7 +477,7 @@
   mode: single
 - id: '1668936398884'
   alias: Lights - Back yard on CCTV intrusion back yard / alfresco
-  description: When sun elevation is < 5°
+  description: When sun elevation is < 0°
   trigger:
   - platform: state
     entity_id:
@@ -523,7 +517,7 @@
   mode: restart
 - id: '1668938565078'
   alias: Light - Alfresco when alfresco door opens at night
-  description: When sun elevation < 6°
+  description: When sun elevation < 0°
   trigger:
   - platform: state
     entity_id:
@@ -1352,7 +1346,7 @@
           entity_id: switch.19_rack_fans
 - id: '1672344646174'
   alias: Lights - Side lights when CCTV line cross motion kitty cam
-  description: When sun elevation is < 5°
+  description: When sun elevation is < 0°
   trigger:
   - platform: state
     entity_id:
@@ -1468,7 +1462,7 @@
     to: '0'
   condition:
   - condition: state
-    entity_id: lock.front_door
+    entity_id: lock.yale_smartlock_front_door
     state: unlocked
   action:
   - service: notify.mobile_app_patricks_iphone_13
@@ -1481,14 +1475,15 @@
           interruption-level: critical
   - if:
     - condition: state
-      entity_id: binary_sensor.front_door_open
+      entity_id: binary_sensor.front_door_aqara_contact
       state: 'off'
       alias: Confirm front door is closed
     then:
     - service: lock.lock
       data: {}
       target:
-        entity_id: lock.front_door
+        entity_id:
+        - lock.yale_smartlock_front_door
   mode: single
 - id: '1674880600732'
   alias: Notify - UPS battery low (not required, done by NUT UPS add-on option)
@@ -1606,7 +1601,7 @@
       hvac_mode: cool
     target:
       entity_id: climate.ac
-    enabled: false
+    enabled: true
   - service: climate.set_fan_mode
     data:
       fan_mode: medium
@@ -2068,7 +2063,7 @@
           title: Washing machine started
           message: Sit back and relax while the machines do your work!
 - id: '1681615571224'
-  alias: Notify - Ensuite shower is on
+  alias: Ensuite fan - control by humidity (notify for testing)
   description: Based on humidity sensor
   trigger:
   - platform: template
@@ -2091,4 +2086,43 @@
       message: Shower is now on because ensuite humidity is 5% above 24hr average
         of {{ states('sensor.ensuite_humidity_average_linear_24h', with_unit=True)
         }}
+  mode: single
+- id: '1682297014844'
+  alias: Ensuite fan - control by humidity
+  description: ''
+  use_blueprint:
+    path: Blackshome/bathroom-humidity-exhaust-fan.yaml
+    input:
+      trigger: sensor.ensuite_humidity_rate_of_change
+      rising_humidity: 3
+      falling_humidity: -1.5
+      by_pass: sensor.ensuite_humidity_rate_of_change
+      include_ha_restart: restart_enabled
+      fan_switch:
+        entity_id: light.home_security_visualiser_pcb_ensuite_fan_indicator
+- id: '1682297394195'
+  alias: Ensuite fan - control by humidity (notify for testing)
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.ensuite_humidity_rate_of_change
+    above: 2.7
+  condition: []
+  action:
+  - service: notify.mobile_app_patricks_iphone_13
+    data:
+      message: Ensuite fan ON
+  - wait_for_trigger:
+    - platform: numeric_state
+      entity_id: sensor.ensuite_humidity_rate_of_change
+      below: -4
+    continue_on_timeout: false
+    timeout:
+      hours: 0
+      minutes: 30
+      seconds: 0
+      milliseconds: 0
+  - service: notify.mobile_app_patricks_iphone_13
+    data:
+      message: Ensuite fan OFF
   mode: single
