@@ -450,7 +450,7 @@ binary_sensor:
   - platform: homeassistant
     internal: true
     id: cctv_motion_driveway
-    entity_id: binary_sensor.hikvision_nvr_driveway_line_crossing
+    entity_id: binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_1_linedetection
     filters:
       delayed_off: ${cctv_motion_off_delay}
     on_state:
@@ -462,7 +462,7 @@ binary_sensor:
   - platform: homeassistant
     internal: true
     id: cctv_motion_porch
-    entity_id: binary_sensor.hikvision_nvr_porch_line_crossing
+    entity_id: binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_2_linedetection
     filters:
       delayed_off: ${cctv_motion_off_delay}
     on_state:
@@ -474,7 +474,7 @@ binary_sensor:
   - platform: homeassistant
     internal: true
     id: cctv_motion_alfresco
-    entity_id: binary_sensor.hikvision_nvr_field_alfresco
+    entity_id: binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_3_fielddetection
     filters:
       delayed_off: ${cctv_motion_off_delay}
     on_state:
@@ -486,7 +486,7 @@ binary_sensor:
   - platform: homeassistant
     internal: true
     id: cctv_motion_backyard
-    entity_id: binary_sensor.hikvision_nvr_field_back_yard
+    entity_id: binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_4_fielddetection
     filters:
       delayed_off: ${cctv_motion_off_delay}
     on_state:
@@ -498,7 +498,7 @@ binary_sensor:
   - platform: homeassistant
     internal: true
     id: cctv_motion_courtyard
-    entity_id: binary_sensor.hikvision_nvr_kitty_cam_line_crossing
+    entity_id: binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_5_linedetection
     filters:
       delayed_off: ${cctv_motion_off_delay}
     on_state:

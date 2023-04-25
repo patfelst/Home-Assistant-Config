@@ -237,24 +237,8 @@ template:
         state: >
           {{ states('binary_sensor.cat_door_contact') }}
 
-# logger:
-#   logs:
-#     pyhik.hikvision: debug
-#     homeassistant.components.binary_sensor.hikvision: debug
-
 binary_sensor:
-  # Motion events from all cameras via the NVR login
-  - platform: hikvision
-    host: 192.168.20.88
-    port: 80
-    name: hikvision_nvr
-    ssl: false
-    # username: homeassistant
-    # password: "fDdui()5;"
-    username: admin
-    password: "@W8-23VJU8"
-
-    # https://www.home-assistant.io/integrations/workday/
+  # https://www.home-assistant.io/integrations/workday/
   - platform: workday
     country: AU
     province: SA
