@@ -902,9 +902,9 @@
   action:
     - choose:
         - conditions:
-            - condition: time
-              before: "21:45:00"
-              after: 06:00:00
+            - condition: state
+              entity_id: input_boolean.sleep_mode
+              state: "off"
           sequence:
             - service: light.turn_on
               data:
@@ -924,13 +924,13 @@
                 milliseconds: 0
     - choose:
         - conditions:
-            - condition: time
-              before: 06:00:00
-              after: "21:45:00"
+            - condition: state
+              entity_id: input_boolean.sleep_mode
+              state: "on"
           sequence:
             - service: light.turn_on
               data:
-                brightness_pct: 5
+                brightness_pct: 7
               target:
                 entity_id: light.wir_downlight
             - wait_for_trigger:
@@ -1716,6 +1716,19 @@
               data:
                 message: Front door is open
                 title: Door open
+        - if:
+            - condition: time
+              after: "21:00:00"
+              before: 06:00:00
+          then:
+            - service: input_boolean.turn_on
+              data: {}
+              target:
+                entity_id: input_boolean.sleep_mode
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                message: Sleep mode turned on with long press of Kathleen's bedside button
+                title: Sleep mode ON
       action_sensor: sensor.button_kathleen_bedside_action
 - id: "1678303773548"
   alias: Light - Courtyard follows bunker light
@@ -2149,7 +2162,7 @@
     - wait_for_trigger:
         - platform: numeric_state
           entity_id: sensor.ensuite_humidity_rate_of_change
-          below: -4
+          below: -1.5
       continue_on_timeout: false
       timeout:
         hours: 0

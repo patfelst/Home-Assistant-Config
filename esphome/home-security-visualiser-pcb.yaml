@@ -1,27 +1,27 @@
 substitutions:
-  driveway_gate_led: "1"
-  front_yard_motion_led: "2"
-  garage_door_led: "3"
-  porch_motion_led: "4"
-  front_doorlock_led: "5"
-  front_door_led: "6"
-  roller_door_led: "7"
-  workshop_window_led: "8"
-  courtyard_motion_led: "9"
-  cat_door_led: "10"
-  laundry_window_led: "11"
-  butlers_window_led: "12"
-  alfresco_door_led: "13"
-  backyard_motion_led: "14"
-  pool_pump_led: "15"
-  alfresco_motion_led: "16"
-  spare1_led: "17"
-  spare2_led: "18"
-  pool_motion_led: "19"
-  frontyard_motion_led: "20"
-  cctv_motion_off_delay: "1.5min" # How long to leave CCTV motion LED red for
-  brightness_sleep_mode: "30"
-  brightness_awake_mode: "80"
+  led_driveway_gate: "1"
+  led_frontyard_motion_1: "2"
+  led_garage_door: "3"
+  led_porch_motion: "4"
+  led_front_doorlock: "5"
+  led_front_door: "6"
+  led_roller_door: "7"
+  led_workshop_window: "8"
+  led_courtyard_motion: "9"
+  led_cat_door: "10"
+  led_laundry_window: "11"
+  led_butlers_window: "12"
+  led_alfresco_door: "13"
+  led_backyard_motion: "14"
+  led_pool_pump: "15"
+  led_alfresco_motion: "16"
+  led_sleep_mode: "17"
+  led_aircon_mode: "18"
+  led_pool_motion_led: "19"
+  led_frontyard_motion_2: "20"
+  cctv_motion_off_delay: "1.0min" # How long to leave CCTV motion LED red for
+  brightness_sleep_mode: "35"
+  brightness_awake_mode: "90"
 
 esphome:
   name: home-security-visualiser-pcb
@@ -189,63 +189,67 @@ script:
       - script.execute:
           id: set_openclosed_led
           led_state: !lambda 'return id(workshop_window).state;'
-          index: !lambda return ${workshop_window_led};
+          index: !lambda return ${led_workshop_window};
       - script.execute:
           id: set_openclosed_led
           led_state: !lambda 'return id(cat_door).state;'
-          index: !lambda return ${cat_door_led};
+          index: !lambda return ${led_cat_door};
       - script.execute:
           id: set_openclosed_led
           led_state: !lambda 'return id(alfresco_door).state;'
-          index: !lambda return ${alfresco_door_led};
+          index: !lambda return ${led_alfresco_door};
       - script.execute:
           id: set_openclosed_led
           led_state: !lambda 'return id(front_door).state;'
-          index: !lambda return ${front_door_led};
+          index: !lambda return ${led_front_door};
       - script.execute:
           id: set_openclosed_led
           led_state: !lambda 'return id(front_doorlock).state == "unlocked";'
-          index: !lambda return ${front_doorlock_led};
+          index: !lambda return ${led_front_doorlock};
       - script.execute:
           id: set_cover_led
           led_state_str: !lambda 'return id(garage_door).state;'
-          index: !lambda return ${garage_door_led};
+          index: !lambda return ${led_garage_door};
       - script.execute:
           id: set_cover_led
           led_state_str: !lambda 'return id(driveway_gate).state;'
-          index: !lambda return ${driveway_gate_led};
+          index: !lambda return ${led_driveway_gate};
       - script.execute:
           id: set_motion_led
           led_state: !lambda 'return id(cat_door).state;'
-          index: !lambda return ${cat_door_led};
+          index: !lambda return ${led_cat_door};
       - script.execute:
           id: set_motion_led
           led_state: !lambda 'return id(cctv_motion_driveway).state;'
-          index: !lambda return ${frontyard_motion_led};
+          index: !lambda return ${led_frontyard_motion_1};
       - script.execute:
           id: set_motion_led
           led_state: !lambda 'return id(cctv_motion_porch).state;'
-          index: !lambda return ${porch_motion_led};
+          index: !lambda return ${led_porch_motion};
       - script.execute:
           id: set_motion_led
           led_state: !lambda 'return id(cctv_motion_alfresco).state;'
-          index: !lambda return ${alfresco_motion_led};
+          index: !lambda return ${led_alfresco_motion};
       - script.execute:
           id: set_motion_led
           led_state: !lambda 'return id(cctv_motion_backyard).state;'
-          index: !lambda return ${backyard_motion_led};
+          index: !lambda return ${led_backyard_motion};
       - script.execute:
           id: set_motion_led
           led_state: !lambda 'return id(cctv_motion_courtyard).state;'
-          index: !lambda return ${courtyard_motion_led};
+          index: !lambda return ${led_courtyard_motion};
       - script.execute:
           id: set_pool_led
           led_state_str: !lambda 'return id(pool_pump_power).state;'
-          index: !lambda return ${pool_pump_led};
+          index: !lambda return ${led_pool_pump};
       - script.execute:
           id: set_sleep_led
           led_state: !lambda 'return id(sleep_mode).state;'
-          index: !lambda return ${spare1_led};
+          index: !lambda return ${led_sleep_mode};
+      - script.execute:
+          id: set_aircon_led
+          led_state_str: !lambda 'return id(aircon_mode).state;'
+          index: !lambda return ${led_aircon_mode};
 
   # *********************************************************************
   # ************ COVER SCRIPT - GARGE DOOR AND DRIVEWAY GATE ************
@@ -302,7 +306,7 @@ script:
   # *********************************************************************
   # ****************** POOL SCRIPT - POOL PUMP SPEED ********************
   # *********************************************************************
-  # Set RGB LED to indicate state of covers (garage door and driveway gate) from HA
+  # Set RGB LED to indicate state of pool pump
   - id: set_pool_led
     mode: single
     parameters:
@@ -351,9 +355,75 @@ script:
                 green: 0%
                 blue: 100%
 
+  # *********************************************************************
+  # ***************** AIR CON SCRIPT - POOL PUMP SPEED ******************
+  # *********************************************************************
+  # Set RGB LED to indicate state of air conditioner:
+  # states include: off, cool, heat, fan_only, dry
+  - id: set_aircon_led
+    mode: single
+    parameters:
+      led_state_str: string
+      index: int
+    then:
+      - if:
+          condition:
+            - lambda: 'return (led_state_str == "off");'
+          then:
+            - light.addressable_set:
+                id: led_strip
+                color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+                range_from: !lambda 'return index - 1;'
+                range_to: !lambda 'return index - 1;'
+                # off
+                red: 0%
+                green: 0%
+                blue: 0%
+      - if:
+          condition:
+            - lambda: 'return (led_state_str == "cool");'
+          then:
+            - light.addressable_set:
+                id: led_strip
+                color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+                range_from: !lambda 'return index - 1;'
+                range_to: !lambda 'return index - 1;'
+                # Light blue
+                red: 0%
+                green: 100%
+                blue: 100%
+      - if:
+          condition:
+            - lambda: 'return (led_state_str == "heat");'
+          then:
+            - light.addressable_set:
+                id: led_strip
+                color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+                range_from: !lambda 'return index - 1;'
+                range_to: !lambda 'return index - 1;'
+                # orange (255 165 0)
+                red: 100%
+                green: 65%
+                blue: 0%
+      - if:
+          condition:
+            or:
+              - lambda: 'return (led_state_str == "dry");'
+              - lambda: 'return (led_state_str == "fan_only");'
+          then:
+            - light.addressable_set:
+                id: led_strip
+                color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+                range_from: !lambda 'return index - 1;'
+                range_to: !lambda 'return index - 1;'
+                # pale green (152 251 152)
+                red: 60%
+                green: 98%
+                blue: 57%
+
 
 # ***********************************************************************
-# *************** TEXT SENSORS - COVERS, LOCKS, PPOL PUMP ***************
+# ********* TEXT SENSORS - COVERS, LOCKS, PPOL PUMP, AIR CON ************
 # ***********************************************************************
 text_sensor:
   - platform: homeassistant
@@ -365,7 +435,7 @@ text_sensor:
         - script.execute:
             id: set_cover_led
             led_state_str: !lambda 'return x;'
-            index: !lambda return ${garage_door_led};
+            index: !lambda return ${led_garage_door};
   - platform: homeassistant
     internal: true
     id: driveway_gate
@@ -375,7 +445,7 @@ text_sensor:
         - script.execute:
             id: set_cover_led
             led_state_str: !lambda 'return x;'
-            index: !lambda return ${driveway_gate_led};
+            index: !lambda return ${led_driveway_gate};
   - platform: homeassistant
     internal: true
     id: front_doorlock
@@ -385,7 +455,7 @@ text_sensor:
         - script.execute:
             id: set_openclosed_led
             led_state: !lambda 'return (x == "unlocked");'
-            index: !lambda return ${front_doorlock_led};
+            index: !lambda return ${led_front_doorlock};
   - platform: homeassistant
     internal: true
     id: pool_pump_power
@@ -395,7 +465,17 @@ text_sensor:
         - script.execute:
             id: set_pool_led
             led_state_str: !lambda 'return x;'
-            index: !lambda return ${pool_pump_led};
+            index: !lambda return ${led_pool_pump};
+  - platform: homeassistant
+    internal: true
+    id: aircon_mode
+    entity_id: climate.ac
+    on_value:
+      then:
+        - script.execute:
+            id: set_aircon_led
+            led_state_str: !lambda 'return x;'
+            index: !lambda return ${led_aircon_mode};
 
 # ***********************************************************************
 # ********************* BINARY SENSORS - OPEN/CLOSED ********************
@@ -410,7 +490,7 @@ binary_sensor:
         - script.execute:
             id: set_openclosed_led
             led_state: !lambda 'return x;'
-            index: !lambda return ${workshop_window_led}; // This syntax is a bug, Jesserockz looking into it
+            index: !lambda return ${led_workshop_window}; // This syntax is a bug, Jesserockz looking into it
   - platform: homeassistant
     internal: true
     id: alfresco_door
@@ -420,7 +500,7 @@ binary_sensor:
         - script.execute:
             id: set_openclosed_led
             led_state: !lambda 'return x;'
-            index: !lambda return ${alfresco_door_led};
+            index: !lambda return ${led_alfresco_door};
   - platform: homeassistant
     internal: true
     id: front_door
@@ -430,7 +510,7 @@ binary_sensor:
         - script.execute:
             id: set_openclosed_led
             led_state: !lambda 'return x;'
-            index: !lambda return ${front_door_led};
+            index: !lambda return ${led_front_door};
 
   # *********************************************************************
   # ******************* BINARY SENSOR - MOTION ALERT ********************
@@ -446,7 +526,7 @@ binary_sensor:
         - script.execute:
             id: set_motion_led
             led_state: !lambda 'return x;'
-            index: !lambda return ${cat_door_led};
+            index: !lambda return ${led_cat_door};
   - platform: homeassistant
     internal: true
     id: cctv_motion_driveway
@@ -458,7 +538,7 @@ binary_sensor:
         - script.execute:
             id: set_motion_led
             led_state: !lambda 'return x;'
-            index: !lambda return ${frontyard_motion_led};
+            index: !lambda return ${led_frontyard_motion_1};
   - platform: homeassistant
     internal: true
     id: cctv_motion_porch
@@ -470,7 +550,7 @@ binary_sensor:
         - script.execute:
             id: set_motion_led
             led_state: !lambda 'return x;'
-            index: !lambda return ${porch_motion_led};
+            index: !lambda return ${led_porch_motion};
   - platform: homeassistant
     internal: true
     id: cctv_motion_alfresco
@@ -482,7 +562,7 @@ binary_sensor:
         - script.execute:
             id: set_motion_led
             led_state: !lambda 'return x;'
-            index: !lambda return ${alfresco_motion_led};
+            index: !lambda return ${led_alfresco_motion};
   - platform: homeassistant
     internal: true
     id: cctv_motion_backyard
@@ -494,7 +574,7 @@ binary_sensor:
         - script.execute:
             id: set_motion_led
             led_state: !lambda 'return x;'
-            index: !lambda return ${backyard_motion_led};
+            index: !lambda return ${led_backyard_motion};
   - platform: homeassistant
     internal: true
     id: cctv_motion_courtyard
@@ -506,7 +586,7 @@ binary_sensor:
         - script.execute:
             id: set_motion_led
             led_state: !lambda 'return x;'
-            index: !lambda return ${courtyard_motion_led};
+            index: !lambda return ${led_courtyard_motion};
   
   # *********************************************************************
   # ********************* INPUT BOOLEAN - SLEEP MODE ********************
@@ -521,7 +601,7 @@ binary_sensor:
         - script.execute:
             id: set_sleep_led
             led_state: True
-            index: !lambda return ${spare1_led};
+            index: !lambda return ${led_sleep_mode};
 
         - number.set:
             id: led_strip_brightness
@@ -536,7 +616,7 @@ binary_sensor:
         - script.execute:
             id: set_sleep_led
             led_state: False
-            index: !lambda return ${spare1_led};
+            index: !lambda return ${led_sleep_mode};
 
         - number.set:
             id: led_strip_brightness
