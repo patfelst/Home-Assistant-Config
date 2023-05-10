@@ -1,0 +1,359 @@
+substitutions:
+  shed_lawn_name: Shed Lawn (z1)        # zone 1
+  ramp_lawn_name: Ramp Lawn (z2)        # zone 2
+  back_lawn_name: Back Lawn (z3)        # zone 3
+  back_garden_name: Back Garden (z4)    # zone 4
+  pool_garden_name: Pool Garden (z5)    # zone 5
+  front_garden_name: Front Garden (z6)  # zone 6
+  front_lawn_name: Front Lawn (z7)      # zone 7
+  verge_lawn_name: Verge Lawn (z8)      # zone 8
+  # initial sprinkler run time in minutes. Set for spring/autumn and use multiplier/divide to adjust for summer/winter
+  initial_runtime_mins: "10"
+  # max runtime for number exposed to HA front end
+  max_runtime_mins: "60"
+
+esphome:
+  name: sprinkler
+  friendly_name: "Sprinkler"
+  includes:
+    - esp_home_functions.h
+  on_boot:
+    - priority: 250
+      then:
+        light.turn_on: status_led
+    - priority: -100
+      then:
+        - delay: 2s
+        - light.turn_off: status_led
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "OD1Idla+MylQloUBjkfBft/Dyp5VuxOFiRbUJF7DQmc="
+  services:
+    - service: start_prg_a
+      then:
+        - script.wait: watering_program_a
+        - script.execute: watering_program_a
+    - service: start_prg_b
+      then:
+        - script.wait: watering_program_b
+        - script.execute: watering_program_b
+
+ota:
+  password: "069426673d630c6ebe4e027926f371cf"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Sprinkler Fallback Hotspot"
+    password: "HfYeKDfyb5Pc"
+
+captive_portal:
+
+button:
+  - platform: restart
+    name: "Reboot"
+  - platform: template
+    name: "Run Watering Program A"
+    on_press:
+      - wait_until:
+          condition: 
+            switch.is_off: main_switch # Not sure if this is actually needed
+      - script.execute: watering_program_a
+  - platform: template
+    name: "Run Watering Program B"
+    on_press:
+      - wait_until:
+          condition: 
+            switch.is_off: main_switch # Not sure if this is actually needed
+      - script.execute: watering_program_b
+  - platform: template
+    name: "Stop All Sprinklers"
+    on_press:
+      - sprinkler.shutdown: sprinkler_controller
+      - sprinkler.clear_queued_valves: sprinkler_controller
+
+light:
+  # Built in status LED on LilyGo 8x channel relay board
+  - platform: binary
+    id: status_led
+    name: "Status LED"
+    output: status_led_gpio
+  
+output:
+  # Built in status LED on LilyGo 8x channel relay board
+  - id: status_led_gpio
+    platform: gpio
+    pin: GPIO25
+    inverted: True
+    
+
+###########
+#### TODO
+###########
+# Add physical push buttons, one for each zone
+
+# This component created by https://github.com/kbx81
+# https://github.com/kbx81/esphome-configs/blob/main/dev/esp-sprinkler-controller.yaml
+sprinkler:
+  - id: sprinkler_controller
+    main_switch:
+      id: main_switch
+      name: "Main Switch"
+      on_turn_on:
+        - light.turn_on: status_led
+        - script.execute: publish_sprinkler_time
+      on_turn_off:
+        - light.turn_off: status_led
+        - sprinkler.clear_queued_valves: sprinkler_controller
+        - text_sensor.template.publish:
+            id: text_time_remaining
+            state: "Finished"
+        - text_sensor.template.publish:
+            id: text_total_queue_time
+            state: "0s"
+    auto_advance_switch: "Sprinklers Auto Advance"
+    valve_overlap: 5s
+    multiplier_number:
+      # Defaults are: multiplier: 1.0, min_value: 0.0, max_value: 10, step: 0.1
+      name: "Time Multiplier"
+      id: multiplier_number
+      max_value: 5.0
+      mode: box
+      # set_action:
+      on_value:
+        - text_sensor.template.publish:
+            id: text_time_remaining
+            state: !lambda |-
+              return seconds_to_readable(id(sprinkler_controller).time_remaining_current_operation().value());
+
+    valves:
+      #
+      # Valve 0 - Zone 1 : SHED LAWN
+      #
+      - valve_switch: ${shed_lawn_name}
+        enable_switch: Enable ${shed_lawn_name}
+        valve_switch_id: relay1
+        run_duration_number:
+          name: ${shed_lawn_name} Run Duration
+          unit_of_measurement: min
+          initial_value: ${initial_runtime_mins}
+          max_value: ${max_runtime_mins}
+          mode: box
+
+      #
+      # Valve 1 - Zone 2 : RAMP LAWN
+      #
+      - valve_switch: ${ramp_lawn_name}
+        enable_switch: Enable ${ramp_lawn_name}
+        valve_switch_id: relay2
+        run_duration_number:
+          name: ${ramp_lawn_name} Run Duration
+          unit_of_measurement: min
+          initial_value: ${initial_runtime_mins}
+          max_value: ${max_runtime_mins}
+          mode: box
+
+      #
+      # Valve 2 -  Zone 3 : BACK LAWN
+      #
+      - valve_switch: ${back_lawn_name}
+        enable_switch: Enable ${back_lawn_name}
+        valve_switch_id: relay3
+        run_duration_number:
+          name: ${back_lawn_name} Run Duration
+          unit_of_measurement: min
+          initial_value: ${initial_runtime_mins}
+          max_value: ${max_runtime_mins}
+          mode: box
+
+      #
+      # Valve 3 -  Zone 4 : BACK GARDEN
+      #
+      - valve_switch: ${back_garden_name}
+        enable_switch: Enable ${back_garden_name}
+        valve_switch_id: relay4
+        run_duration_number:
+          name: ${back_garden_name} Run Duration
+          unit_of_measurement: min
+          initial_value: ${initial_runtime_mins}
+          max_value: ${max_runtime_mins}
+          mode: box
+
+      #
+      # Valve 4 - Zone 5 : POOL GARDEN
+      #
+      - valve_switch: ${pool_garden_name}
+        enable_switch: Enable ${pool_garden_name}
+        valve_switch_id: relay5
+        run_duration_number:
+          name: ${pool_garden_name} Run Duration
+          unit_of_measurement: min
+          initial_value: ${initial_runtime_mins}
+          max_value: ${max_runtime_mins}
+          mode: box
+
+      #
+      # Valve 5 -  Zone 6 : FRONT GARDEN
+      #
+      - valve_switch: ${front_garden_name}
+        enable_switch: Enable ${front_garden_name}
+        valve_switch_id: relay6
+        run_duration_number:
+          name: ${front_garden_name} Run Duration
+          unit_of_measurement: min
+          initial_value: ${initial_runtime_mins}
+          max_value: ${max_runtime_mins}
+          mode: box
+
+      #
+      # Valve 6 -  Zone 7 : FRONT LAWN
+      #
+      - valve_switch: ${front_lawn_name}
+        enable_switch: Enable ${front_lawn_name}
+        valve_switch_id: relay7
+        run_duration_number:
+          name: ${front_lawn_name} Run Duration
+          unit_of_measurement: min
+          initial_value: ${initial_runtime_mins}
+          max_value: ${max_runtime_mins}
+          mode: box
+
+      #
+      # Valve 7 -  Zone 8 : VERGE LAWN
+      #
+      - valve_switch: ${verge_lawn_name}
+        enable_switch: Enable ${verge_lawn_name}
+        valve_switch_id: relay8
+        run_duration_number:
+          name: ${verge_lawn_name} Run Duration
+          unit_of_measurement: min
+          initial_value: ${initial_runtime_mins}
+          max_value: ${max_runtime_mins}
+          mode: box
+
+switch:
+  - platform: gpio
+    pin: GPIO33
+    id: relay1
+
+  - platform: gpio
+    pin: GPIO32
+    id: relay2
+
+  - platform: gpio
+    pin: GPIO13
+    id: relay3
+
+  - platform: gpio
+    pin: GPIO12
+    id: relay4
+
+  - platform: gpio
+    pin: GPIO21
+    id: relay5
+
+  - platform: gpio
+    pin: GPIO19
+    id: relay6
+
+  - platform: gpio
+    pin: GPIO18
+    id: relay7
+
+  - platform: gpio
+    pin: GPIO5
+    id: relay8
+
+script:
+  #
+  # Program A - GARDENS
+  #
+  - id: watering_program_a
+    then:
+      - sprinkler.clear_queued_valves:
+          id: sprinkler_controller
+      - sprinkler.queue_valve:
+          id: sprinkler_controller
+          valve_number: 3 # Zone 4 BACK GARDEN
+          run_duration: 0s
+      - sprinkler.queue_valve:
+          id: sprinkler_controller
+          valve_number: 4 # Zone 5 POOL GARDEN
+          run_duration: 0s
+      - sprinkler.queue_valve:
+          id: sprinkler_controller
+          valve_number: 5 # Zone 6 FRONT GARDEN
+          run_duration: 0s
+      - sprinkler.start_from_queue:
+          id: sprinkler_controller
+      - script.execute: publish_queue_time
+      - script.execute: publish_sprinkler_time
+
+  #
+  # Program B - BACK LAWNS
+  #
+  - id: watering_program_b
+    then:
+      - sprinkler.clear_queued_valves:
+          id: sprinkler_controller
+      - sprinkler.queue_valve:
+          id: sprinkler_controller
+          valve_number: 0 # Zone 1 SHED LAWN
+          run_duration: 0s
+      - sprinkler.queue_valve:
+          id: sprinkler_controller
+          valve_number: 1 # Zone 2 RAMP LAWN
+          run_duration: 0s
+      - sprinkler.queue_valve:
+          id: sprinkler_controller
+          valve_number: 2 # Zone 3 BACK LAWN
+          run_duration: 0s
+      - sprinkler.start_from_queue:
+          id: sprinkler_controller
+      - script.execute: publish_queue_time
+      - script.execute: publish_sprinkler_time
+
+  - id: publish_queue_time
+    then:
+      - text_sensor.template.publish:
+          id: text_total_queue_time
+          state: !lambda |-
+            return seconds_to_readable(id(sprinkler_controller).total_queue_time());
+
+  - id: publish_sprinkler_time
+    then:
+      - while:
+          condition:
+            lambda: 'return id(sprinkler_controller).time_remaining_current_operation().has_value();'
+          then:
+            - text_sensor.template.publish:
+                id: text_time_remaining
+                state: !lambda |-
+                  return seconds_to_readable(id(sprinkler_controller).time_remaining_current_operation().value());
+            - delay: 5s
+      - text_sensor.template.publish:
+          id: text_time_remaining
+          state: "Finished"
+
+text_sensor:
+  - platform: template
+    name: Time Remaining
+    id: text_time_remaining
+    icon: mdi:clock-start
+  - platform: template
+    name: Total Program Time
+    id: text_total_queue_time
+    icon: mdi:clock-start
