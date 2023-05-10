@@ -416,7 +416,10 @@
     - platform: numeric_state
       entity_id: zone.home
       below: 1
-  condition: []
+  condition:
+    - condition: state
+      entity_id: sun.sun
+      state: above_horizon
   action:
     - if:
         - condition: state
@@ -2072,8 +2075,8 @@
   use_blueprint:
     path: sbyx/notify-or-do-something-when-an-appliance-like-a-dishwasher-or-washing-machine-finishes.yaml
     input:
-      power_sensor: sensor.washing_machine_power
-      starting_threshold: 5
+      power_sensor: sensor.washing_machine_current_power
+      starting_threshold: 100
       actions:
         - service: tts.cloud_say
           data:
@@ -2107,6 +2110,8 @@
           data:
             title: Washing machine started
             message: Sit back and relax while the machines do your work!
+      starting_hysteresis: 5
+      finishing_threshold: 1
 - id: "1681615571224"
   alias: Ensuite fan - control by humidity (notify for testing)
   description: Based on humidity sensor
@@ -2172,4 +2177,18 @@
     - service: notify.mobile_app_patricks_iphone_13
       data:
         message: Ensuite fan OFF
+  mode: single
+- id: "1683635574099"
+  alias: Auto off - gas heater when last person leaves home
+  description: ""
+  trigger:
+    - platform: numeric_state
+      entity_id: zone.home
+      below: 0
+  condition: []
+  action:
+    - service: switch.turn_off
+      data: {}
+      target:
+        entity_id: switch.gas_heater
   mode: single
