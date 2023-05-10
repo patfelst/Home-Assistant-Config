@@ -12,6 +12,13 @@ substitutions:
   # max runtime for number exposed to HA front end
   max_runtime_mins: "60"
 
+
+globals:
+  - id: current_program_str
+    type: std::string
+    restore_value: no  # Strings cannot be saved/restored
+    initial_value: '"No program"'
+
 esphome:
   name: sprinkler
   friendly_name: "Sprinkler"
@@ -299,6 +306,7 @@ script:
           run_duration: 0s
       - sprinkler.start_from_queue:
           id: sprinkler_controller
+      - lambda: 'id(current_program_str) = "Prog A";'
       - script.execute: publish_queue_time
       - script.execute: publish_sprinkler_time
 
@@ -323,6 +331,7 @@ script:
           run_duration: 0s
       - sprinkler.start_from_queue:
           id: sprinkler_controller
+      - lambda: 'id(current_program_str) = "Prog B";'
       - script.execute: publish_queue_time
       - script.execute: publish_sprinkler_time
 
@@ -331,7 +340,10 @@ script:
       - text_sensor.template.publish:
           id: text_total_queue_time
           state: !lambda |-
-            return seconds_to_readable(id(sprinkler_controller).total_queue_time());
+            std::string prog_txt = "";
+            prog_txt = id(current_program_str) + " " +
+                        seconds_to_readable(id(sprinkler_controller).total_queue_time());
+            return prog_txt;
 
   - id: publish_sprinkler_time
     then:
