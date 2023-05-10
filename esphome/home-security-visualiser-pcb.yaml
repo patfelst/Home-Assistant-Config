@@ -356,7 +356,7 @@ script:
                 blue: 100%
 
   # *********************************************************************
-  # ***************** AIR CON SCRIPT - POOL PUMP SPEED ******************
+  # ************************ AIR CON SCRIPT  ****************************
   # *********************************************************************
   # Set RGB LED to indicate state of air conditioner:
   # states include: off, cool, heat, fan_only, dry
@@ -459,7 +459,7 @@ text_sensor:
   - platform: homeassistant
     internal: true
     id: pool_pump_power
-    entity_id: sensor.pool_pump
+    entity_id: sensor.pool_pump_status
     on_value:
       then:
         - script.execute:

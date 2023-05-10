@@ -212,9 +212,8 @@ template:
       # Med 350W
       # Low 155W
       - name: "Pool pump status"
-        unique_id: pool_pump_status
+        unique_id: id_pool_pump_status
         icon: mdi:water-pump
-        device_class: power
         state: >
           {% set pool_power = states('sensor.pool_pump_current_power')|float %}
           {% if pool_power < 50 %}
@@ -238,11 +237,6 @@ template:
           {{ states('binary_sensor.cat_door_contact') }}
 
 binary_sensor:
-  # https://www.home-assistant.io/integrations/workday/
-  - platform: workday
-    country: AU
-    province: SA
-
   - platform: group
     name: "Shelly overheating sensors"
     entities:
