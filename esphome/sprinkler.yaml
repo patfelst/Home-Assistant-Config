@@ -75,16 +75,16 @@ button:
   - platform: template
     name: "Run Watering Program A"
     on_press:
-      - wait_until:
-          condition: 
-            switch.is_off: main_switch # Not sure if this is actually needed
+      # - wait_until:
+      #     condition: 
+      #       switch.is_off: main_switch # Not sure if this is actually needed
       - script.execute: watering_program_a
   - platform: template
     name: "Run Watering Program B"
     on_press:
-      - wait_until:
-          condition: 
-            switch.is_off: main_switch # Not sure if this is actually needed
+      # - wait_until:
+      #     condition: 
+      #       switch.is_off: main_switch # Not sure if this is actually needed
       - script.execute: watering_program_b
   - platform: template
     name: "Stop All Sprinklers"
@@ -130,6 +130,9 @@ sprinkler:
             state: "Finished"
         - text_sensor.template.publish:
             id: text_total_queue_time
+            state: "0s"
+        - text_sensor.template.publish:
+            id: text_valve_rem_time
             state: "0s"
     auto_advance_switch: "Sprinklers Auto Advance"
     valve_overlap: 5s
@@ -290,6 +293,7 @@ script:
   #
   - id: watering_program_a
     then:
+      - lambda: 'id(current_program_str) = "Prog A";'
       - sprinkler.clear_queued_valves:
           id: sprinkler_controller
       - sprinkler.queue_valve:
@@ -304,10 +308,10 @@ script:
           id: sprinkler_controller
           valve_number: 5 # Zone 6 FRONT GARDEN
           run_duration: 0s
+      # Must publish queue time here as once started the first value is removed form queue
+      - script.execute: publish_queue_time
       - sprinkler.start_from_queue:
           id: sprinkler_controller
-      - lambda: 'id(current_program_str) = "Prog A";'
-      - script.execute: publish_queue_time
       - script.execute: publish_sprinkler_time
 
   #
@@ -315,6 +319,7 @@ script:
   #
   - id: watering_program_b
     then:
+      - lambda: 'id(current_program_str) = "Prog B";'
       - sprinkler.clear_queued_valves:
           id: sprinkler_controller
       - sprinkler.queue_valve:
@@ -329,10 +334,10 @@ script:
           id: sprinkler_controller
           valve_number: 2 # Zone 3 BACK LAWN
           run_duration: 0s
+      # Must publish queue time here as once started the first value is removed form queue
+      - script.execute: publish_queue_time
       - sprinkler.start_from_queue:
           id: sprinkler_controller
-      - lambda: 'id(current_program_str) = "Prog B";'
-      - script.execute: publish_queue_time
       - script.execute: publish_sprinkler_time
 
   - id: publish_queue_time
@@ -355,6 +360,10 @@ script:
                 id: text_time_remaining
                 state: !lambda |-
                   return seconds_to_readable(id(sprinkler_controller).time_remaining_current_operation().value());
+            - text_sensor.template.publish:
+                id: text_valve_rem_time
+                state: !lambda |-
+                  return seconds_to_readable(id(sprinkler_controller).time_remaining_active_valve().value());
             - delay: 5s
       - text_sensor.template.publish:
           id: text_time_remaining
@@ -368,4 +377,8 @@ text_sensor:
   - platform: template
     name: Total Program Time
     id: text_total_queue_time
+    icon: mdi:clock-start
+  - platform: template
+    name: Valve Remaining Time
+    id: text_valve_rem_time
     icon: mdi:clock-start
