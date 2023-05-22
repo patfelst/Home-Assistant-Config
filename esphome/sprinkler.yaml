@@ -22,6 +22,7 @@ globals:
 esphome:
   name: sprinkler
   friendly_name: "Sprinkler"
+  comment: ESP32 Sprinkler controller using LilyGo T-Relay (8x channel) board.
   includes:
     - esp_home_functions.h
   on_boot:
@@ -143,11 +144,11 @@ sprinkler:
       max_value: 5.0
       mode: box
       # set_action:
-      on_value:
-        - text_sensor.template.publish:
-            id: text_time_remaining
-            state: !lambda |-
-              return seconds_to_readable(id(sprinkler_controller).time_remaining_current_operation().value());
+      # on_value:
+      #   - text_sensor.template.publish:
+      #       id: text_time_remaining
+      #       state: !lambda |-
+      #         return seconds_to_readable(id(sprinkler_controller).time_remaining_current_operation().value());
 
     valves:
       #
@@ -159,6 +160,7 @@ sprinkler:
         run_duration_number:
           name: ${shed_lawn_name} Run Duration
           unit_of_measurement: min
+          icon: "mdi:timer-sand"
           initial_value: ${initial_runtime_mins}
           max_value: ${max_runtime_mins}
           mode: box
@@ -172,6 +174,7 @@ sprinkler:
         run_duration_number:
           name: ${ramp_lawn_name} Run Duration
           unit_of_measurement: min
+          icon: "mdi:timer-sand"
           initial_value: ${initial_runtime_mins}
           max_value: ${max_runtime_mins}
           mode: box
@@ -185,6 +188,7 @@ sprinkler:
         run_duration_number:
           name: ${back_lawn_name} Run Duration
           unit_of_measurement: min
+          icon: "mdi:timer-sand"
           initial_value: ${initial_runtime_mins}
           max_value: ${max_runtime_mins}
           mode: box
@@ -198,6 +202,7 @@ sprinkler:
         run_duration_number:
           name: ${back_garden_name} Run Duration
           unit_of_measurement: min
+          icon: "mdi:timer-sand"
           initial_value: ${initial_runtime_mins}
           max_value: ${max_runtime_mins}
           mode: box
@@ -211,6 +216,7 @@ sprinkler:
         run_duration_number:
           name: ${pool_garden_name} Run Duration
           unit_of_measurement: min
+          icon: "mdi:timer-sand"
           initial_value: ${initial_runtime_mins}
           max_value: ${max_runtime_mins}
           mode: box
@@ -224,6 +230,7 @@ sprinkler:
         run_duration_number:
           name: ${front_garden_name} Run Duration
           unit_of_measurement: min
+          icon: "mdi:timer-sand"
           initial_value: ${initial_runtime_mins}
           max_value: ${max_runtime_mins}
           mode: box
@@ -237,6 +244,7 @@ sprinkler:
         run_duration_number:
           name: ${front_lawn_name} Run Duration
           unit_of_measurement: min
+          icon: "mdi:timer-sand"
           initial_value: ${initial_runtime_mins}
           max_value: ${max_runtime_mins}
           mode: box
@@ -250,6 +258,7 @@ sprinkler:
         run_duration_number:
           name: ${verge_lawn_name} Run Duration
           unit_of_measurement: min
+          icon: "mdi:timer-sand"
           initial_value: ${initial_runtime_mins}
           max_value: ${max_runtime_mins}
           mode: box
@@ -374,11 +383,14 @@ text_sensor:
     name: Time Remaining
     id: text_time_remaining
     icon: mdi:clock-start
+    update_interval: 5min
   - platform: template
     name: Total Program Time
     id: text_total_queue_time
     icon: mdi:clock-start
+    update_interval: 5min
   - platform: template
     name: Valve Remaining Time
     id: text_valve_rem_time
     icon: mdi:clock-start
+    update_interval: 5min

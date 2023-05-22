@@ -26,14 +26,14 @@ sensor:
     name: "Max daily solar production over last year"
     entity_id: sensor.symo_10_0_3_m_1_energy_day
     state_characteristic: value_max
-    # sampling_size: 3153600 # With HA 2022.12, this is now optional
+    sampling_size: 3153600 # With HA 2022.12, this is now optional
     max_age:
       days: 365
   - platform: statistics
     name: "Date of max daily solar production over last year"
     entity_id: sensor.symo_10_0_3_m_1_energy_day
     state_characteristic: datetime_value_max
-    # sampling_size: 3153600 # With HA 2022.12, this is now optional
+    sampling_size: 3153600 # With HA 2022.12, this is now optional
     max_age:
       days: 365
   - platform: filter
