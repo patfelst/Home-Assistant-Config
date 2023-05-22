@@ -835,9 +835,15 @@
   action:
     - choose:
         - conditions:
-            - condition: time
-              before: "23:00:00"
-              after: 06:00:00
+            - condition: or
+              conditions:
+                - condition: time
+                  before: "23:00:00"
+                  after: 06:00:00
+                  enabled: false
+                - condition: state
+                  entity_id: input_boolean.sleep_mode
+                  state: "off"
           sequence:
             - service: light.turn_on
               data:
@@ -847,9 +853,15 @@
                   - light.butlers_downlight
                   - light.led_strip_butlers_overhead_cupboards
         - conditions:
-            - condition: time
-              before: 06:00:00
-              after: "23:00:00"
+            - condition: or
+              conditions:
+                - condition: state
+                  entity_id: input_boolean.sleep_mode
+                  state: "on"
+                - condition: time
+                  after: "23:00:00"
+                  before: 06:00:00
+                  enabled: false
           sequence:
             - service: light.turn_on
               data:
