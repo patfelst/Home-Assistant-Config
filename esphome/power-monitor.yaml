@@ -190,6 +190,7 @@ display:
           int xx, yy = 0;
 
           auto grey = Color(128, 128, 128);
+          auto grey_light = Color(50, 50, 50);
           auto white = Color(255, 255, 255);
           auto black = Color(0, 0, 0);
           auto orange = Color(255, 128, 0);
@@ -268,6 +269,15 @@ display:
           // ***
           // *** DISPLAY FLOWS
           // ***
+          
+          // Flow line SOLAR-GRID
+          it.line(width/2 + ${icon_size}/2, ${icon_size}, width - ${icon_size}, height - ${icon_size}, grey_light);
+          // Flow line SOLAR-HOUSE
+          it.line(width/2 - ${icon_size}/2, ${icon_size}, ${icon_size}, height - ${icon_size}, grey_light);
+          // Flow line GRID-HOUSE
+          yy = height - ${icon_size}/2;
+          it.line(${icon_size}, yy, width - ${icon_size}, yy, grey_light);
+
           static int solar_grid_ind_x = width/2 + ${icon_size}/2;
           static int solar_grid_ind_y = ${icon_size};
           // *** Display FLOW SOLAR-GRID
@@ -308,14 +318,14 @@ display:
           // *** Display FLOW GRID-HOUSE
           if (grid_kw > 0.05) {
             xx = width/2;
-            yy = height - ${icon_size} + 15;
+            yy = height - ${icon_size}/2;
             // Only display Import flow
-            it.printf(xx, yy, id(font_med), red, TextAlign::CENTER, "%.1f", grid_kw);
+            it.printf(xx, yy - 25, id(font_med), red, TextAlign::CENTER, "%.1f", grid_kw);
 
             if (grid_house_ind_x <= ${icon_size} + 5) {
               grid_house_ind_x = width - ${icon_size} - 5;
             }
-            it.filled_circle(grid_house_ind_x, yy + ${icon_size}/2 - 10, ${dot_size}, red);
+            it.filled_circle(grid_house_ind_x, yy, ${dot_size}, red);
             grid_house_ind_x -= 10;
           }
 
