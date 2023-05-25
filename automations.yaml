@@ -326,6 +326,10 @@
       to: "on"
     - platform: state
       entity_id:
+        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_1_fielddetection
+      to: "on"
+    - platform: state
+      entity_id:
         - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_2_linedetection
       to: "on"
     - platform: state
@@ -335,6 +339,10 @@
     - platform: state
       entity_id:
         - binary_sensor.front_door_aqara_contact
+      to: "on"
+    - platform: state
+      entity_id:
+        - binary_sensor.driveway_motion_occupancy
       to: "on"
   condition:
     - condition: numeric_state
@@ -1385,7 +1393,7 @@
   trigger:
     - platform: state
       entity_id:
-        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_5_fielddetection
+        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_5_linedetection
       to: "on"
   condition:
     - condition: numeric_state
@@ -2203,4 +2211,47 @@
       data: {}
       target:
         entity_id: switch.gas_heater
+  mode: single
+- id: "1684844548755"
+  alias: Notify - Motion in front yard
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_1_linedetection
+      to: "on"
+    - platform: state
+      entity_id:
+        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_1_fielddetection
+      to: "on"
+    - platform: state
+      entity_id:
+        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_2_linedetection
+      to: "on"
+    - platform: state
+      entity_id:
+        - binary_sensor.driveway_motion_occupancy
+      to: "on"
+  condition:
+    - condition: numeric_state
+      entity_id: sun.sun
+      attribute: elevation
+      below: 0
+      enabled: false
+  action:
+    - service: notify.patrick_and_kathleen
+      data:
+        title: Motion Front Yard
+        message: Motion due to {{ trigger.to_state.name }}
+        data:
+          push:
+            sound:
+              name: default
+              critical: 1
+              volume: 0.5
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 30
+        milliseconds: 0
   mode: single
