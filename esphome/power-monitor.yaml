@@ -209,21 +209,21 @@ display:
           float solar_kw = 0.0;
           if (!isnan(id(ha_solar_power).state))
             solar_kw = id(ha_solar_power).state;
-          solar_kw = id(sim_solar).state;
+          // solar_kw = id(sim_solar).state; // Use number component to simulate solar power
 
           // DETERMINE HOUSE POWER
           //  Note: Negative means house consuming (should almost always be the case)
           float house_kw = 0.0;
           if (!isnan(id(ha_house_power).state))
             house_kw = -id(ha_house_power).state;
-          house_kw = -id(sim_house).state;
+          // house_kw = -id(sim_house).state;   // Use number component to simulate house power
 
           // DETERMINE GRID POWER
           // Note: Negative = Export, Positive = Import
           float grid_kw = 0.0;
           if (!isnan(id(ha_grid_power).state))
             grid_kw = id(ha_grid_power).state;
-          grid_kw = id(sim_grid).state;
+          // grid_kw = id(sim_grid).state; // Use number component to simulate grid power
 
           // ***
           // *** Display images
