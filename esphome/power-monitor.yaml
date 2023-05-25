@@ -1,11 +1,16 @@
 substitutions:
   touch_delay: 10ms
-  icon_size: "80"
+  icon_size: "72"
+  dot_size: "4"
 
 esphome:
   name: power-monitor
   friendly_name: Power Monitor
   comment: M5Stack Core2 home power visualiser
+  platformio_options:
+    board_build.f_flash: 80000000L
+    board_upload.flash_size: 16MB
+    board_build.partitions: default_16MB.csv
 
 external_components:
   - source: github://Pionizer/pionizer-axp192
@@ -18,9 +23,12 @@ external_components:
       path: ext_components/components
 
 esp32:
-  board: esp32dev
+  # board: esp32dev
+  board: m5stack-core-esp32
   framework:
     type: arduino
+    # board_build.partitions: default_16MB.csv
+    # board_build.arduino.memory_type: qio_opi
 
 # Enable logging
 logger:
@@ -169,6 +177,7 @@ display:
   - platform: ili9xxx
     model: M5STACK # x=320 x y=240 + 40 pixels for red touch circles below display
     id: lcd_display
+    update_interval: 500ms
     cs_pin: 5
     dc_pin: 15
     pages:
@@ -223,43 +232,29 @@ display:
           it.image(0, height - ${icon_size}, id(img_house));
           it.image(width - ${icon_size}, height - ${icon_size}, id(img_powerlines));
 
-          // Dispaly kW in the centre
-          xx = width/2;
-          yy = height/2+6;
-          // it.filled_circle(xx, yy, 10, grey);
-          it.print(xx, yy, id(font_lge), grey, TextAlign::CENTER, "kW");
+          // Dispaly units of kW
+          xx = width - 23;
+          yy = 18;
+          it.filled_circle(xx, yy, 18, grey);
+          it.print(xx, yy, id(font_sml), black, TextAlign::CENTER, "kW");
 
           // ***
           // *** Display POWER
           // ***
 
           // *** Display SOLAR power
-          xx = width/2 + ${icon_size}/2 + txt_xoffset;
-          yy = ${icon_size}/2 - med_font_height/2;
-          it.printf(xx, yy, id(font_med), yellow, TextAlign::LEFT, "%.1f", solar_kw);
+          xx = width/2 - ${icon_size}/2 - txt_xoffset;
+          yy = ${icon_size}/2 - 12;
+          it.printf(xx, yy, id(font_med), yellow, TextAlign::RIGHT, "%.1f", solar_kw);
 
-          // *** Display HOUSE power.
-          xx = ${icon_size} + txt_xoffset;
-          yy = height - ${icon_size}/2 - med_font_height/2;
+          // *** Display HOUSE power
+          xx = 15;
+          yy = height - ${icon_size} - med_font_height - 10;
           it.printf(xx, yy, id(font_med), cyan, TextAlign::LEFT, "%.1f", house_kw);
-
-          // *** Display GRID power.
-          // xx = width - ${icon_size} - txt_xoffset;
-          // yy = height - ${icon_size}/2 - med_font_height/2;
-          // if (grid_kw < 0.0) {
-          //   it.printf(xx, yy, id(font_med), green, TextAlign::RIGHT, "%.1f", -grid_kw);
-          //   // it.print(xx, yy, id(font_med), green, "Exporting");
-          // }
-          // else if (grid_kw > 0.0) {
-          //   it.printf(xx, yy, id(font_med), red, TextAlign::RIGHT, "%.1f", grid_kw);
-          //   // it.print(xx, yy, id(font_med), red, "Importing");
-          // }
 
           // ***
           // *** DETERMINE FLOWS
           // ***
-
-          // Solar ==> House, and Solar ==> Grid
           float flow_solar_house = 0.0;
           float flow_solar_grid = 0.0;
           if (solar_kw >= house_kw) {
@@ -269,33 +264,60 @@ display:
           else
             flow_solar_house = solar_kw;
 
-          // Grid  ==> House
-          // float flow_grid_house = 0.0;
-          // if (solar_kw > 0.0)
-          //   flow_grid_house = house_kw - solar_kw;
-          // else
-          //   flow_grid_house = grid_kw;
 
           // ***
           // *** DISPLAY FLOWS
           // ***
-
+          static int solar_grid_ind_x = width/2 + ${icon_size}/2;
+          static int solar_grid_ind_y = ${icon_size};
           // *** Display FLOW SOLAR-GRID
-          xx = (width * 3)/4;
-          yy = height/2;
-          it.printf(xx, yy, id(font_med), green, TextAlign::CENTER, "%.1f", flow_solar_grid);
+          if (flow_solar_grid > 0.05) {
+            xx = (width * 6)/8 + 10;
+            yy = height/2 - 25;
+            it.printf(xx, yy, id(font_med), green, TextAlign::CENTER, "%.1f", flow_solar_grid);
 
+            // Display moving direction indicator
+            if (solar_grid_ind_y >= (height - ${icon_size})) {
+              solar_grid_ind_x = width/2 + ${icon_size}/2;
+              solar_grid_ind_y = ${icon_size};
+            }
+            it.filled_circle(solar_grid_ind_x, solar_grid_ind_y, ${dot_size}, green);
+            solar_grid_ind_x += 5;
+            solar_grid_ind_y += 9;
+          }
+
+          static int solar_house_ind_x = width/2 - ${icon_size}/2;
+          static int solar_house_ind_y = ${icon_size};
           // *** Display FLOW SOLAR-HOUSE
-          xx = width/4;
-          yy = height/2;
-          it.printf(xx, yy, id(font_med), green, TextAlign::CENTER, "%.1f", flow_solar_house);
+          if (flow_solar_house > 0.05) {
+            xx = (width * 2)/8 - 10;
+            yy = height/2 - 25;
+            it.printf(xx, yy, id(font_med), green, TextAlign::CENTER, "%.1f", flow_solar_house);
 
+            // Display moving direction indicator
+            if (solar_house_ind_y >= (height - ${icon_size})) {
+              solar_house_ind_x = width/2 - ${icon_size}/2;
+              solar_house_ind_y = ${icon_size};
+            }
+            it.filled_circle(solar_house_ind_x, solar_house_ind_y, ${dot_size}, green);
+            solar_house_ind_x -= 5;
+            solar_house_ind_y += 9;
+          }
+
+          static int grid_house_ind_x = width - ${icon_size} - 5;
           // *** Display FLOW GRID-HOUSE
-          xx = width/2;
-          yy = height - ${icon_size}/2 + 6;
-          // Only display Import flow
-          if (grid_kw > 0.0)
+          if (grid_kw > 0.05) {
+            xx = width/2;
+            yy = height - ${icon_size} + 15;
+            // Only display Import flow
             it.printf(xx, yy, id(font_med), red, TextAlign::CENTER, "%.1f", grid_kw);
+
+            if (grid_house_ind_x <= ${icon_size} + 5) {
+              grid_house_ind_x = width - ${icon_size} - 5;
+            }
+            it.filled_circle(grid_house_ind_x, yy + ${icon_size}/2 - 10, ${dot_size}, red);
+            grid_house_ind_x -= 10;
+          }
 
       - id: page3
         lambda: |-
@@ -439,7 +461,8 @@ number:
   - platform: template
     name: Sim solar
     id: sim_solar
-    initial_value: 3
+    # initial_value: 3
+    restore_value: True
     optimistic: True
     min_value: 0
     max_value: 10
@@ -455,7 +478,8 @@ number:
   - platform: template
     name: Sim house
     id: sim_house
-    initial_value: -0.60
+    # initial_value: -0.60
+    restore_value: True
     optimistic: True
     min_value: -10
     max_value: 0
