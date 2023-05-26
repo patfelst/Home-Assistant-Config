@@ -349,6 +349,9 @@
       entity_id: sun.sun
       attribute: elevation
       below: 0
+    - condition: state
+      entity_id: input_boolean.disable_front_yard_motion_lights
+      state: "off"
   action:
     - service: light.turn_on
       data: {}
@@ -508,9 +511,6 @@
       entity_id: sun.sun
       attribute: elevation
       below: 0
-    - condition: state
-      entity_id: input_boolean.camera_motion_trigger_lights
-      state: "on"
     - condition: state
       entity_id: input_boolean.sleep_mode
       state: "on"
@@ -1873,35 +1873,6 @@
           - light.pool_light_controller_pool_lights
           - light.led_strip_fire_pit_dimmer
   mode: single
-- id: "1679254613444"
-  alias: Input boolean - CCTV motion trigger set to copy sleep state
-  description: ""
-  trigger:
-    - platform: state
-      entity_id:
-        - input_boolean.sleep_mode
-  condition: []
-  action:
-    - choose:
-        - conditions:
-            - condition: state
-              entity_id: input_boolean.sleep_mode
-              state: "on"
-          sequence:
-            - service: input_boolean.turn_on
-              data: {}
-              target:
-                entity_id: input_boolean.camera_motion_trigger_lights
-        - conditions:
-            - condition: state
-              entity_id: input_boolean.sleep_mode
-              state: "off"
-          sequence:
-            - service: input_boolean.turn_off
-              data: {}
-              target:
-                entity_id: input_boolean.camera_motion_trigger_lights
-  mode: single
 - id: "1679693076266"
   alias: Automatic - open garage and gate when PATRICK arrives home in when driving
   description: ""
@@ -2238,6 +2209,9 @@
       attribute: elevation
       below: 0
       enabled: false
+    - condition: state
+      entity_id: input_boolean.disable_front_yard_motion_alerts
+      state: "off"
   action:
     - service: notify.patrick_and_kathleen
       data:
@@ -2254,4 +2228,103 @@
         minutes: 0
         seconds: 30
         milliseconds: 0
+  mode: single
+- id: "1685061501391"
+  alias: Input boolean - Enable front yard motion alerts after 1 hour
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - input_boolean.disable_front_yard_motion_alerts
+      to: "on"
+      for:
+        hours: 1
+        minutes: 0
+        seconds: 0
+  condition: []
+  action:
+    - service: input_boolean.turn_off
+      data: {}
+      target:
+        entity_id: input_boolean.disable_front_yard_motion_alerts
+  mode: single
+- id: "1685061918531"
+  alias: Timer - remaining time to enable front yard motion alerts
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - input_boolean.disable_front_yard_motion_alerts
+  condition: []
+  action:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: input_boolean.disable_front_yard_motion_alerts
+              state: "on"
+          sequence:
+            - service: timer.start
+              data: {}
+              target:
+                entity_id: timer.remaining_time_front_yard_motion_alerts_disabled
+        - conditions:
+            - condition: state
+              entity_id: input_boolean.disable_front_yard_motion_alerts
+              state: "off"
+          sequence:
+            - service: timer.finish
+              data: {}
+              target:
+                entity_id: timer.remaining_time_front_yard_motion_alerts_disabled
+  mode: single
+- id: "1685102688097"
+  alias: Input boolean - Enable front yard motion lights after 5 mins
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - input_boolean.disable_front_yard_motion_lights
+      to: "on"
+      for:
+        hours: 0
+        minutes: 5
+        seconds: 0
+  condition: []
+  action:
+    - service: input_boolean.turn_off
+      data: {}
+      target:
+        entity_id:
+          - input_boolean.disable_front_yard_motion_lights
+  mode: single
+- id: "1685103116029"
+  alias: Timer - remaining time to enable front yard lights
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - input_boolean.disable_front_yard_motion_lights
+  condition: []
+  action:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: input_boolean.disable_front_yard_motion_lights
+              state: "on"
+          sequence:
+            - service: timer.start
+              data: {}
+              target:
+                entity_id:
+                  - timer.remaining_time_front_yard_motion_lights_disabled
+        - conditions:
+            - condition: state
+              entity_id: input_boolean.disable_front_yard_motion_lights
+              state: "off"
+          sequence:
+            - service: timer.finish
+              data: {}
+              target:
+                entity_id:
+                  - timer.remaining_time_front_yard_motion_lights_disabled
   mode: single

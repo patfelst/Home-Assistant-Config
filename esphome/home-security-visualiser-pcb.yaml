@@ -530,7 +530,7 @@ binary_sensor:
   - platform: homeassistant
     internal: true
     id: cctv_motion_driveway
-    entity_id: binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_1_linedetection
+    entity_id: binary_sensor.front_yard_motion
     filters:
       delayed_off: ${cctv_motion_off_delay}
     on_state:

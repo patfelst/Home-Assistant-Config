@@ -282,9 +282,9 @@ display:
           static int solar_grid_ind_y = ${icon_size};
           // *** Display FLOW SOLAR-GRID
           if (flow_solar_grid > 0.05) {
-            xx = (width * 6)/8 + 10;
-            yy = height/2 - 25;
-            it.printf(xx, yy, id(font_med), green, TextAlign::CENTER, "%.1f", flow_solar_grid);
+            xx = (width * 6)/8 - 12;
+            yy = height/2 - 27;
+            it.printf(xx, yy, id(font_med), green, TextAlign::LEFT, "%.1f", flow_solar_grid);
 
             // Display moving direction indicator
             if (solar_grid_ind_y >= (height - ${icon_size})) {
@@ -300,9 +300,9 @@ display:
           static int solar_house_ind_y = ${icon_size};
           // *** Display FLOW SOLAR-HOUSE
           if (flow_solar_house > 0.05) {
-            xx = (width * 2)/8 - 10;
-            yy = height/2 - 25;
-            it.printf(xx, yy, id(font_med), green, TextAlign::CENTER, "%.1f", flow_solar_house);
+            xx = (width * 2)/8 + 12;
+            yy = height/2 - 27;
+            it.printf(xx, yy, id(font_med), green, TextAlign::RIGHT, "%.1f", flow_solar_house);
 
             // Display moving direction indicator
             if (solar_house_ind_y >= (height - ${icon_size})) {
