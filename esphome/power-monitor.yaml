@@ -176,10 +176,9 @@ binary_sensor:
     # entity_id: binary_sensor.butlers_sensor_occupancy
     entity_id: light.butlers_downlight
     on_press: 
-      then:
         - globals.set:
             id: lcd_brightness
-            value: '100.0'
+            value: '90.0'
     on_release:
         - globals.set:
             id: lcd_brightness
@@ -218,6 +217,7 @@ display:
           auto cyan = Color(0, 255, 255);
           auto red = Color(255, 0, 0);
 
+          // LCD is off at or below 40%
           axp192_axp192component->set_brightness(id(lcd_brightness)/100.0);
 
           // ***
@@ -501,6 +501,9 @@ number:
     mode: slider
     on_value:
       then:
+        # - globals.set:
+        #     id: lcd_brightness
+        #     value: !lambda 'return x * 10.0;'
         - sensor.template.publish:
             id: sim_grid
             state: !lambda |-
