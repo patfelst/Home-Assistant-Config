@@ -130,7 +130,7 @@ binary_sensor:
     internal: True
     x_min: 0
     x_max: 106
-    y_min: 240
+    y_min: 0
     y_max: 280
     filters:
       - delayed_on: ${touch_delay}
@@ -144,7 +144,7 @@ binary_sensor:
     internal: True
     x_min: 107
     x_max: 213
-    y_min: 240
+    y_min: 0
     y_max: 280
     filters:
       - delayed_on: ${touch_delay}
@@ -158,7 +158,7 @@ binary_sensor:
     internal: True
     x_min: 214
     x_max: 319
-    y_min: 240
+    y_min: 0
     y_max: 280
     filters:
       - delayed_on: ${touch_delay}
@@ -186,7 +186,6 @@ display:
           int width = it.get_width();
           int height = it.get_height();
           int txt_xoffset = 5;
-          const int med_font_height = 20;
           int xx, yy = 0;
 
           auto grey = Color(128, 128, 128);
@@ -245,12 +244,12 @@ display:
 
           // *** Display SOLAR power
           xx = width/2 - ${icon_size}/2 - txt_xoffset;
-          yy = ${icon_size}/2 - 12;
+          yy = 15;
           it.printf(xx, yy, id(font_med), yellow, TextAlign::RIGHT, "%.1f", solar_kw);
 
           // *** Display HOUSE power
           xx = 15;
-          yy = height - ${icon_size} - med_font_height - 10;
+          yy = height - ${icon_size} - 7;
           it.printf(xx, yy, id(font_med), cyan, TextAlign::LEFT, "%.1f", house_kw);
 
           // ***
@@ -271,47 +270,47 @@ display:
           // ***
           
           // Flow line SOLAR-GRID
-          it.line(width/2 + ${icon_size}/2, ${icon_size}, width - ${icon_size}, height - ${icon_size}, grey_light);
+          it.line(width/2 + 15, ${icon_size} - 15, width - 50, height - ${icon_size} + 5, grey_light);
           // Flow line SOLAR-HOUSE
-          it.line(width/2 - ${icon_size}/2, ${icon_size}, ${icon_size}, height - ${icon_size}, grey_light);
+          it.line(width/2 - 15, ${icon_size} - 15, 50, height - ${icon_size} + 15, grey_light);
           // Flow line GRID-HOUSE
           yy = height - ${icon_size}/2;
           it.line(${icon_size}, yy, width - ${icon_size}, yy, grey_light);
 
-          static int solar_grid_ind_x = width/2 + ${icon_size}/2;
-          static int solar_grid_ind_y = ${icon_size};
+          static int solar_grid_ind_x = width/2 + 15;
+          static int solar_grid_ind_y = ${icon_size} - 15;
           // *** Display FLOW SOLAR-GRID
           if (flow_solar_grid > 0.05) {
-            xx = (width * 6)/8 - 12;
-            yy = height/2 - 27;
+            xx = width/4 - 10;
+            yy = height/2 - 30;
             it.printf(xx, yy, id(font_med), green, TextAlign::LEFT, "%.1f", flow_solar_grid);
 
             // Display moving direction indicator
-            if (solar_grid_ind_y >= (height - ${icon_size})) {
-              solar_grid_ind_x = width/2 + ${icon_size}/2;
-              solar_grid_ind_y = ${icon_size};
+            if (solar_grid_ind_y >= (height - 60)) {
+              solar_grid_ind_x = width/2 + 15;
+              solar_grid_ind_y = ${icon_size} - 15;
             }
             it.filled_circle(solar_grid_ind_x, solar_grid_ind_y, ${dot_size}, green);
-            solar_grid_ind_x += 5;
-            solar_grid_ind_y += 9;
+            solar_grid_ind_x += 6;
+            solar_grid_ind_y += 8;
           }
 
-          static int solar_house_ind_x = width/2 - ${icon_size}/2;
-          static int solar_house_ind_y = ${icon_size};
+          static int solar_house_ind_x = width/2 - 15;
+          static int solar_house_ind_y = ${icon_size} - 15;
           // *** Display FLOW SOLAR-HOUSE
           if (flow_solar_house > 0.05) {
-            xx = (width * 2)/8 + 12;
-            yy = height/2 - 27;
+            xx = width/4 + 10;
+            yy = height/2 - 30;
             it.printf(xx, yy, id(font_med), green, TextAlign::RIGHT, "%.1f", flow_solar_house);
 
             // Display moving direction indicator
-            if (solar_house_ind_y >= (height - ${icon_size})) {
-              solar_house_ind_x = width/2 - ${icon_size}/2;
-              solar_house_ind_y = ${icon_size};
+            if (solar_house_ind_y >= (height - 60)) {
+              solar_house_ind_x = width/2 - 15;
+              solar_house_ind_y = ${icon_size} - 15;
             }
             it.filled_circle(solar_house_ind_x, solar_house_ind_y, ${dot_size}, green);
-            solar_house_ind_x -= 5;
-            solar_house_ind_y += 9;
+            solar_house_ind_x -= 6;
+            solar_house_ind_y += 8;
           }
 
           static int grid_house_ind_x = width - ${icon_size} - 5;
@@ -450,7 +449,7 @@ display:
 
 
 image:
-  - file: "images/sun2.png"
+  - file: "images/sun.png"
     id: img_sun
     resize: ${icon_size}X${icon_size}
     type: RGB24
@@ -460,7 +459,7 @@ image:
     resize: ${icon_size}X${icon_size}
     type: RGB24
     dither: FLOYDSTEINBERG
-  - file: "images/powerlines.png"
+  - file: "images/power3.png"
     id: img_powerlines
     resize: ${icon_size}X${icon_size}
     type: RGB24
