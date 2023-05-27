@@ -270,7 +270,7 @@ display:
           // ***
           
           // Flow line SOLAR-GRID
-          it.line(width/2 + 15, ${icon_size} - 15, width - 50, height - ${icon_size} + 5, grey_light);
+          it.line(width/2 + 15, ${icon_size} - 15, width - 50, height - ${icon_size} + 15, grey_light);
           // Flow line SOLAR-HOUSE
           it.line(width/2 - 15, ${icon_size} - 15, 50, height - ${icon_size} + 15, grey_light);
           // Flow line GRID-HOUSE
@@ -281,7 +281,7 @@ display:
           static int solar_grid_ind_y = ${icon_size} - 15;
           // *** Display FLOW SOLAR-GRID
           if (flow_solar_grid > 0.05) {
-            xx = width/4 - 10;
+            xx = (width * 3)/4 - 10;
             yy = height/2 - 30;
             it.printf(xx, yy, id(font_med), green, TextAlign::LEFT, "%.1f", flow_solar_grid);
 
