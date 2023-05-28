@@ -1,0 +1,473 @@
+substitutions:
+  touch_delay: 10ms
+  icon_size: "72"
+  dot_size: "4"
+
+esphome:
+  name: "power-monitor-workshop"
+  friendly_name: Power Monitor Workshop
+  comment: M5Stack Core2 home power visualiser
+  platformio_options:
+    board_build.f_flash: 80000000L
+    board_upload.flash_size: 16MB
+    board_build.partitions: default_16MB.csv
+
+external_components:
+  - source: github://Pionizer/pionizer-axp192
+    components: [axp192]
+    refresh: 1days
+  # - source: github://gpambrozio/esphome@FT6336U-touch
+  #   components: [ft63x6]
+  - source:
+      type: local
+      path: ext_components/components
+    
+esp32:
+  board: m5stack-core-esp32
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "qnBXJ3FtQ8Rv7GAjh6FWKtxo9vdyzulexaP3L/4YHbI="
+
+ota:
+  password: "ee821cb69cf51bc3fa79226056c5be89"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Power-Monitor-No2"
+    password: "XrE96HQp1wN9"
+
+globals:
+  - id: touch_x
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: touch_y
+    type: int
+    restore_value: no
+    initial_value: "0"
+
+sensor:
+  - platform: axp192
+    model: M5CORE2
+    address: 0x34
+    i2c_id: bus_a
+    update_interval: 30s
+    brightness: 100%
+    battery_level:
+      name: "Battery Level"
+      id: batterylevel
+
+  - platform: template
+    name: Sim grid
+    id: sim_grid
+    
+  - platform: homeassistant
+    internal: true
+    id: ha_grid_power
+    entity_id: sensor.solarnet_power_grid
+
+  - platform: homeassistant
+    internal: true
+    id: ha_solar_power
+    entity_id: sensor.solarnet_power_photovoltaics
+
+  - platform: homeassistant
+    internal: true
+    id: ha_house_power
+    entity_id: sensor.solarnet_power_load
+
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+  miso_pin: GPIO38
+
+i2c:
+  - id: bus_a
+    sda: GPIO21
+    scl: GPIO22
+    scan: True
+
+font:
+  - file: "arial.ttf"
+    id: font_sml
+    size: 20
+  - file: "arial.ttf"
+    id: font_med
+    size: 25
+  - file: "arial.ttf"
+    id: font_lge
+    size: 30
+
+touchscreen:
+  - platform: ft63x6
+    i2c_id: bus_a
+    interrupt_pin: 39
+    id: touch_screen
+    on_touch:
+      - lambda: |-
+          // ESP_LOGD("debug", "touch (x,y) = %d, %d", touch.x, touch.y);
+          id(touch_x) = touch.x;
+          id(touch_y) = touch.y;
+          Turn LCD bright for 30s on screen touch
+              axp192_axp192component->set_brightness(0.9);
+      # - delay: 30s
+      # - lambda: "axp192_axp192component->set_brightness(0.5);"
+
+binary_sensor:
+  - platform: touchscreen
+    name: Button A
+    id: btn_a
+    internal: True
+    x_min: 0
+    x_max: 106
+    y_min: 0
+    y_max: 280
+    filters:
+      - delayed_on: ${touch_delay}
+    on_press:
+      - display.page.show: page1
+      - component.update: lcd_display
+
+  - platform: touchscreen
+    name: Button B
+    id: btn_b
+    internal: True
+    x_min: 107
+    x_max: 213
+    y_min: 0
+    y_max: 280
+    filters:
+      - delayed_on: ${touch_delay}
+    on_press:
+      - display.page.show: page2
+      - component.update: lcd_display
+  
+  - platform: touchscreen
+    name: Button C
+    id: btn_c
+    internal: True
+    x_min: 214
+    x_max: 319
+    y_min: 0
+    y_max: 280
+    filters:
+      - delayed_on: ${touch_delay}
+    on_press:
+      - display.page.show: page3
+      - component.update: lcd_display
+
+  - platform: homeassistant
+    internal: true
+    id: presence
+    entity_id: light.workshop_downlight
+    on_press: 
+      - lambda: "axp192_axp192component->set_brightness(0.9);"
+    on_release:
+      - lambda: "axp192_axp192component->set_brightness(0.5);"
+
+  
+  # - platform: gpio
+  #   id: touching
+  #   name: Touching
+  #   pin:
+  #     number: 39
+  #     inverted: true
+
+display:
+  - platform: ili9xxx
+    model: M5STACK # x=320 x y=240 + 40 pixels for red touch circles below display
+    id: lcd_display
+    update_interval: 500ms
+    cs_pin: 5
+    dc_pin: 15
+    pages:
+      - id: page1
+        lambda: |-
+          int width = it.get_width();
+          int height = it.get_height();
+          int txt_xoffset = 5;
+          int xx, yy = 0;
+
+          auto grey = Color(128, 128, 128);
+          auto grey_light = Color(50, 50, 50);
+          auto white = Color(255, 255, 255);
+          auto black = Color(0, 0, 0);
+          auto orange = Color(255, 128, 0);
+          auto yellow = Color(255, 255, 0);
+          auto green = Color(0, 255, 0);
+          auto cyan = Color(0, 255, 255);
+          auto red = Color(255, 0, 0);
+
+          // ***
+          // *** Determine POWER
+          // ***
+
+          // *** DETERMINE SOLAR POWER
+          // At night the solar sensor is "NaN" so check for it before using
+          float solar_kw = 0.0;
+          if (!isnan(id(ha_solar_power).state))
+            solar_kw = id(ha_solar_power).state;
+          // solar_kw = id(sim_solar).state; // Use number component to simulate solar power
+
+          // DETERMINE HOUSE POWER
+          //  Note: Negative means house consuming (should almost always be the case)
+          float house_kw = 0.0;
+          if (!isnan(id(ha_house_power).state))
+            house_kw = -id(ha_house_power).state;
+          // house_kw = -id(sim_house).state;   // Use number component to simulate house power
+
+          // DETERMINE GRID POWER
+          // Note: Negative = Export, Positive = Import
+          float grid_kw = 0.0;
+          if (!isnan(id(ha_grid_power).state))
+            grid_kw = id(ha_grid_power).state;
+          // grid_kw = id(sim_grid).state; // Use number component to simulate grid power
+
+          // ***
+          // *** Display images
+          // ***
+          it.image(width/2 - ${icon_size}/2, 0, id(img_sun));
+          it.image(0, height - ${icon_size}, id(img_house));
+          it.image(width - ${icon_size}, height - ${icon_size}, id(img_powerlines));
+
+          // Dispaly units of kW
+          xx = width - 23;
+          yy = 18;
+          it.filled_circle(xx, yy, 18, grey);
+          it.print(xx, yy, id(font_sml), black, TextAlign::CENTER, "kW");
+
+          // ***
+          // *** Display POWER
+          // ***
+
+          // *** Display SOLAR power
+          xx = width/2 - ${icon_size}/2 - txt_xoffset;
+          yy = 15;
+          it.printf(xx, yy, id(font_med), yellow, TextAlign::RIGHT, "%.1f", solar_kw);
+
+          // *** Display HOUSE power
+          xx = 15;
+          yy = height - ${icon_size} - 7;
+          it.printf(xx, yy, id(font_med), cyan, TextAlign::LEFT, "%.1f", house_kw);
+
+          // ***
+          // *** DETERMINE FLOWS
+          // ***
+          float flow_solar_house = 0.0;
+          float flow_solar_grid = 0.0;
+          if (solar_kw >= house_kw) {
+            flow_solar_house = house_kw;
+            flow_solar_grid = solar_kw - house_kw;
+          }
+          else
+            flow_solar_house = solar_kw;
+
+
+          // ***
+          // *** DISPLAY FLOWS
+          // ***
+          
+          // Flow line SOLAR-GRID
+          it.line(width/2 + 15, ${icon_size} - 15, width - 50, height - ${icon_size} + 15, grey_light);
+          // Flow line SOLAR-HOUSE
+          it.line(width/2 - 15, ${icon_size} - 15, 50, height - ${icon_size} + 15, grey_light);
+          // Flow line GRID-HOUSE
+          yy = height - ${icon_size}/2;
+          it.line(${icon_size}, yy, width - ${icon_size}, yy, grey_light);
+
+          static int solar_grid_ind_x = width/2 + 15;
+          static int solar_grid_ind_y = ${icon_size} - 15;
+          // *** Display FLOW SOLAR-GRID
+          if (flow_solar_grid > 0.05) {
+            xx = (width * 3)/4 - 10;
+            yy = height/2 - 30;
+            it.printf(xx, yy, id(font_med), green, TextAlign::LEFT, "%.1f", flow_solar_grid);
+
+            // Display moving direction indicator
+            if (solar_grid_ind_y >= (height - 60)) {
+              solar_grid_ind_x = width/2 + 15;
+              solar_grid_ind_y = ${icon_size} - 15;
+            }
+            it.filled_circle(solar_grid_ind_x, solar_grid_ind_y, ${dot_size}, green);
+            solar_grid_ind_x += 6;
+            solar_grid_ind_y += 8;
+          }
+
+          static int solar_house_ind_x = width/2 - 15;
+          static int solar_house_ind_y = ${icon_size} - 15;
+          // *** Display FLOW SOLAR-HOUSE
+          if (flow_solar_house > 0.05) {
+            xx = width/4 + 10;
+            yy = height/2 - 30;
+            it.printf(xx, yy, id(font_med), green, TextAlign::RIGHT, "%.1f", flow_solar_house);
+
+            // Display moving direction indicator
+            if (solar_house_ind_y >= (height - 60)) {
+              solar_house_ind_x = width/2 - 15;
+              solar_house_ind_y = ${icon_size} - 15;
+            }
+            it.filled_circle(solar_house_ind_x, solar_house_ind_y, ${dot_size}, green);
+            solar_house_ind_x -= 6;
+            solar_house_ind_y += 8;
+          }
+
+          static int grid_house_ind_x = width - ${icon_size} - 5;
+          // *** Display FLOW GRID-HOUSE
+          if (grid_kw > 0.05) {
+            xx = width/2;
+            yy = height - ${icon_size}/2;
+            // Only display Import flow
+            it.printf(xx, yy - 25, id(font_med), red, TextAlign::CENTER, "%.1f", grid_kw);
+
+            if (grid_house_ind_x <= ${icon_size} + 5) {
+              grid_house_ind_x = width - ${icon_size} - 5;
+            }
+            it.filled_circle(grid_house_ind_x, yy, ${dot_size}, red);
+            grid_house_ind_x -= 10;
+          }
+
+      - id: page3
+        lambda: |-
+          auto grey = Color(128, 128, 128);
+          auto white = Color(255, 255, 255);
+          auto orange = Color(255, 128, 0);
+          auto yellow = Color(255, 255, 0);
+          auto green = Color(0, 255, 0);
+          auto cyan = Color(0, 255, 255);
+          auto red = Color(255, 0, 0);
+          int width = it.get_width();
+          int height = it.get_height();
+          int x_lab = 10;
+          const int y_lab_start = 50;
+          int y_lab = y_lab_start;
+          int y_inc = 35;
+          int x_val = 165;
+
+          // ***      Display labels
+          it.rectangle(0, 0, width, height, grey);
+          it.print(width / 2, 20, id(font_lge), white, TextAlign::CENTER, "Home Power");
+          it.print(x_lab, y_lab, id(font_med), orange, "Solar:");
+          y_lab += y_inc;
+          it.print(x_lab, y_lab, id(font_med), orange, "House:");
+          y_lab += y_inc;
+          it.print(x_lab, y_lab, id(font_med), orange, "Grid:");
+          y_lab += y_inc;
+
+          // ***      Display values
+          y_lab = y_lab_start;
+
+          // *** Display SOLAR power
+          // At night the solar sensor is "NaN" so check for it before using
+          float solar_kw = 0.0;
+          if (!isnan(id(ha_solar_power).state))
+            solar_kw = id(ha_solar_power).state;
+          it.printf(x_val, y_lab, id(font_med), yellow, "%.1f kW", solar_kw);
+          y_lab += y_inc;
+
+          // *** Display HOUSE power
+          float house_kw = 0.0;
+          if (!isnan(id(ha_house_power).state))
+            house_kw = -id(ha_house_power).state;
+          it.printf(x_val, y_lab, id(font_med), cyan, "%.1f kW", house_kw);
+          y_lab += y_inc;
+
+          // *** Display GRID power. Note: Negative means exporting
+          float grid_kw = 0.0;
+          int suffix_x = x_val + 80;
+          if (!isnan(id(ha_grid_power).state)) {
+            grid_kw = id(ha_grid_power).state;
+            if (grid_kw < 0.0) {
+              it.printf(x_val, y_lab, id(font_med), green, "%.1f kW", -grid_kw);
+              y_lab += y_inc;
+              it.print(x_val, y_lab, id(font_med), green, "Exporting");
+            }
+            else {
+              it.printf(x_val, y_lab, id(font_med), red, "%.1f kW", grid_kw);
+              y_lab += y_inc;
+              it.print(x_val, y_lab, id(font_med), red, "Importing");
+            }
+          }
+          else {
+            it.printf(x_val, y_lab, id(font_med), grey, "%.1f kW", grid_kw);
+            y_lab += y_inc;
+            it.print(x_val, y_lab, id(font_med), grey, "N/A");
+          }
+          y_lab += y_inc;
+
+      - id: page2
+        lambda: |-
+          auto grey = Color(128, 128, 128);
+          auto white = Color(255, 255, 255);
+          auto orange = Color(255, 128, 0);
+          auto yellow = Color(255, 255, 0);
+          auto green = Color(0, 255, 0);
+          auto cyan = Color(0, 255, 255);
+          auto red = Color(255, 0, 0);
+          int width = it.get_width();
+          int height = it.get_height();
+          int x_lab = 10;
+          const int y_lab_start = 50;
+          int y_lab = y_lab_start;
+          int y_inc = 27;
+          int x_val = 165;
+
+          it.rectangle(0, 0, width, height, grey);
+          it.print(width / 2, 20, id(font_lge), white, TextAlign::CENTER, "Info");
+          it.print(x_lab, y_lab, id(font_sml), orange, "Battery V:");
+          y_lab += y_inc;
+          it.print(x_lab, y_lab, id(font_sml), orange, "Battery:");
+          y_lab += y_inc;
+          it.print(x_lab, y_lab, id(font_sml), orange, "Vin:");
+          y_lab += y_inc;
+          it.print(x_lab, y_lab, id(font_sml), orange, "VBus:");
+          y_lab += y_inc;
+          it.print(x_lab, y_lab, id(font_sml), orange, "Touch (x, y):");
+
+
+          y_lab = y_lab_start;
+          float core2_val = axp192_axp192component->GetBatVoltage();
+          it.printf(x_val, y_lab, id(font_sml), white, "%.1fV", core2_val);
+          y_lab += y_inc;
+
+          it.printf(x_val, y_lab, id(font_sml), white, "%.0f%%", id(batterylevel).state);
+          y_lab += y_inc;
+
+          core2_val = axp192_axp192component->GetVinVoltage();
+          it.printf(x_val, y_lab, id(font_sml), white, "%.1fV", core2_val);
+          y_lab += y_inc;
+
+          core2_val = axp192_axp192component->GetVBusVoltage();
+          it.printf(x_val, y_lab, id(font_sml), white, "%.1fV", core2_val);
+          y_lab += y_inc;
+
+          it.printf(x_val, y_lab, id(font_sml), white, "%d, %d", id(touch_x), id(touch_y));
+          y_lab += y_inc;
+
+
+image:
+  - file: "images/sun.png"
+    id: img_sun
+    resize: ${icon_size}X${icon_size}
+    type: RGB24
+    dither: FLOYDSTEINBERG
+  - file: "images/house.png"
+    id: img_house
+    resize: ${icon_size}X${icon_size}
+    type: RGB24
+    dither: FLOYDSTEINBERG
+  - file: "images/power3.png"
+    id: img_powerlines
+    resize: ${icon_size}X${icon_size}
+    type: RGB24
+    dither: FLOYDSTEINBERG
