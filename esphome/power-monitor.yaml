@@ -59,10 +59,6 @@ globals:
     type: int
     restore_value: no
     initial_value: "0"
-  - id: lcd_brightness
-    type: float
-    restore_value: yes
-    initial_value: "100.0"
 
 sensor:
   - platform: axp192
@@ -126,6 +122,10 @@ touchscreen:
           // ESP_LOGD("debug", "touch (x,y) = %d, %d", touch.x, touch.y);
           id(touch_x) = touch.x;
           id(touch_y) = touch.y;
+          // Turn LCD bright for 30s on screen touch
+          //     axp192_axp192component->set_brightness(0.9);
+      # - delay: 30s
+      # - lambda: "axp192_axp192component->set_brightness(0.5);"
 
 binary_sensor:
   - platform: touchscreen
@@ -173,16 +173,11 @@ binary_sensor:
   - platform: homeassistant
     internal: true
     id: presence
-    # entity_id: binary_sensor.butlers_sensor_occupancy
-    entity_id: light.butlers_downlight
+    entity_id: light.led_strip_butlers_overhead_cupboards
     on_press: 
-        - globals.set:
-            id: lcd_brightness
-            value: '90.0'
+      - lambda: "axp192_axp192component->set_brightness(0.9);"
     on_release:
-        - globals.set:
-            id: lcd_brightness
-            value: '50.0'
+      - lambda: "axp192_axp192component->set_brightness(0.5);"
 
   
   # - platform: gpio
@@ -216,9 +211,6 @@ display:
           auto green = Color(0, 255, 0);
           auto cyan = Color(0, 255, 255);
           auto red = Color(255, 0, 0);
-
-          // LCD is off at or below 40%
-          axp192_axp192component->set_brightness(id(lcd_brightness)/100.0);
 
           // ***
           // *** Determine POWER
@@ -365,8 +357,6 @@ display:
           int y_inc = 35;
           int x_val = 165;
 
-          axp192_axp192component->set_brightness(id(lcd_brightness)/100.0);
-
           // ***      Display labels
           it.rectangle(0, 0, width, height, grey);
           it.print(width / 2, 20, id(font_lge), white, TextAlign::CENTER, "Home Power");
@@ -435,8 +425,6 @@ display:
           int y_inc = 27;
           int x_val = 165;
 
-          axp192_axp192component->set_brightness(id(lcd_brightness)/100.0);
-
           it.rectangle(0, 0, width, height, grey);
           it.print(width / 2, 20, id(font_lge), white, TextAlign::CENTER, "Info");
           it.print(x_lab, y_lab, id(font_sml), orange, "Battery V:");
@@ -501,9 +489,8 @@ number:
     mode: slider
     on_value:
       then:
-        # - globals.set:
-        #     id: lcd_brightness
-        #     value: !lambda 'return x * 10.0;'
+        # - lambda: |-
+        #     axp192_axp192component->set_brightness(x/10.0);
         - sensor.template.publish:
             id: sim_grid
             state: !lambda |-

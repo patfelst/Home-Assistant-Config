@@ -2328,3 +2328,23 @@
                 entity_id:
                   - timer.remaining_time_front_yard_motion_lights_disabled
   mode: single
+- id: "1685241223269"
+  alias: Notify - Yale lock, unlocked with keypad PIN
+  description: ""
+  trigger:
+    - platform: template
+      value_template:
+        "{{ is_state('sensor.yale_smartlock_front_door_action', 'unlock')
+        and is_state('sensor.yale_smartlock_front_door_action_source_name', 'keypad')
+        }}
+
+        "
+  condition: []
+  action:
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: Yale front door lock
+        message: "Unlocked with kaypad PIN
+
+          "
+  mode: single
