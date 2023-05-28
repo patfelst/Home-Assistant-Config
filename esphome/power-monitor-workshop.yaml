@@ -119,8 +119,8 @@ touchscreen:
           // ESP_LOGD("debug", "touch (x,y) = %d, %d", touch.x, touch.y);
           id(touch_x) = touch.x;
           id(touch_y) = touch.y;
-          Turn LCD bright for 30s on screen touch
-              axp192_axp192component->set_brightness(0.9);
+          // Turn LCD bright on screen touch
+          axp192_axp192component->set_brightness(0.9);
       # - delay: 30s
       # - lambda: "axp192_axp192component->set_brightness(0.5);"
 

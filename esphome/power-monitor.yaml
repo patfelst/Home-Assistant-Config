@@ -27,8 +27,6 @@ esp32:
   board: m5stack-core-esp32
   framework:
     type: arduino
-    # board_build.partitions: default_16MB.csv
-    # board_build.arduino.memory_type: qio_opi
 
 # Enable logging
 logger:
