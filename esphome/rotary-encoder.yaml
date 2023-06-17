@@ -1,0 +1,64 @@
+esphome:
+  name: rotary-encoder
+  friendly_name: rotary encoder
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "ADzSAzbMdlOUE735Jv09Q/xoSva2+67izXNshHdDKyM="
+
+ota:
+  password: "167fb774bef8cad6af5cd6508316fb3e"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Rotary-Encoder Fallback Hotspot"
+    password: "cKdHqk8UIyBn"
+
+captive_portal:
+
+  
+binary_sensor:
+  #******************************************************************************
+  # Push button on rotary encoder
+  # ESPHome docs: https://esphome.io/components/binary_sensor/index.html
+  # This sensor is the push switch built into the shaft of the rotary encoder
+  #******************************************************************************
+  - platform: gpio
+    internal: true
+    id: rotary_push
+    pin:
+      number: GPIO2
+      inverted: true
+      mode: INPUT_PULLUP
+    filters:
+      - delayed_on: 50ms # debounce
+
+sensor:
+  #******************************************************************************
+  # Rotary encoder
+  # ESPHome docs: https://esphome.io/components/sensor/rotary_encoder.html
+  #******************************************************************************
+  - platform: rotary_encoder
+    name: "Rotary Encoder"
+    id: knob
+    pin_a: GPIO10
+    pin_b: GPIO1
+    resolution: 2
+    min_value: 0
+    max_value: 10
+    filters:
+      - debounce: 50ms # debounce the encoder wafers
+      - throttle: 100ms # limit updates if the user twists the encoder too fast :D

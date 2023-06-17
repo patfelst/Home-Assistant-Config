@@ -215,14 +215,14 @@ template:
         unique_id: id_pool_pump_status
         icon: mdi:water-pump
         state: >
-          {% set pool_power = states('sensor.pool_pump_current_power')|float %}
+          {% set pool_power = states('sensor.filtered_pool_pump_power_average_linear_6mins')|float %}
           {% if pool_power < 50 %}
             Pump OFF
-          {% elif 100 <= pool_power < 600 %}
+          {% elif 100 <= pool_power < 300 %}
             Low speed
-          {% elif 600 <= pool_power < 900 %}
+          {% elif 300 <= pool_power < 500 %}
             Medium speed
-          {% elif pool_power >= 900 %}
+          {% elif pool_power >= 500 %}
             High speed
           {% else %}
             Unsure?

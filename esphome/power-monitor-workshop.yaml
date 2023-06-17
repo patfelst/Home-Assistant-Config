@@ -120,7 +120,7 @@ touchscreen:
           id(touch_x) = touch.x;
           id(touch_y) = touch.y;
           // Turn LCD bright on screen touch
-          axp192_axp192component->set_brightness(0.9);
+          axp192_axp192component->set_brightness(1.0);
       # - delay: 30s
       # - lambda: "axp192_axp192component->set_brightness(0.5);"
 
@@ -172,7 +172,7 @@ binary_sensor:
     id: presence
     entity_id: light.workshop_downlight
     on_press: 
-      - lambda: "axp192_axp192component->set_brightness(0.9);"
+      - lambda: "axp192_axp192component->set_brightness(1.0);"
     on_release:
       - lambda: "axp192_axp192component->set_brightness(0.5);"
 

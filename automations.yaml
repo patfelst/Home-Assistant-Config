@@ -342,8 +342,9 @@
       to: "on"
     - platform: state
       entity_id:
-        - binary_sensor.driveway_motion_occupancy
+        - binary_sensor.driveway_motion_sensor_motion_detection
       to: "on"
+      enabled: false
   condition:
     - condition: numeric_state
       entity_id: sun.sun
@@ -462,37 +463,6 @@
           data: {}
           target:
             entity_id: light.all_lights
-  mode: single
-- id: "1668860168988"
-  alias: Button - Butlers pantry MQTT direct
-  description: ""
-  trigger:
-    - platform: mqtt
-      topic: zigbee2mqtt/Aqara button 2/action
-      payload: single
-  condition: []
-  action:
-    - service: light.toggle
-      data:
-        brightness_pct: 40
-      target:
-        entity_id:
-          - light.butlers_downlight
-          - light.led_strip_butlers_overhead_cupboards
-    - if:
-        - condition: state
-          entity_id: light.butlers_downlight
-          state: "on"
-      then:
-        - service: automation.turn_off
-          data: {}
-          target:
-            entity_id: automation.motion_butlers_lights_on_motion
-      else:
-        - service: automation.turn_on
-          data: {}
-          target:
-            entity_id: automation.motion_butlers_lights_on_motion
   mode: single
 - id: "1668936398884"
   alias: Lights - Back yard on CCTV intrusion back yard / alfresco
@@ -786,6 +756,10 @@
               data:
                 message: Sleep mode turned on with long press of Patrick's bedside button
                 title: Sleep mode ON
+        - service: switch.turn_off
+          data: {}
+          target:
+            entity_id: switch.gas_heater
 - id: "1669631569864"
   alias: Lights - Front yard lights ON when anyone arrives home
   description: ""
@@ -1115,51 +1089,6 @@
       target:
         entity_id: automation.motion_butlers_lights_on_motion
   mode: single
-- id: "1670062946286"
-  alias: Button - Butlers pantry
-  description: ""
-  use_blueprint:
-    path: CrazyCoder/zigbee2mqtt_aqara_wireless_switch.yaml
-    input:
-      action_sensor: sensor.button_butler_s_pantry_action
-      press_single:
-        - service: light.turn_on
-          data:
-            brightness_pct: 50
-          target:
-            entity_id:
-              - light.butlers_downlight
-              - light.led_strip_butlers_overhead_cupboards
-        - service: automation.turn_off
-          data: {}
-          target:
-            entity_id: automation.motion_butlers_lights_on_motion
-      press_double:
-        - service: light.turn_off
-          data: {}
-          target:
-            entity_id: light.butlers_downlight
-        - service: light.turn_on
-          data:
-            brightness_pct: 2
-          target:
-            entity_id: light.led_strip_butlers_overhead_cupboards
-        - service: automation.turn_off
-          data: {}
-          target:
-            entity_id: automation.motion_butlers_lights_on_motion
-      press_hold:
-        - service: light.turn_off
-          data: {}
-          target:
-            entity_id:
-              - light.butlers_downlight
-              - light.led_strip_butlers_overhead_cupboards
-        - service: automation.turn_on
-          data: {}
-          target:
-            entity_id: automation.motion_butlers_lights_on_motion
-      press_release: []
 - id: "1670132740049"
   alias: Notify - Shelly getting hot (> 75°C)
   description: ""
@@ -1387,6 +1316,10 @@
           data: {}
           target:
             entity_id: switch.19_rack_fans
+        - service: switch.turn_off
+          data: {}
+          target:
+            entity_id: switch.gas_heater
 - id: "1672344646174"
   alias: Lights - Side lights when CCTV line cross motion kitty cam
   description: When sun elevation is < 0°
@@ -1456,45 +1389,6 @@
       data: {}
       target:
         entity_id: fan.workshop_ceiling_fan
-  mode: single
-- id: "1674447619148"
-  alias: Notify - Washing machine finished
-  description: Based on vibration sensor
-  trigger:
-    - platform: state
-      entity_id:
-        - binary_sensor.accelerometer_1_vibration
-      from: "off"
-      to: "on"
-      for:
-        hours: 0
-        minutes: 5
-        seconds: 0
-  condition: []
-  action:
-    - repeat:
-        count: 2
-        sequence:
-          - delay:
-              hours: 0
-              minutes: 5
-              seconds: 0
-              milliseconds: 0
-          - service: tts.cloud_say
-            data:
-              entity_id:
-                - media_player.back_longe_speaker
-                - media_player.workshop_speaker
-              message: Washing machine finished, please hang out the washing
-              cache: false
-          - service: notify.mobile_app_patricks_iphone_13
-            data:
-              title: Washing machine
-              message:
-                "Washing machine finished - please hang out ({{ (trigger.to_state.last_updated)
-                | as_timestamp | timestamp_custom('%I:%M %p') }})
-
-                "
   mode: single
 - id: "1674775378226"
   alias: Notify - leaving home and front door unlocked
@@ -1752,6 +1646,10 @@
               data:
                 message: Sleep mode turned on with long press of Kathleen's bedside button
                 title: Sleep mode ON
+        - service: switch.turn_off
+          data: {}
+          target:
+            entity_id: switch.gas_heater
       action_sensor: sensor.button_kathleen_bedside_action
 - id: "1678303773548"
   alias: Light - Courtyard follows bunker light
@@ -2201,8 +2099,9 @@
       to: "on"
     - platform: state
       entity_id:
-        - binary_sensor.driveway_motion_occupancy
+        - binary_sensor.driveway_motion_sensor_motion_detection
       to: "on"
+      enabled: false
   condition:
     - condition: numeric_state
       entity_id: sun.sun
