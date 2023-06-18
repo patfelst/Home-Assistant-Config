@@ -1,0 +1,138 @@
+type: custom:floorplan-card
+# title: Floorplanner Home
+# full_height: true
+config:
+  # log_level: debug
+  # console_log_level: debug
+  image:
+    location: /local/floorplan/rostrevor.svg
+    cache: false
+  stylesheet:
+    location: /local/floorplan/floorplanner_home.css
+    cache: false
+  defaults:
+    hover_action: hover-info
+    tap_action: more-info
+  rules:
+    - name: Heaters
+      entities:
+        - entity: switch.gas_heater
+          element: gas-heater
+      tap_action: switch.toggle
+      state_action:
+        service: floorplan.class_set
+        service_data:
+          class: '${(entity.state === "on") ? "heater-on" : "heat-off"}'
+
+    - name: PoolPump
+      entities:
+        - entity: sensor.pool_pump_status
+          element: pool-pump
+      tap_action: more-info
+      state_action:
+        service: floorplan.class_set
+        service_data:
+          class: '${(entity.state === "Pump OFF") ? "pump-off" : "pump-on"}'
+    - entity: sensor.pool_pump_status
+      state_action:
+        - service: floorplan.text_set
+          service_data:
+            element: pool-pump-status
+            text: |
+              >
+              return (entity.state !== undefined) ? "Pool pump: " + entity.state : "unknown";
+
+    - name: Rooms
+      entities:
+        - entity: light.stairs_light
+          element: area.stairs
+
+        - entity: light.kitchen_downlights
+          element: area.kitchen1
+
+        - entity: light.kitchen_hall_downlights
+          element: area.kitchen2
+
+        - entity: light.workshop_downlight
+          element: area.workshop
+
+        - entity: light.dining_downlight
+          element: area.dining
+
+        - entity: light.back_lounge_downlights
+          element: area.back-lounge
+
+        - entity: light.alfresco_downlights
+          element: area.alfresco
+
+        - entity: light.butlers_downlight
+          element: area.butlers
+
+        - entity: light.laundry_downlight
+          element: area.laundry
+
+        - entity: light.rear_garden_lights
+          element: area.rear-garden
+
+        - entity: light.pool_perimeter_downlights
+          element: area.pool-perimeter
+
+        - entity: light.pool_light_controller_pool_lights
+          element: area.pool
+
+        - entity: light.led_strip_fire_pit_dimmer
+          element: area.fire-pit
+
+      tap_action: light.toggle
+      state_action:
+        service: floorplan.class_set
+        service_data: '${(entity.state === "on") ? "light-on" : "light-off"}'
+
+    - name: Lights
+      entities:
+        - entity: light.kitchen_pendant
+          element: light.pendant
+
+        - entity: light.back_lounge_sideboard_lamp
+          element: light.table-lamp-back-lounge
+
+        - entity: light.back_lounge_pendant
+          element: light.tv-pendant
+
+        - entity: light.lamp_rhs_fireplace
+          element: light.fireplace-rhs
+
+        - entity: light.front_stone_up_down
+          element: light.stone-feature
+
+        - entity: light.front_hall_lamp
+          element: light.front-hall-lamp
+
+        - entity: light.laundry_path_bunker_light
+          element: light.laundry-bunker-light.glow
+
+        - entity: light.meterbox_bunker
+          element: light.meterbox-bunker-light.glow
+
+        - entity: light.led_strip_kitchen_kicker
+          element: light.kitchen-led-kicker-yellow
+
+        - entity: light.front_north_side_flood
+          element: light.north-flood
+
+        - entity: light.courtyard_flood_light
+          element: light.courtyard-flood
+
+        - entity: light.rear_flood_light
+          element: light.rear-flood
+
+        - entity: light.garage_downlights
+          element: area.garage
+
+        - entity: light.front_porch
+          element: light.front-porch
+
+      tap_action: light.toggle
+      state_action:
+        service: floorplan.class_set
+        service_data: '${(entity.state === "on") ? "light-on" : "light-off"}'

@@ -1,0 +1,102 @@
+#floorplan  {
+  padding: 10px;
+}
+
+/* #floorplan svg{
+  height: 100vh!important;
+} */
+
+svg tspan {
+  fill: var(--primary-text-color);
+}
+
+/* SVG shapes */
+
+/* svg, svg * {
+  vector-effect: non-scaling-stroke !important;
+  pointer-events: all !important;
+} */
+
+/* Hover over */
+.ha-entity:hover {
+  stroke: #03A9F4 !important;
+  stroke-width: 1px !important;
+  stroke-opacity: 1 !important;
+}
+
+/* Binary sensors */
+
+.binary-sensor-on {
+  fill: #F9D27C !important;
+}
+
+.binary-sensor-off {
+  fill: #7CB1F9 !important;
+  transition: fill 5s ease;
+}
+
+/* Buttons */
+
+.background-on {
+  fill: #1ABA92 !important;
+}
+
+.background-off {
+  fill: #d32f2f !important;
+}
+
+.background-on tspan {
+  fill: white !important;
+}
+
+/* Light Control */
+
+path[id*="area."].light-off{
+  opacity: 0.65 !important;
+  /* fill: #1dc11d !important; */
+}
+
+path[id*="area."].light-on{
+  opacity: 0 !important;
+  /* fill: #d32f2f !important; */
+  transition: opacity .25s;
+  -moz-transition: opacity .25s;
+  -webkit-transition: opacity .25s;
+}
+
+/* Individual light bulb control */
+path[id*="light."].light-on{
+  opacity: 1.0 !important;
+  /* fill: #d32f2f !important; */
+}
+path[id*="light."].light-off{
+  opacity: 0 !important;
+  /* fill: #2fd334 !important; */
+}
+
+/* Heater on */
+.heat-on {
+  fill-opacity: 1 !important;
+  fill: #ff0202bd !important;
+}
+
+.heat-off {
+  fill-opacity: 0.7 !important;
+  fill: #020affa5 !important;
+}
+
+/* Pool pump */
+.pump-on {
+  fill-opacity: 0.85 !important;
+  fill: #02b3ffbd !important;
+}
+
+.pump-off {
+  fill-opacity: 0 !important;
+  /* fill: #020affa5 !important; */
+}
+
+/* Temperature text */
+.static-temp, .static-temp tspan {
+  fill: #ffffff;
+}

@@ -5,6 +5,9 @@
 !.gitignore
 !*.md
 !/esphome/
+!/www/
+!/www/floorplan
+!/www/floorplan/*
 !*.h
 
 # Ignore folders.
