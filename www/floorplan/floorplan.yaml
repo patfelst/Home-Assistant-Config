@@ -50,6 +50,9 @@ config:
 
     - name: Rooms
       entities:
+        - entity: light.front_lounge_downlight
+          element: area.front-lounge
+
         - entity: light.front_garden_lights
           element: area.front-garden
 
@@ -106,6 +109,9 @@ config:
 
     - name: Lights
       entities:
+        - entity: light.front_lounge_pendant
+          element: light.front-lounge-pendant
+
         - entity: light.kitchen_pendant
           element: light.pendant
 
