@@ -22,7 +22,7 @@ config:
       state_action:
         service: floorplan.class_set
         service_data:
-          class: '${(entity.state === "on") ? "heater-on" : "heat-off"}'
+          class: '${(entity.state === "on") ? "heater-on" : "heater-off"}'
 
     - name: PoolPump
       entities:
@@ -40,10 +40,25 @@ config:
             element: pool-pump-status
             text: |
               >
-              return (entity.state !== undefined) ? "Pool pump: " + entity.state : "unknown";
+                var temp = entity.state;
+                if (temp == undefined)
+                  return "Unknown";
+                else if (temp == "Pump OFF")
+                  return "Pool pump: OFF";
+                else
+                  return "Pool pump: " + temp;
 
     - name: Rooms
       entities:
+        - entity: light.front_garden_lights
+          element: area.front-garden
+
+        - entity: light.wiz_bedsside_lamp_1
+          element: light.kathleen-bedside
+
+        - entity: light.wir_downlight
+          element: area.wir
+
         - entity: light.stairs_light
           element: area.stairs
 
@@ -84,6 +99,7 @@ config:
           element: area.fire-pit
 
       tap_action: light.toggle
+      hold_action: more-info
       state_action:
         service: floorplan.class_set
         service_data: '${(entity.state === "on") ? "light-on" : "light-off"}'

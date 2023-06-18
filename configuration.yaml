@@ -218,7 +218,7 @@ template:
           {% set pool_power = states('sensor.filtered_pool_pump_power_average_linear_6mins')|float %}
           {% if pool_power < 50 %}
             Pump OFF
-          {% elif 100 <= pool_power < 300 %}
+          {% elif 50 <= pool_power < 300 %}
             Low speed
           {% elif 300 <= pool_power < 500 %}
             Medium speed
@@ -303,6 +303,7 @@ light:
       - light.back_lounge_pendant
       - light.back_lounge_sideboard_lamp
       - light.lamp_rhs_fireplace
+      - light.led_strip_bookshlelf_dimmer
 
       # Group: Back yard lights
       - light.alfresco_downlights
@@ -341,6 +342,7 @@ light:
       - light.back_lounge_pendant
       - light.back_lounge_sideboard_lamp
       - light.lamp_rhs_fireplace
+      - light.led_strip_bookshlelf_dimmer
   - platform: group
     name: "Back yard lights"
     entities:
