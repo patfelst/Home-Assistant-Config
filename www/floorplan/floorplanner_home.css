@@ -26,28 +26,14 @@ svg tspan {
 
 /* Binary sensors */
 
-.binary-sensor-on {
+/* .binary-sensor-on {
   fill: #F9D27C !important;
 }
 
 .binary-sensor-off {
   fill: #7CB1F9 !important;
   transition: fill 5s ease;
-}
-
-/* Buttons */
-
-.background-on {
-  fill: #1ABA92 !important;
-}
-
-.background-off {
-  fill: #d32f2f !important;
-}
-
-.background-on tspan {
-  fill: white !important;
-}
+} */
 
 /* Light Control */
 
@@ -72,6 +58,26 @@ path[id*="light."].light-on{
 path[id*="light."].light-off{
   opacity: 0 !important;
   /* fill: #2fd334 !important; */
+}
+
+.binarysensor-on{
+  opacity: 1.0 !important;
+  fill: #ff0000b3 !important;
+}
+
+.binarysensor-off{
+  opacity: 0 !important;
+  fill: #00ff00c6 !important;
+}
+
+.cover-open{
+  opacity: 1.0 !important;
+  fill: #ff0000b3 !important;
+}
+
+.cover-closed{
+  opacity: 0.0 !important;
+  fill: #00ff00 !important;
 }
 
 /* Heater on */
