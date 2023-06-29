@@ -1064,31 +1064,6 @@
             interruption-level: time-sensitive
       enabled: true
   mode: single
-- id: "1670058353470"
-  alias: Motion - Butler's motion Automation re-enable
-  description: ""
-  trigger:
-    - platform: state
-      entity_id:
-        - automation.motion_butlers_lights_on_motion
-      to: "off"
-      for:
-        hours: 0
-        minutes: 15
-        seconds: 0
-  condition: []
-  action:
-    - service: light.turn_off
-      data: {}
-      target:
-        entity_id:
-          - light.butlers_downlight
-          - light.led_strip_butlers_overhead_cupboards
-    - service: automation.turn_on
-      data: {}
-      target:
-        entity_id: automation.motion_butlers_lights_on_motion
-  mode: single
 - id: "1670132740049"
   alias: Notify - Shelly getting hot (> 75°C)
   description: ""

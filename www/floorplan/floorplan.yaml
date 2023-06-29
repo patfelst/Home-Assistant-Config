@@ -60,6 +60,16 @@ config:
         service_data:
           class: '${(entity.state === "closed") ? "cover-closed" : "cover-open"}'
 
+    - name: Locks
+      entities:
+        - entity: lock.yale_smartlock_front_door
+          element: front-door-lock
+      tap_action: more-info
+      state_action:
+        service: floorplan.class_set
+        service_data:
+          class: '${(entity.state === "locked") ? "lock-locked" : "lock-unlocked"}'
+
     - name: Rooms
       entities:
         - entity: light.front_lounge_downlight

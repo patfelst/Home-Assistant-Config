@@ -80,6 +80,16 @@ path[id*="light."].light-off{
   fill: #00ff00 !important;
 }
 
+.lock-unlocked{
+  opacity: 1 !important;
+  fill: #ff0000 !important;
+}
+
+.lock-locked{
+  opacity: 0 !important;
+  fill: #00ff00 !important;
+}
+
 /* Heater on */
 .heater-on {
   fill-opacity: 1 !important;
