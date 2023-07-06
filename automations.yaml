@@ -345,6 +345,10 @@
         - binary_sensor.driveway_motion_sensor_motion_detection
       to: "on"
       enabled: false
+    - platform: state
+      entity_id:
+        - cover.pedestrian_gate
+      to: open
   condition:
     - condition: numeric_state
       entity_id: sun.sun
@@ -1055,9 +1059,10 @@
     - service: notify.mobile_app_patricks_iphone_13
       data:
         title: Garage Door!
-        message: "{{ trigger.to_state.name }} has closed
+        message:
+          '{{ trigger.to_state.name | replace(" Bottom Magnet", "")}} has closed
 
-          "
+          '
         data:
           push:
             sound: US-EN-Morgan-Freeman-Garage-Door-Closed.wav
@@ -1430,11 +1435,10 @@
       data_template:
         title: UPS {{ trigger.event.data.notify_type }}
         message:
-          "{{ trigger.event.data.notify_msg | replace('UPS@localhost', '')
-          }} ({{ (trigger.to_state.last_updated) | as_timestamp | timestamp_custom('%I:%M
-          %p') }})
-
-          "
+          "{% set ups_msg = trigger.event.data.notify_msg | replace('UPS@localhost
+          ', '') %} {% if 'battery' in ups_msg %}\n  Power outage! Running on UPS.\n{%
+          elif 'line' in ups_msg %}\n  Power restored. UPS charging.\n{% endif -%} Battery
+          level is {{ states('sensor.ups_battery_charge') }}%\n"
   mode: single
 - id: "1675156383173"
   alias: Notify - Leaving home and a window left open
@@ -2222,3 +2226,20 @@
 
           "
   mode: single
+- id: "1688620863158"
+  alias: Button - Hall stand
+  description: ""
+  use_blueprint:
+    path: CrazyCoder/zigbee2mqtt_aqara_wireless_switch.yaml
+    input:
+      action_sensor: sensor.button_hall_stand_action
+      press_double:
+        - service: cover.open_cover
+          data: {}
+          target:
+            entity_id: cover.pedestrian_gate
+      press_single:
+        - service: cover.open_cover
+          data: {}
+          target:
+            entity_id: cover.pedestrian_gate
