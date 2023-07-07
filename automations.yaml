@@ -2111,15 +2111,14 @@
   alias: Input boolean - Enable front yard motion alerts after 1 hour
   description: ""
   trigger:
-    - platform: state
-      entity_id:
-        - input_boolean.disable_front_yard_motion_alerts
-      to: "on"
-      for:
-        hours: 1
-        minutes: 0
-        seconds: 0
-  condition: []
+    - platform: event
+      event_type: timer.finished
+      event_data:
+        entity_id: timer.remaining_time_front_yard_motion_alerts_disabled
+  condition:
+    - condition: state
+      entity_id: input_boolean.disable_front_yard_motion_alerts
+      state: "on"
   action:
     - service: input_boolean.turn_off
       data: {}
@@ -2159,15 +2158,14 @@
   alias: Input boolean - Enable front yard motion lights after 5 mins
   description: ""
   trigger:
-    - platform: state
-      entity_id:
-        - input_boolean.disable_front_yard_motion_lights
-      to: "on"
-      for:
-        hours: 0
-        minutes: 5
-        seconds: 0
-  condition: []
+    - platform: event
+      event_type: timer.finished
+      event_data:
+        entity_id: timer.remaining_time_front_yard_motion_lights_disabled
+  condition:
+    - condition: state
+      entity_id: input_boolean.disable_front_yard_motion_lights
+      state: "on"
   action:
     - service: input_boolean.turn_off
       data: {}
