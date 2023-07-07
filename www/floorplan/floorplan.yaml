@@ -30,23 +30,41 @@ config:
           element: pool-pump
       tap_action: more-info
       state_action:
-        service: floorplan.class_set
+        action: call-service
+        service: floorplan.style_set
         service_data:
-          class: '${(entity.state === "Pump OFF") ? "pump-off" : "pump-on"}'
+          style: |
+            >
+              var opacity = 0.7;
+              var color = '';
+              var style = '';
+              switch (entity.state) {
+                case 'Off':
+                  color = 'grey';
+                  opacity = 0;
+                  break;
+                case 'Low speed':
+                  color = 'rgb(179, 224, 255)';
+                  break;
+                case 'Medium speed':
+                  color = 'rgb(0, 153, 255)';
+                  break;
+                case 'High speed':
+                  color = 'rgb(0, 0, 255)';
+                  break;
+                case 'Unknown':
+                  color = 'rgb(255, 0, 0)';
+                  break;
+              }
+              style = `fill: ${color}; fill-opacity: ${opacity};`;
+              return style;
+
     - entity: sensor.pool_pump_status
       state_action:
         - service: floorplan.text_set
           service_data:
             element: pool-pump-status
-            text: |
-              >
-                var temp = entity.state;
-                if (temp == undefined)
-                  return "Unknown";
-                else if (temp == "Pump OFF")
-                  return "Pool pump: OFF";
-                else
-                  return "Pool pump: " + temp;
+            text: "Pool pump: ${entity.state}"
 
     - name: Covers
       entities:

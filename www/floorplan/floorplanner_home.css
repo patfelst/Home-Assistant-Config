@@ -100,14 +100,3 @@ path[id*="light."].light-off{
   fill-opacity: 1 !important;
   fill: #020aff74 !important;
 }
-
-/* Pool pump */
-.pump-on {
-  fill-opacity: 0.85 !important;
-  fill: #02b3ffbd !important;
-}
-
-.pump-off {
-  fill-opacity: 0 !important;
-  /* fill: #020affa5 !important; */
-}
