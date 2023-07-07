@@ -21,6 +21,5 @@ std::string seconds_to_readable(int sec) {
   if (hours) txt+= (to_string(hours) + "h "); else "";
   if (minutes) txt+= (to_string(minutes) + "m "); else "";
   txt+= to_string(seconds) + "s";
-  // ESP_LOGW("Sprinkler debug", "Time remaining is %s", txt.c_str());
   return txt;
 }
