@@ -1,9 +1,5 @@
 type: custom:floorplan-card
-# title: Floorplanner Home
-# full_height: true
 config:
-  # log_level: debug
-  # console_log_level: debug
   image:
     location: /local/floorplan/rostrevor.svg
     cache: false
@@ -13,22 +9,19 @@ config:
   defaults:
     hover_action: hover-info
     tap_action: more-info
+  console_log_level: info
   rules:
     - name: Heaters
-      entities:
-        - entity: switch.gas_heater
-          element: gas-heater
+      entity: switch.gas_heater
+      element: gas-heater
       tap_action: switch.toggle
       state_action:
         service: floorplan.class_set
         service_data:
           class: '${(entity.state === "on") ? "heater-on" : "heater-off"}'
-
     - name: PoolPump
-      entities:
-        - entity: sensor.pool_pump_status
-          element: pool-pump
-      tap_action: more-info
+      entity: sensor.pool_pump_status
+      element: pool-pump
       state_action:
         action: call-service
         service: floorplan.style_set
@@ -58,166 +51,158 @@ config:
               }
               style = `fill: ${color}; fill-opacity: ${opacity};`;
               return style;
-
+    - entity: light.jess_wled_mk2
+      element: debug-text
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          text: "WLED: ${entity.state} + ${entity.attributes.rgb_color}"
+    - entity: light.jess_wled_mk2
+      element: light.jess-led-strip
+      tap_action: light.toggle
+      hold_action: more-info
+      state_action:
+        service: floorplan.style_set
+        service_data:
+          style: |
+            >
+              console.log("Jess WLED State:" + entity.state + ", RGB color:" + entity.attributes.rgb_color);
+              var style = '';
+              var color = 'rgb(0, 0, 0)';
+              var rgb = entity.attributes.rgb_color;
+              if (entity.state == 'on') {
+                color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+                style = `fill: ${color}; fill-opacity: 0.7;`;
+              }
+              else {
+                style = `fill-opacity: 0;`;
+              }
+              return style;
     - entity: sensor.pool_pump_status
+      element: pool-pump-status
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          text: "Pool pump: ${entity.state}"
+    - entity: counter.cat_door_counter
+      element: cat-door-counter
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          text: ${entity.state}
+    - entity: counter.cat_door_counter
+      element: cat-door-time
       state_action:
         - service: floorplan.text_set
-          service_data:
-            element: pool-pump-status
-            text: "Pool pump: ${entity.state}"
-
+          service_data: ${util.date.timeago(entity.last_updated)}
     - name: Covers
       entities:
         - entity: cover.garage_door
           element: garage-door
         - entity: cover.driveway_gate
           element: driveway-gate
-      tap_action: more-info
       state_action:
         service: floorplan.class_set
         service_data:
           class: '${(entity.state === "closed") ? "cover-closed" : "cover-open"}'
-
     - name: Locks
       entities:
         - entity: lock.yale_smartlock_front_door
           element: front-door-lock
-      tap_action: more-info
       state_action:
         service: floorplan.class_set
         service_data:
           class: '${(entity.state === "locked") ? "lock-locked" : "lock-unlocked"}'
-
     - name: Rooms
       entities:
         - entity: light.front_lounge_downlight
           element: area.front-lounge
-
         - entity: light.front_garden_lights
           element: area.front-garden
-
         - entity: light.wiz_bedsside_lamp_1
           element: light.kathleen-bedside
-
         - entity: light.wir_downlight
           element: area.wir
-
         - entity: light.stairs_light
           element: area.stairs
-
         - entity: light.kitchen_downlights
           element: area.kitchen1
-
         - entity: light.kitchen_hall_downlights
           element: area.kitchen2
-
         - entity: light.workshop_downlight
           element: area.workshop
-
         - entity: light.dining_downlight
           element: area.dining
-
         - entity: light.back_lounge_downlights
           element: area.back-lounge
-
         - entity: light.alfresco_downlights
           element: area.alfresco
-
         - entity: light.butlers_downlight
           element: area.butlers
-
         - entity: light.laundry_downlight
           element: area.laundry
-
         - entity: light.rear_garden_lights
           element: area.rear-garden
-
         - entity: light.pool_perimeter_downlights
           element: area.pool-perimeter
-
         - entity: light.pool_light_controller_pool_lights
           element: area.pool
-
         - entity: light.led_strip_fire_pit_dimmer
           element: area.fire-pit
-
       tap_action: light.toggle
       hold_action: more-info
       state_action:
         service: floorplan.class_set
         service_data: '${(entity.state === "on") ? "light-on" : "light-off"}'
-
     - name: Lights
       entities:
         - entity: light.front_lounge_pendant
           element: light.front-lounge-pendant
-
         - entity: light.kitchen_pendant
           element: light.pendant
-
         - entity: light.back_lounge_sideboard_lamp
           element: light.table-lamp-back-lounge
-
         - entity: light.back_lounge_pendant
           element: light.tv-pendant
-
         - entity: light.lamp_rhs_fireplace
           element: light.fireplace-rhs
-
         - entity: light.front_stone_up_down
           element: light.stone-feature
-
         - entity: light.front_hall_lamp
           element: light.front-hall-lamp
-
         - entity: light.laundry_path_bunker_light
           element: light.laundry-bunker-light.glow
-
         - entity: light.meterbox_bunker
           element: light.meterbox-bunker-light.glow
-
         - entity: light.led_strip_kitchen_kicker
           element: light.kitchen-led-kicker-yellow
-
         - entity: light.front_north_side_flood
           element: light.north-flood
-
         - entity: light.courtyard_flood_light
           element: light.courtyard-flood
-
         - entity: light.rear_flood_light
           element: light.rear-flood
-
         - entity: light.garage_downlights
           element: area.garage
-
         - entity: light.front_porch
           element: light.front-porch
-
         - entity: light.led_strip_workshop_shelf_dimmer
           element: light.workshop-shelf-leds
-
-        - entity: light.jess_wled_mk2
-          element: light.jess-led-strip
-
       tap_action: light.toggle
       hold_action: more-info
       state_action:
         service: floorplan.class_set
         service_data: '${(entity.state === "on") ? "light-on" : "light-off"}'
-
     - name: Binary Sensors
       entities:
         - entity: binary_sensor.alfresco_door_contact
           element: alfresco_door_contact
-
         - entity: binary_sensor.workshop_window_contact
           element: workshop-window
-
+        - entity: binary_sensor.workshop_door_contact
+          element: workshop-door
         - entity: binary_sensor.front_door_aqara_contact
           element: front-door
-
-      tap_action: more-info
       state_action:
         service: floorplan.class_set
         service_data: '${(entity.state === "on") ? "binarysensor-on" : "binarysensor-off"}'
