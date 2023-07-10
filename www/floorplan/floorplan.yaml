@@ -9,8 +9,82 @@ config:
   defaults:
     hover_action: hover-info
     tap_action: more-info
-  console_log_level: info
+  # console_log_level: debug
+  functions: |
+    >
+    return {
+      FormatTemperature: (entity) => {
+        var tc = entity.toFixed(1);
+        return tc + "°"; 
+      },
+    };
   rules:
+    - name: Toggle display of room temperatures
+      element: show-temps.button
+      entity: input_boolean.floorplan_display_temperatures
+      tap_action: input_boolean.toggle
+    - name: Set temperatue text visibilty based on input boolean
+      entity: input_boolean.floorplan_display_temperatures
+      state_action:
+        - service: floorplan.class_set
+          service_data:
+            elements:
+              - all-temperatures
+            class: '${(entity.state === "off") ? "layer-hidden" : "layer-visible"}'
+    - entity: sensor.alfresco_environmental_temperature
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          element: temp-alfresco
+          text: ${functions.FormatTemperature(Number(entity.state))}
+    - entity: climate.ac_back_lounge
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          element: temp-back-lounge
+          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
+    - entity: climate.ac_kitchen
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          element: temp-kitchen
+          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
+    - entity: climate.ac_entry
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          element: temp-front-hallway
+          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
+    - entity: climate.ac_master_br
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          element: temp-mbr
+          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
+    - entity: climate.ac_jess_br
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          element: temp-jess
+          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
+    - entity: climate.ac_front_lounge
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          element: temp-front-lounge
+          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
+    - entity: climate.ac_spare_br
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          element: temp-spare-br
+          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
+    - entity: climate.ac_workshop
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          element: temp-workshop
+          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
     - name: Heaters
       entity: switch.gas_heater
       element: gas-heater
@@ -19,6 +93,16 @@ config:
         service: floorplan.class_set
         service_data:
           class: '${(entity.state === "on") ? "heater-on" : "heater-off"}'
+    - entity: sensor.pool_pump_status
+      element: pool-pump-status
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          text: |
+            >
+              var temp = entity.state;
+              var msg = temp.replace('speed', '');
+              return msg;
     - name: PoolPump
       entity: sensor.pool_pump_status
       element: pool-pump
@@ -52,12 +136,6 @@ config:
               style = `fill: ${color}; fill-opacity: ${opacity};`;
               return style;
     - entity: light.jess_wled_mk2
-      element: debug-text
-      state_action:
-        service: floorplan.text_set
-        service_data:
-          text: "WLED: ${entity.state} + ${entity.attributes.rgb_color}"
-    - entity: light.jess_wled_mk2
       element: light.jess-led-strip
       tap_action: light.toggle
       hold_action: more-info
@@ -78,12 +156,6 @@ config:
                 style = `fill-opacity: 0;`;
               }
               return style;
-    - entity: sensor.pool_pump_status
-      element: pool-pump-status
-      state_action:
-        service: floorplan.text_set
-        service_data:
-          text: "Pool pump: ${entity.state}"
     - entity: counter.cat_door_counter
       element: cat-door-counter
       state_action:

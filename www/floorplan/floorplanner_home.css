@@ -2,20 +2,10 @@
   padding: 10px;
 }
 
-/* #floorplan svg{
-  height: 100vh!important;
-} */
-
 svg tspan {
   fill: var(--primary-text-color);
 }
 
-/* SVG shapes */
-
-/* svg, svg * {
-  vector-effect: non-scaling-stroke !important;
-  pointer-events: all !important;
-} */
 
 /* Hover over */
 .ha-entity:hover {
@@ -24,16 +14,19 @@ svg tspan {
   stroke-opacity: 1 !important;
 }
 
-/* Binary sensors */
-
-/* .binary-sensor-on {
-  fill: #F9D27C !important;
+.layer-visible {
+  /* display: block !important; */
+  visibility: visible !important;
+  opacity: 1 !important;
+  stroke-opacity: 1 !important;
 }
-
-.binary-sensor-off {
-  fill: #7CB1F9 !important;
-  transition: fill 5s ease;
-} */
+ 
+.layer-hidden {
+  /* display: none !important; */
+  visibility: hidden !important;
+  opacity: 0 !important;
+  stroke-opacity: 0 !important;
+}
 
 /* Light Control */
 
