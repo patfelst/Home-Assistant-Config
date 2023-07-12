@@ -315,7 +315,7 @@ script:
     then:
       - if:
           condition:
-            - lambda: 'return (led_state_str == "Pump OFF");'
+            - lambda: 'return (led_state_str == "Off");'
           then:
             - light.addressable_set:
                 id: led_strip
