@@ -31,6 +31,15 @@ config:
             elements:
               - all-temperatures
             class: '${(entity.state === "off") ? "layer-hidden" : "layer-visible"}'
+        - service: floorplan.text_set
+          service_data:
+            element: temp-label
+            text: |
+              >
+                if (entity.state === "off")
+                  return "Show";
+                else
+                  return "Hide";
     - entity: sensor.alfresco_environmental_temperature
       state_action:
         service: floorplan.text_set
@@ -231,7 +240,7 @@ config:
         - entity: light.front_lounge_pendant
           element: light.front-lounge-pendant
         - entity: light.kitchen_pendant
-          element: light.pendant
+          element: light.kitchen-pendant
         - entity: light.back_lounge_sideboard_lamp
           element: light.table-lamp-back-lounge
         - entity: light.back_lounge_pendant
@@ -260,6 +269,10 @@ config:
           element: light.front-porch
         - entity: light.led_strip_workshop_shelf_dimmer
           element: light.workshop-shelf-leds
+        - entity: light.led_strip_front_hall
+          element: light.front-hall-leds
+        - entity: light.led_strip_butlers_overhead_cupboards
+          element: light.butlers-leds
       tap_action: light.toggle
       hold_action: more-info
       state_action:

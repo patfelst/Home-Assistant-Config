@@ -67,6 +67,7 @@
       target:
         entity_id:
           - light.led_strip_kitchen_kicker
+          - light.led_strip_front_hall
     - delay:
         hours: 0
         minutes: 2
@@ -77,6 +78,7 @@
       target:
         entity_id:
           - light.led_strip_kitchen_kicker
+          - light.led_strip_front_hall
   mode: single
 - id: "1667473720137"
   alias: Blinds close at sunset
@@ -313,6 +315,11 @@
         brightness_pct: 25
       target:
         entity_id: light.wiz_bedsside_lamp_1
+    - service: light.turn_on
+      data:
+        brightness_pct: 12
+      target:
+        entity_id: light.led_strip_front_hall
   mode: single
 - id: "1668760849772"
   alias:
@@ -2236,8 +2243,34 @@
           data: {}
           target:
             entity_id: cover.pedestrian_gate
+        - wait_for_trigger:
+            - platform: state
+              entity_id:
+                - cover.pedestrian_gate
+              to: closed
+        - service: cover.open_cover
+          data: {}
+          target:
+            entity_id: cover.pedestrian_gate
       press_single:
         - service: cover.open_cover
           data: {}
           target:
             entity_id: cover.pedestrian_gate
+- id: "1689412431203"
+  alias: Air con turn off timer
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - input_number.air_con_off_timer
+  condition: []
+  action:
+    - service: advantage_air.set_time_to
+      data:
+        minutes: "{{ trigger.to_state.state }}
+
+          "
+      target:
+        entity_id: sensor.ac_time_to_off
+  mode: single
