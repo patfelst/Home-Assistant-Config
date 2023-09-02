@@ -274,7 +274,7 @@ light:
       - light.front_lounge_downlight
       - light.front_lounge_pendant
       - light.front_hall_lamp
-      - light.led_strip_front_hall
+      - light.led_strip_front_hall_dimmer
 
       - light.garage_downlights
       - light.workshop_downlight
@@ -331,7 +331,7 @@ light:
       - light.front_lounge_downlight
       - light.front_lounge_pendant
       - light.front_hall_lamp
-      - light.led_strip_front_hall
+      - light.led_strip_front_hall_dimmer
   - platform: group
     name: "Kitchen lights"
     entities:

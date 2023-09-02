@@ -67,7 +67,11 @@
       target:
         entity_id:
           - light.led_strip_kitchen_kicker
-          - light.led_strip_front_hall
+    - service: light.turn_on
+      data:
+        brightness_pct: 10
+      target:
+        entity_id: light.led_strip_front_hall_dimmer
     - delay:
         hours: 0
         minutes: 2
@@ -78,7 +82,7 @@
       target:
         entity_id:
           - light.led_strip_kitchen_kicker
-          - light.led_strip_front_hall
+          - light.led_strip_front_hall_dimmer
   mode: single
 - id: "1667473720137"
   alias: Blinds close at sunset
@@ -317,9 +321,9 @@
         entity_id: light.wiz_bedsside_lamp_1
     - service: light.turn_on
       data:
-        brightness_pct: 12
+        brightness_pct: 20
       target:
-        entity_id: light.led_strip_front_hall
+        entity_id: light.led_strip_front_hall_dimmer
   mode: single
 - id: "1668760849772"
   alias:
@@ -349,13 +353,16 @@
       to: "on"
     - platform: state
       entity_id:
-        - binary_sensor.driveway_motion_sensor_motion_detection
-      to: "on"
-      enabled: false
-    - platform: state
-      entity_id:
         - cover.pedestrian_gate
       to: open
+    - platform: state
+      entity_id:
+        - binary_sensor.driveway_eaves_eyeball
+      to: "on"
+    - platform: state
+      entity_id:
+        - binary_sensor.eaves_square_motion
+      to: "on"
   condition:
     - condition: numeric_state
       entity_id: sun.sun
@@ -406,6 +413,11 @@
         - binary_sensor.workshop_ceiling_motion_occupancy
       from: "off"
       to: "on"
+      enabled: false
+    - platform: state
+      entity_id:
+        - binary_sensor.ld2410_mmwave_presence
+      to: "on"
   condition: []
   action:
     - service: light.turn_on
@@ -419,6 +431,11 @@
         - platform: state
           entity_id:
             - binary_sensor.workshop_ceiling_motion_occupancy
+          to: "off"
+          enabled: false
+        - platform: state
+          entity_id:
+            - binary_sensor.ld2410_mmwave_presence
           to: "off"
     - delay:
         hours: 0
@@ -2081,13 +2098,12 @@
       to: "on"
     - platform: state
       entity_id:
-        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_2_linedetection
+        - binary_sensor.driveway_eaves_eyeball
       to: "on"
     - platform: state
       entity_id:
-        - binary_sensor.driveway_motion_sensor_motion_detection
+        - binary_sensor.eaves_square_motion
       to: "on"
-      enabled: false
   condition:
     - condition: numeric_state
       entity_id: sun.sun
@@ -2097,6 +2113,10 @@
     - condition: state
       entity_id: input_boolean.disable_front_yard_motion_alerts
       state: "off"
+    - condition: time
+      after: "23:00:00"
+      before: 06:00:00
+      enabled: true
   action:
     - service: notify.patrick_and_kathleen
       data:
@@ -2264,11 +2284,23 @@
     - platform: state
       entity_id:
         - input_number.air_con_off_timer
+    - platform: state
+      entity_id:
+        - input_button.set_air_con_off_timer
   condition: []
   action:
+    - service: climate.turn_on
+      data: {}
+      target:
+        entity_id: climate.ac
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 2
+        milliseconds: 0
     - service: advantage_air.set_time_to
       data:
-        minutes: "{{ trigger.to_state.state }}
+        minutes: "{{ states('input_number.air_con_off_timer') }}
 
           "
       target:

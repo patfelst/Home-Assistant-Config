@@ -37,9 +37,15 @@ config:
             text: |
               >
                 if (entity.state === "off")
-                  return "Show";
+                  return "Show\nTemps";
                 else
-                  return "Hide";
+                  return "Hide\nTemps";
+    - entity: sensor.rostrevor_pool_inlet_water_temp_t02
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          element: temp-pool
+          text: ${functions.FormatTemperature(Number(entity.state))}
     - entity: sensor.alfresco_environmental_temperature
       state_action:
         service: floorplan.text_set
@@ -269,7 +275,7 @@ config:
           element: light.front-porch
         - entity: light.led_strip_workshop_shelf_dimmer
           element: light.workshop-shelf-leds
-        - entity: light.led_strip_front_hall
+        - entity: light.led_strip_front_hall_dimmer
           element: light.front-hall-leds
         - entity: light.led_strip_butlers_overhead_cupboards
           element: light.butlers-leds

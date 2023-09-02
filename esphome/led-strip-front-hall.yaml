@@ -4,8 +4,8 @@ substitutions:
   rgb_led_brightness: "100%"
 
 esphome:
-  name: bookshelf-dimmer
-  friendly_name: LED Strip Bookshlelf
+  name: "led-strip-front-hall"
+  friendly_name: LED Strip Front Hall
   comment: White LED strip dimmer on M5Stack Stamp-Pico
   on_boot:
     priority: 600
