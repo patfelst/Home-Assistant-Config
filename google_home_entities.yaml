@@ -15,6 +15,7 @@ google_actions:
       - script.sunset_lights
       - switch.workshop_power_strip
       - switch.gas_heater
+      - switch.pool_robot
       - light.all_lights
       - light.alfresco_downlights
       - light.back_lounge_downlights

@@ -213,7 +213,7 @@ template:
       # Low 155W
       - name: "Pool pump status"
         unique_id: id_pool_pump_status
-        icon: mdi:water-pump
+        icon: mdi:pump
         state: >
           {% set pool_power = states('sensor.filtered_pool_pump_power_average_linear_6mins') %}
           {% if pool_power|is_number %}

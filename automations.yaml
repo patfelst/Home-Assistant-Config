@@ -241,9 +241,7 @@
               message:
                 '{{ trigger.to_state.name | replace(" Bottom Magnet","") }} has
                 been open since {{ (trigger.to_state.last_updated) | as_timestamp | timestamp_custom(''%I:%M
-                %p'') }}.
-
-                '
+                %p'') }}.'
               data:
                 push:
                   sound: long_low_short_high.caf
@@ -2305,4 +2303,130 @@
           "
       target:
         entity_id: sensor.ac_time_to_off
+  mode: single
+- id: "1693651577831"
+  alias: Auto off - Pool robot (Shelly) after x hrs
+  description:
+    Robot turns itself off after 2 hrs, even with Shelly switch power applied.
+    So this is to turn Shelly off.
+  trigger:
+    - platform: state
+      entity_id:
+        - switch.pool_robot
+      to: "on"
+      for:
+        hours: 4
+        minutes: 0
+        seconds: 0
+  condition: []
+  action:
+    - service: switch.turn_off
+      data: {}
+      target:
+        entity_id: switch.pool_robot
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: "Pool robot cleaner \U0001F3CA \U0001F916"
+        message: Turned off pool robot after {{ trigger.for }}
+  mode: single
+- id: "1693826918399"
+  alias: Pool heater - turn ON when grid export power > 2.5kW
+  description: ""
+  trigger:
+    - platform: time
+      at: 09:10:01
+      id: trigger_time
+    - platform: template
+      value_template: "{{ states('sensor.solarnet_power_grid')|float < -2.5 }}"
+      id: trigger_power
+  condition:
+    - condition: state
+      entity_id: climate.rostrevor_pool
+      state: "off"
+    - condition: numeric_state
+      entity_id: sensor.solarnet_power_grid
+      below: -2.5
+    - condition: time
+      after: 09:10:00
+  action:
+    - service: climate.set_hvac_mode
+      data:
+        hvac_mode: heat
+      target:
+        entity_id: climate.rostrevor_pool
+    - service: climate.turn_on
+      data: {}
+      target:
+        entity_id: climate.rostrevor_pool
+    - choose:
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger_power
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Pool heater
+                message:
+                  Turned on pool heater because exporting more than 2.5kW ({{ -(trigger.to_state.state
+                  | float | round(1)) }}kW)
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger_time
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Pool heater
+                message:
+                  Turned on pool heater because exporting enough power (2.5kW) and
+                  time was {{ trigger.now }}
+  mode: single
+- id: "1693827066966"
+  alias: Pool heater - turn OFF when grid importing for 30 mins
+  description: ""
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.solarnet_power_grid
+      for:
+        hours: 0
+        minutes: 30
+        seconds: 0
+      above: 0
+      id: not enough power
+    - platform: time
+      at: "16:55:00"
+      id: time of day
+  condition:
+    - condition: state
+      entity_id: climate.rostrevor_pool
+      state: heat
+  action:
+    - service: climate.turn_off
+      data: {}
+      target:
+        entity_id: climate.rostrevor_pool
+    - choose:
+        - conditions:
+            - condition: trigger
+              id:
+                - not enough power
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Pool heater
+                message:
+                  Turned off pool heater because importing power from grid for {{
+                  (((trigger.for.seconds) | int) / 60) | round(0) }} mins
+        - conditions:
+            - condition: trigger
+              id:
+                - time of day
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Pool heater
+                message:
+                  Turned off pool heater because it's {{ trigger.now | as_timestamp
+                  | timestamp_custom('%I:%M %p') }} and pump will switch off soon.
   mode: single
