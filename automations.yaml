@@ -194,7 +194,7 @@
       to: "on"
       for:
         hours: 0
-        minutes: 0
+        minutes: 15
         seconds: 0
   condition:
     - condition: state
@@ -209,14 +209,16 @@
       data:
         title: Garage Door!
         message:
-          '{{ trigger.to_state.name | replace(" Bottom Magnet","") }} just opened
-
-          '
-        data:
-          push:
-            sound: US-EN-Morgan-Freeman-Garage-Door-Opened.wav
-            interruption-level: time-sensitive
-      enabled: true
+          Garage door has been open for {{ ((trigger.for.seconds) | int) / 60
+          }} minutes
+    - service: tts.cloud_say
+      data:
+        entity_id:
+          - media_player.back_longe_speaker
+          - media_player.workshop_speaker
+        message:
+          Garage door has been open for {{ ((trigger.for.seconds) | int) / 60
+          }} minutes
     - delay:
         hours: 0
         minutes: 15
@@ -249,6 +251,14 @@
                 actions:
                   - action: "{{ action_disable }}"
                     title: Disable these notifications
+          - service: tts.cloud_say
+            data:
+              entity_id:
+                - media_player.back_longe_speaker
+                - media_player.workshop_speaker
+              message:
+                Garage door has been open since {{ (trigger.to_state.last_updated)
+                | as_timestamp | timestamp_custom('%I:%M %p') }}.
           - wait_for_trigger:
               - platform: event
                 event_type: mobile_app_notification_action
@@ -319,7 +329,7 @@
         entity_id: light.wiz_bedsside_lamp_1
     - service: light.turn_on
       data:
-        brightness_pct: 20
+        brightness_pct: 25
       target:
         entity_id: light.led_strip_front_hall_dimmer
   mode: single
@@ -339,10 +349,6 @@
       to: "on"
     - platform: state
       entity_id:
-        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_2_linedetection
-      to: "on"
-    - platform: state
-      entity_id:
         - binary_sensor.garage_door_bottom_magnet
       to: "on"
     - platform: state
@@ -355,17 +361,18 @@
       to: open
     - platform: state
       entity_id:
-        - binary_sensor.driveway_eaves_eyeball
+        - binary_sensor.driveway_light_beam
       to: "on"
     - platform: state
       entity_id:
-        - binary_sensor.eaves_square_motion
-      to: "on"
+        - cover.driveway_gate
+      to: opening
   condition:
     - condition: numeric_state
       entity_id: sun.sun
       attribute: elevation
       below: 0
+      enabled: true
     - condition: state
       entity_id: input_boolean.disable_front_yard_motion_lights
       state: "off"
@@ -500,8 +507,7 @@
       to: "on"
     - platform: state
       entity_id:
-        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_4_fielddetection
-      to: "on"
+        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_2_fielddetection
   condition:
     - condition: numeric_state
       entity_id: sun.sun
@@ -522,10 +528,24 @@
         minutes: 5
         seconds: 0
         milliseconds: 0
-    - service: light.turn_off
-      data: {}
-      target:
-        entity_id: light.back_yard_lights
+    - if:
+        - condition: state
+          entity_id: input_boolean.sleep_mode
+          state: "on"
+      then:
+        - service: light.turn_off
+          data: {}
+          target:
+            entity_id:
+              - light.back_yard_lights
+      else:
+        - service: light.turn_off
+          data: {}
+          target:
+            entity_id:
+              - light.alfresco_downlights
+              - light.pool_perimeter_downlights
+              - light.rear_flood_light
   mode: restart
 - id: "1668938565078"
   alias: Light - Alfresco when alfresco door opens at night
@@ -802,7 +822,7 @@
     - condition: numeric_state
       entity_id: sun.sun
       attribute: elevation
-      below: 0
+      below: 5
   action:
     - service: light.turn_on
       data: {}
@@ -1522,14 +1542,18 @@
             interruption-level: critical
   mode: single
 - id: "1676543396010"
-  alias: Turn on air conditioning when back lounge is hot
+  alias: Air con ON when HOT back lounge (people at home)
   description: ""
   trigger:
     - platform: numeric_state
       entity_id: climate.ac_back_lounge
       attribute: current_temperature
-      above: 26
-  condition: []
+      above: 25
+  condition:
+    - condition: numeric_state
+      entity_id: zone.home
+      attribute: persons
+      above: 0
   action:
     - service: climate.turn_on
       data: {}
@@ -1554,10 +1578,11 @@
         entity_id: climate.ac
     - service: notify.mobile_app_patricks_iphone_13
       data:
-        title: Air con turned on as it's hot
+        title: Air con turned on (People at home)
         message:
           Turned on air conditioner as {{ trigger.to_state.name }} temperature
-          is above trigger temperature of {{ trigger.above }}°C
+          is above {{ trigger.above }} and people are at home (i.e don't care if alrady
+          importing power)
   mode: single
 - id: "1677320260752"
   alias: Lights - garden lights off (first ~8pm)
@@ -1684,7 +1709,7 @@
           - light.laundry_path_bunker_light
   mode: single
 - id: "1678589815500"
-  alias: Notify - Grid power > 0.8kW, turn off with Actionable Notification
+  alias: Notify - Grid power > 1.5kW, turn off with Actionable Notification
   description: ""
   trigger:
     - platform: numeric_state
@@ -1693,7 +1718,7 @@
         hours: 0
         minutes: 15
         seconds: 0
-      above: 0.8
+      above: 1.5
   condition:
     - condition: state
       entity_id: input_boolean.grid_power_alert
@@ -2096,18 +2121,9 @@
       to: "on"
     - platform: state
       entity_id:
-        - binary_sensor.driveway_eaves_eyeball
-      to: "on"
-    - platform: state
-      entity_id:
-        - binary_sensor.eaves_square_motion
+        - binary_sensor.driveway_light_beam
       to: "on"
   condition:
-    - condition: numeric_state
-      entity_id: sun.sun
-      attribute: elevation
-      below: 0
-      enabled: false
     - condition: state
       entity_id: input_boolean.disable_front_yard_motion_alerts
       state: "off"
@@ -2131,7 +2147,8 @@
         minutes: 0
         seconds: 30
         milliseconds: 0
-  mode: single
+  mode: queued
+  max: 10
 - id: "1685061501391"
   alias: Input boolean - Enable front yard motion alerts after 1 hour
   description: ""
@@ -2305,19 +2322,18 @@
         entity_id: sensor.ac_time_to_off
   mode: single
 - id: "1693651577831"
-  alias: Auto off - Pool robot (Shelly) after x hrs
+  alias: Auto off - Pool robot (Shelly) when power drops to zero
   description:
     Robot turns itself off after 2 hrs, even with Shelly switch power applied.
-    So this is to turn Shelly off.
+    So this is to turn Shelly output off.
   trigger:
-    - platform: state
-      entity_id:
-        - switch.pool_robot
-      to: "on"
+    - platform: numeric_state
+      entity_id: sensor.pool_robot_power
+      below: 4
       for:
-        hours: 4
+        hours: 0
         minutes: 0
-        seconds: 0
+        seconds: 30
   condition: []
   action:
     - service: switch.turn_off
@@ -2327,27 +2343,24 @@
     - service: notify.mobile_app_patricks_iphone_13
       data:
         title: "Pool robot cleaner \U0001F3CA \U0001F916"
-        message: Turned off pool robot after {{ trigger.for }}
+        message:
+          Turned off pool cleaner because power dropped below {{ trigger.below
+          }} Watts for 30 seconds.
   mode: single
 - id: "1693826918399"
-  alias: Pool heater - turn ON when grid export power > 2.5kW
+  alias: Pool heater - turn ON when grid export power > 2.1kW
   description: ""
   trigger:
-    - platform: time
-      at: 09:10:01
-      id: trigger_time
     - platform: template
-      value_template: "{{ states('sensor.solarnet_power_grid')|float < -2.5 }}"
+      value_template: "{{ states('sensor.solarnet_power_grid')|float < -2.1 }}"
       id: trigger_power
   condition:
     - condition: state
       entity_id: climate.rostrevor_pool
       state: "off"
-    - condition: numeric_state
-      entity_id: sensor.solarnet_power_grid
-      below: -2.5
-    - condition: time
-      after: 09:10:00
+    - condition: state
+      entity_id: switch.pool_pump
+      state: "on"
   action:
     - service: climate.set_hvac_mode
       data:
@@ -2358,45 +2371,35 @@
       data: {}
       target:
         entity_id: climate.rostrevor_pool
-    - choose:
-        - conditions:
-            - condition: trigger
-              id:
-                - trigger_power
-          sequence:
-            - service: notify.mobile_app_patricks_iphone_13
-              data:
-                title: Pool heater
-                message:
-                  Turned on pool heater because exporting more than 2.5kW ({{ -(trigger.to_state.state
-                  | float | round(1)) }}kW)
-        - conditions:
-            - condition: trigger
-              id:
-                - trigger_time
-          sequence:
-            - service: notify.mobile_app_patricks_iphone_13
-              data:
-                title: Pool heater
-                message:
-                  Turned on pool heater because exporting enough power (2.5kW) and
-                  time was {{ trigger.now }}
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: Pool heater
+        message:
+          Turned on pool heater because exporting more than 2.1kW ({{ -(trigger.to_state.state
+          | float | round(1)) }}kW) and pump is ON.
   mode: single
 - id: "1693827066966"
-  alias: Pool heater - turn OFF when grid importing for 30 mins
+  alias:
+    Pool heater - turn OFF when grid importing for 20 mins or pool pump turns
+    OFF
   description: ""
   trigger:
     - platform: numeric_state
       entity_id: sensor.solarnet_power_grid
       for:
         hours: 0
-        minutes: 30
+        minutes: 20
         seconds: 0
       above: 0
       id: not enough power
-    - platform: time
-      at: "16:55:00"
-      id: time of day
+    - platform: state
+      entity_id:
+        - switch.pool_pump
+      to: "off"
+      id: pump_off
+    - platform: numeric_state
+      entity_id: sensor.rostrevor_pool_inlet_water_temp_t02
+      above: 27
   condition:
     - condition: state
       entity_id: climate.rostrevor_pool
@@ -2421,12 +2424,289 @@
         - conditions:
             - condition: trigger
               id:
-                - time of day
+                - pump_off
           sequence:
             - service: notify.mobile_app_patricks_iphone_13
               data:
                 title: Pool heater
+                message: Turned off pool heater because pump just switched off.
+  mode: single
+- id: "1694562264439"
+  alias: Notify - Consider turn OFF a/c as importing power
+  description: ""
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.solarnet_power_grid
+      for:
+        hours: 0
+        minutes: 20
+        seconds: 0
+      above: 0
+  condition:
+    - condition: state
+      entity_id: climate.ac
+      state: cool
+  action:
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: Air con - consider turning off
+        message:
+          Consider turning OFF air conditioner as now importing power {{ states('sensor.solarnet_power_grid')
+          | float | round(1) }}kW for more than {{ (((trigger.for.seconds) | int) /
+          60) | round(0) }} mins
+  mode: single
+- id: "1694750544303"
+  alias: Notify - sump pump ON/OFF
+  description: ""
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.shellyem_sump_pump_power
+      above: 60
+      id: power high
+    - platform: numeric_state
+      entity_id: sensor.shellyem_sump_pump_power
+      below: 10
+      id: power low
+  condition: []
+  action:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id:
+                - power high
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Sump pump!
+                message: Sump pump turned ON!
+        - conditions:
+            - condition: trigger
+              id:
+                - power low
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Sump pump!
+                message: Sump pump turned OFF!
+  mode: single
+- id: "1694818227771"
+  alias: Blinds - CLOSE when sunny and hot (based on solar energy for the day at 10AM)
+  description: ""
+  trigger:
+    - platform: time
+      at: "10:00:00"
+  condition: []
+  action:
+    - if:
+        - condition: numeric_state
+          entity_id: sensor.solarnet_energy_day
+          above: 9800
+      then:
+        - service: notify.mobile_app_patricks_iphone_13
+          data:
+            title: Closed blinds to reduce heat
+            message:
+              Closed rear blinds 1, and 3-5 as it's {{ trigger.now | as_timestamp
+              | timestamp_custom('%I:%M %p') }} and solar energy for the day is above
+              9,800Wh ({{ states('sensor.solarnet_energy_day') | float | round(1) }}Wh).
+        - service: cover.close_cover
+          data: {}
+          target:
+            entity_id:
+              - cover.blind_3
+              - cover.blind_4
+              - cover.blind_5
+      else:
+        - service: notify.mobile_app_patricks_iphone_13
+          data:
+            title: Didn't close blinds
+            message:
+              Didn't close rear blinds as at {{ trigger.now | as_timestamp | timestamp_custom('%I:%M
+              %p') }} because solar energy for the day was below 9,800Wh ({{ states('sensor.solarnet_energy_day')
+              | float | round(1) }}Wh).
+  mode: single
+- id: "1694846476742"
+  alias: Pool pump - ON at 8am or when enough solar (2.1kW) to run heater
+  description: ""
+  trigger:
+    - platform: time
+      at: 08:00:00
+      id: trigger_time
+    - platform: template
+      value_template: "{{ states('sensor.solarnet_power_grid')|float < -2.1 }}"
+      id: trigger_power
+  condition:
+    - condition: state
+      entity_id: switch.pool_pump
+      state: "off"
+    - condition: time
+      before: "17:00:00"
+  action:
+    - service: switch.turn_on
+      data: {}
+      target:
+        entity_id: switch.pool_pump
+    - choose:
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger_time
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Pool pump turned ON
                 message:
-                  Turned off pool heater because it's {{ trigger.now | as_timestamp
-                  | timestamp_custom('%I:%M %p') }} and pump will switch off soon.
+                  Pool pump turned ON because it's {{ trigger.now | as_timestamp
+                  | timestamp_custom('%I:%M %p') }}
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger_power
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Pool pump turned ON
+                message:
+                  Pool pump turned ON because because exporting enough power to run
+                  heater too ({{ -(trigger.to_state.state | float | round(2)) }}kW)
+  mode: single
+- id: "1694847669808"
+  alias: Pool pump - OFF at 5pm
+  description: ""
+  trigger:
+    - platform: time
+      at: "17:00:00"
+      id: trigger_time
+  condition: []
+  action:
+    - service: switch.turn_off
+      data: {}
+      target:
+        entity_id: switch.pool_pump
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: Pool pump turned OFF
+        message:
+          Pool pump turned OFF because it's {{ trigger.now | as_timestamp | timestamp_custom('%I:%M
+          %p') }}
+  mode: single
+- id: "1695041517610"
+  alias: Air con ON when HOT back lounge (nobody at home)
+  description: ""
+  trigger:
+    - platform: numeric_state
+      entity_id: climate.ac_back_lounge
+      attribute: current_temperature
+      above: 26
+  condition:
+    - condition: numeric_state
+      entity_id: sensor.solarnet_power_grid
+      below: -5
+    - condition: numeric_state
+      entity_id: zone.home
+      attribute: persons
+      below: 1
+  action:
+    - service: climate.turn_on
+      data: {}
+      target:
+        entity_id: climate.ac
+    - service: climate.set_temperature
+      data:
+        temperature: 24
+        hvac_mode: cool
+      target:
+        entity_id: climate.ac
+    - service: climate.set_hvac_mode
+      data:
+        hvac_mode: cool
+      target:
+        entity_id: climate.ac
+      enabled: true
+    - service: climate.set_fan_mode
+      data:
+        fan_mode: medium
+      target:
+        entity_id: climate.ac
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: Air con turned on (Nobody at home)
+        message:
+          Turned on air conditioner as {{ trigger.to_state.name }} temperature
+          is above {{ trigger.above }} and exporting more than 5kW (nobody is home)
+  mode: single
+- id: "1695267626675"
+  alias: "Blinds - open all (except #1) in the afternoon when sun < 20°"
+  description: ""
+  trigger:
+    - platform: numeric_state
+      entity_id: sun.sun
+      attribute: elevation
+      below: 20
+  condition: []
+  action:
+    - service: cover.open_cover
+      data: {}
+      target:
+        entity_id:
+          - cover.blind_2
+          - cover.blind_3
+          - cover.blind_4
+          - cover.blind_5
+  mode: single
+- id: "1695452208621"
+  alias: Gate - close automatically after car passes through
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.driveway_light_beam
+      to: "on"
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 4
+  condition:
+    - condition: template
+      value_template:
+        "  {{ as_timestamp(now()) - as_timestamp(states.sensor.button_garage_action.last_changed)
+        < 360 }}"
+      enabled: true
+  action:
+    - wait_for_trigger:
+        - platform: state
+          entity_id:
+            - binary_sensor.driveway_light_beam
+          to: "off"
+      timeout:
+        hours: 0
+        minutes: 5
+        seconds: 0
+        milliseconds: 0
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 2
+        milliseconds: 0
+    - service: cover.close_cover
+      data: {}
+      target:
+        entity_id:
+          - cover.driveway_gate
+          - cover.garage_door
+  mode: single
+- id: "1696560418641"
+  alias: Blinds - open blind 1 at sunset
+  description: ""
+  trigger:
+    - platform: sun
+      event: sunset
+      offset: 0
+  condition: []
+  action:
+    - service: cover.open_cover
+      data: {}
+      target:
+        entity_id:
+          - cover.blind_1
   mode: single

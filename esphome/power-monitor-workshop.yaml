@@ -13,6 +13,9 @@ esphome:
     board_build.partitions: default_16MB.csv
 
 external_components:
+  # also try this custom component, has more features. e.g. 
+  # should be able to set VBUS as an input from external +5V via (Grove port) using AXP192 GPIO0 ==> BUS_PW_EN / N_VBUSEN
+  # https://gitlab.com/geiseri/esphome_extras/-/tree/main/components/axp192
   - source: github://Pionizer/pionizer-axp192
     components: [axp192]
     refresh: 1days

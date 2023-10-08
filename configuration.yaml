@@ -29,6 +29,7 @@ sensor:
     sampling_size: 3153600 # With HA 2022.12, this is now optional
     max_age:
       days: 365
+
   - platform: statistics
     name: "Date of max daily solar production over last year"
     entity_id: sensor.symo_10_0_3_m_1_energy_day
@@ -36,22 +37,16 @@ sensor:
     sampling_size: 3153600 # With HA 2022.12, this is now optional
     max_age:
       days: 365
+
   - platform: filter
     name: Filtered pool pump power Lowpass Filter
     unique_id: id_pool_pump_power_lowpass_filter
     entity_id: sensor.pool_pump_current_power
     filters:
-      # - filter: time_simple_moving_average
       - filter: lowpass
-        time_constant: 20
-        precision: 2
-  - platform: statistics
-    name: Filtered pool pump power Average Linear 6mins
-    unique_id: id_pool_pump_power_ave_linear
-    entity_id: sensor.pool_pump_current_power
-    state_characteristic: average_linear
-    max_age:
-      minutes: 6
+        time_constant: 6
+        precision: 4
+
   - platform: statistics
     # From https://community.home-assistant.io/t/quick-bathroom-fan-humidity-switch-control/421996
     name: Ensuite Humidity Average Linear 24h
@@ -215,8 +210,10 @@ template:
         unique_id: id_pool_pump_status
         icon: mdi:pump
         state: >
-          {% set pool_power = states('sensor.filtered_pool_pump_power_average_linear_6mins') %}
-          {% if pool_power|is_number %}
+          {% set pool_power = states('sensor.filtered_pool_pump_power_lowpass_filter') %}
+          {% if states('switch.pool_pump') == 'off' %}
+            Off
+          {% elif pool_power|is_number %}
             {% set pool_power = pool_power|float %}
             {% if pool_power < 50 %}
               Off
@@ -238,6 +235,13 @@ template:
           milliseconds: 1500
         state: >
           {{ states('binary_sensor.cat_door_contact') }}
+  - binary_sensor:
+      - name: "Driveway light beam"
+        device_class: motion
+        delay_off:
+          milliseconds: 1500
+        state: >
+          {{ states('sensor.driveway_gate_light_beam') | float > 3.0 }}
 
 binary_sensor:
   - platform: group

@@ -158,6 +158,7 @@ close_gate_and_garage:
           minutes: 0
           seconds: 0
           milliseconds: 500
+    enabled: false
   - service: cover.close_cover
     data: {}
     target:

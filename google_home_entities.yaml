@@ -16,6 +16,7 @@ google_actions:
       - switch.workshop_power_strip
       - switch.gas_heater
       - switch.pool_robot
+      - switch.pool_pump
       - light.all_lights
       - light.alfresco_downlights
       - light.back_lounge_downlights
@@ -52,6 +53,7 @@ google_actions:
       - light.led_strip_workshop_shelf_dimmer
       - light.jess_wled_mk2
       - light.led_strip_fire_pit_dimmer
+      - light.led_strip_front_hall_dimmer
       - light.pool_light_controller_pool_lights
   # entity_config:
   #   script.sunset_lights:

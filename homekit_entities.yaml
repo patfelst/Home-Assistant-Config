@@ -23,6 +23,7 @@
       - switch.workshop_power_strip
       - switch.gas_heater
       - switch.pool_robot
+      - switch.pool_pump
       - light.all_lights
       - light.alfresco_downlights
       - light.back_lounge_downlights
@@ -47,6 +48,7 @@
       - light.laundry_path_bunker_light
       - light.led_strip_butlers_overhead_cupboards
       - light.led_strip_kitchen_kicker
+      - light.led_strip_front_hall_dimmer
       - light.meterbox_bunker
       - light.pool_perimeter_downlights
       - light.rear_flood_light

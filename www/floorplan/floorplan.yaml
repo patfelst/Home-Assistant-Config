@@ -237,7 +237,6 @@ config:
         - entity: light.led_strip_fire_pit_dimmer
           element: area.fire-pit
       tap_action: light.toggle
-      hold_action: more-info
       state_action:
         service: floorplan.class_set
         service_data: '${(entity.state === "on") ? "light-on" : "light-off"}'
@@ -280,7 +279,6 @@ config:
         - entity: light.led_strip_butlers_overhead_cupboards
           element: light.butlers-leds
       tap_action: light.toggle
-      hold_action: more-info
       state_action:
         service: floorplan.class_set
         service_data: '${(entity.state === "on") ? "light-on" : "light-off"}'
