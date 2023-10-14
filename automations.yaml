@@ -298,7 +298,6 @@
       data: {}
       target:
         entity_id:
-          - light.lamp_rhs_fireplace
           - light.stairs_light
           - light.back_lounge_pendant
           - light.kitchen_pendant
@@ -308,10 +307,24 @@
     - service: light.turn_on
       data:
         brightness_pct: 40
+        kelvin: 3300
       target:
         entity_id:
           - light.back_lounge_sideboard_lamp
+    - service: light.turn_on
+      data:
+        brightness_pct: 40
+        color_temp: 358
+      target:
+        entity_id:
           - light.front_hall_lamp
+    - service: light.turn_on
+      data:
+        brightness_pct: 50
+        color_temp: 358
+      target:
+        entity_id:
+          - light.lamp_rhs_fireplace
     - service: light.turn_on
       data:
         brightness_pct: 12
@@ -849,6 +862,17 @@
           - light.meterbox_bunker
           - light.front_north_side_flood
           - light.garage_downlights
+    - if:
+        - condition: time
+          after: input_datetime.lights_off_time_2
+      then:
+        - service: light.turn_off
+          data: {}
+          target:
+            entity_id:
+              - light.back_yard_lights
+              - light.pool_light_controller_pool_lights
+              - light.front_yard_lights
   mode: restart
 - id: "1669632348299"
   alias: Motion - Butler's pantry lights ON
@@ -1177,22 +1201,6 @@
           morning.
   mode: queued
   max: 10
-- id: "1671249454927"
-  alias: Counter - cat door increment
-  description: ""
-  trigger:
-    - platform: state
-      entity_id:
-        - binary_sensor.debounced_cat_door
-      from: "off"
-      to: "on"
-  condition: []
-  action:
-    - service: counter.increment
-      data: {}
-      target:
-        entity_id: counter.cat_door_counter
-  mode: single
 - id: "1671250102998"
   alias: Input booleans and counters - Reset and midnight
   description: ""
@@ -1201,10 +1209,6 @@
       at: 00:00:00
   condition: []
   action:
-    - service: counter.reset
-      data: {}
-      target:
-        entity_id: counter.cat_door_counter
     - service: input_boolean.turn_on
       data: {}
       target:
@@ -2665,7 +2669,7 @@
       for:
         hours: 0
         minutes: 0
-        seconds: 4
+        seconds: 2
   condition:
     - condition: template
       value_template:
@@ -2688,6 +2692,7 @@
         minutes: 0
         seconds: 2
         milliseconds: 0
+      enabled: false
     - service: cover.close_cover
       data: {}
       target:
@@ -2709,4 +2714,37 @@
       target:
         entity_id:
           - cover.blind_1
+  mode: single
+- id: "1696932809329"
+  alias: Blinds - close at 10:30AM if kitchen hot (>20C)
+  description: ""
+  trigger:
+    - platform: time
+      at: "10:30:00"
+  condition:
+    - condition: numeric_state
+      entity_id: climate.ac_kitchen
+      attribute: current_temperature
+      above: 20
+    - condition: numeric_state
+      entity_id: sensor.solarnet_energy_day
+      above: 9000
+  action:
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: Closed blinds to reduce heat
+        message:
+          Closed rear blinds 1, and 3-5 as it's {{ trigger.now | as_timestamp
+          | timestamp_custom('%I:%M %p') }} and kitchen temperature is above 20°C  ({{
+          state_attr('climate.ac_kitchen', 'current_temperature') | float | round(1)
+          }}°C), solar energy for the day is above 9,000Wh ({{ states('sensor.solarnet_energy_day')
+          | float | round(1) }}Wh)
+    - service: cover.close_cover
+      data: {}
+      target:
+        entity_id:
+          - cover.blind_1
+          - cover.blind_3
+          - cover.blind_4
+          - cover.blind_5
   mode: single

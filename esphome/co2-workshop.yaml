@@ -138,7 +138,7 @@ display:
     dc_pin: GPIO16
     reset_pin: GPIO23
     update_interval: 1s
-    rotation: 90
+    rotation: 270
     lambda: |-
       static int cal_msg_timout = 0;
 

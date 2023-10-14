@@ -56,11 +56,6 @@ sensor:
     max_age:
       hours: 24
 
-counter:
-  cat_door_counter:
-    name: Cat door counter
-    icon: mdi:cat
-
 cover:
   - platform: template
     covers:
@@ -228,13 +223,6 @@ template:
             Unknown
           {% endif %}
 
-  - binary_sensor:
-      - name: "Debounced cat door"
-        device_class: door
-        delay_off:
-          milliseconds: 1500
-        state: >
-          {{ states('binary_sensor.cat_door_contact') }}
   - binary_sensor:
       - name: "Driveway light beam"
         device_class: motion
