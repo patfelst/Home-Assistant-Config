@@ -177,11 +177,6 @@ config:
         service: floorplan.text_set
         service_data:
           text: ${entity.state}
-    - entity: counter.cat_door_counter
-      element: cat-door-time
-      state_action:
-        - service: floorplan.text_set
-          service_data: ${util.date.timeago(entity.last_updated)}
     - name: Covers
       entities:
         - entity: cover.garage_door
