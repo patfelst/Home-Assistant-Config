@@ -28,6 +28,7 @@ google_actions:
       - light.front_hall_lamp
       - light.front_lounge_downlight
       - light.front_lounge_pendant
+      - light.front_lounge_sideboard_lamp
       - light.front_north_side_flood
       - light.front_porch
       - light.front_garden_lights
@@ -47,7 +48,7 @@ google_actions:
       - light.rear_garden_lights
       - light.stairs_light
       - light.wir_downlight
-      - light.wiz_bedsside_lamp_1
+      - light.bedside_lamp_kathleen
       - light.workshop_downlight
       - light.workshop_rgb_light
       - light.led_strip_workshop_shelf_dimmer

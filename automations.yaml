@@ -306,8 +306,8 @@
           - light.pool_light_controller_pool_lights
     - service: light.turn_on
       data:
-        brightness_pct: 40
-        kelvin: 3300
+        brightness_pct: 35
+        kelvin: 2900
       target:
         entity_id:
           - light.back_lounge_sideboard_lamp
@@ -318,6 +318,17 @@
       target:
         entity_id:
           - light.front_hall_lamp
+    - service: light.turn_on
+      data:
+        brightness_pct: 25
+      target:
+        entity_id: light.led_strip_front_hall_dimmer
+    - service: light.turn_on
+      data:
+        brightness_pct: 30
+        color_temp: 358
+      target:
+        entity_id: light.front_lounge_sideboard_lamp
     - service: light.turn_on
       data:
         brightness_pct: 50
@@ -339,12 +350,7 @@
       data:
         brightness_pct: 25
       target:
-        entity_id: light.wiz_bedsside_lamp_1
-    - service: light.turn_on
-      data:
-        brightness_pct: 25
-      target:
-        entity_id: light.led_strip_front_hall_dimmer
+        entity_id: light.bedside_lamp_kathleen
   mode: single
 - id: "1668760849772"
   alias:
@@ -617,6 +623,15 @@
     - platform: state
       entity_id:
         - binary_sensor.workshop_ceiling_motion_occupancy
+      to: "off"
+      for:
+        hours: 0
+        minutes: 10
+        seconds: 0
+      enabled: false
+    - platform: state
+      entity_id:
+        - binary_sensor.ld2410_mmwave_presence
       to: "off"
       for:
         hours: 0
@@ -1618,7 +1633,8 @@
         - service: light.toggle
           data: {}
           target:
-            entity_id: light.wiz_bedsside_lamp_1
+            entity_id:
+              - light.bedside_lamp_kathleen
       press_double:
         - service: light.turn_on
           data: {}
@@ -2701,12 +2717,13 @@
           - cover.garage_door
   mode: single
 - id: "1696560418641"
-  alias: Blinds - open blind 1 at sunset
+  alias: Blinds - open blind 1 just before sunset
   description: ""
   trigger:
-    - platform: sun
-      event: sunset
-      offset: 0
+    - platform: numeric_state
+      entity_id: sun.sun
+      attribute: elevation
+      below: 3.5
   condition: []
   action:
     - service: cover.open_cover

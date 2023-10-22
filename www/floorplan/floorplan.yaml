@@ -150,8 +150,12 @@ config:
               }
               style = `fill: ${color}; fill-opacity: ${opacity};`;
               return style;
-    - entity: light.jess_wled_mk2
-      element: light.jess-led-strip
+    - name: RGB Lights
+      entities:
+        - entity: light.jess_wled_mk2
+          element: light.jess-led-strip
+        - entity: light.workshop_rgb_light
+          element: light.workshop-lamp-rgb
       tap_action: light.toggle
       hold_action: more-info
       state_action:
@@ -159,24 +163,17 @@ config:
         service_data:
           style: |
             >
-              console.log("Jess WLED State:" + entity.state + ", RGB color:" + entity.attributes.rgb_color);
               var style = '';
               var color = 'rgb(0, 0, 0)';
               var rgb = entity.attributes.rgb_color;
               if (entity.state == 'on') {
                 color = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-                style = `fill: ${color}; fill-opacity: 0.7;`;
+                style = `fill: ${color}; fill-opacity: 0.9;`;
               }
               else {
                 style = `fill-opacity: 0;`;
               }
               return style;
-    - entity: counter.cat_door_counter
-      element: cat-door-counter
-      state_action:
-        service: floorplan.text_set
-        service_data:
-          text: ${entity.state}
     - name: Covers
       entities:
         - entity: cover.garage_door
@@ -201,7 +198,7 @@ config:
           element: area.front-lounge
         - entity: light.front_garden_lights
           element: area.front-garden
-        - entity: light.wiz_bedsside_lamp_1
+        - entity: light.bedside_lamp_kathleen
           element: light.kathleen-bedside
         - entity: light.wir_downlight
           element: area.wir
@@ -239,6 +236,8 @@ config:
       entities:
         - entity: light.front_lounge_pendant
           element: light.front-lounge-pendant
+        - entity: light.front_lounge_sideboard_lamp
+          element: light.front-lounge-sideboard-lamp
         - entity: light.kitchen_pendant
           element: light.kitchen-pendant
         - entity: light.back_lounge_sideboard_lamp

@@ -267,6 +267,7 @@ light:
       - light.front_lounge_pendant
       - light.front_hall_lamp
       - light.led_strip_front_hall_dimmer
+      - light.front_lounge_sideboard_lamp
 
       - light.garage_downlights
       - light.workshop_downlight
@@ -276,7 +277,7 @@ light:
       - light.courtyard_flood_light
 
       - light.wir_downlight
-      - light.wiz_bedsside_lamp_1
+      - light.bedside_lamp_kathleen
       - light.jess_wled_mk2
 
       - light.laundry_downlight
@@ -294,7 +295,7 @@ light:
       - light.butlers_downlight
       - light.led_strip_butlers_overhead_cupboards
 
-      # Group: Back lounge lights (+laundry_path_bunker_light)
+      # Group: Back lounge lights
       - light.back_lounge_downlights
       - light.back_lounge_pendant
       - light.back_lounge_sideboard_lamp
@@ -324,6 +325,7 @@ light:
       - light.front_lounge_pendant
       - light.front_hall_lamp
       - light.led_strip_front_hall_dimmer
+      - light.front_lounge_sideboard_lamp
   - platform: group
     name: "Kitchen lights"
     entities:
