@@ -209,16 +209,16 @@
       data:
         title: Garage Door!
         message:
-          Garage door has been open for {{ ((trigger.for.seconds) | int) / 60
-          }} minutes
+          Garage door has been open for {{ (((trigger.for.seconds) | int) / 60)
+          | round(0) }} minutes
     - service: tts.cloud_say
       data:
         entity_id:
           - media_player.back_longe_speaker
           - media_player.workshop_speaker
         message:
-          Garage door has been open for {{ ((trigger.for.seconds) | int) / 60
-          }} minutes
+          Garage door has been open for {{ (((trigger.for.seconds) | int) / 60)
+          | round(0) }} minutes
     - delay:
         hours: 0
         minutes: 15
@@ -1185,7 +1185,8 @@
         message:
           'Shelly "{{ trigger.to_state.name | replace(" Device Temperature",
           "") }}" is {{ trigger.to_state.state }}°C. {{ ''\n'' -}} [Above trigger of
-          {{ trigger.above }}°C for {{ ((trigger.for.seconds) | int) / 60 }} minutes.]
+          {{ trigger.above }}°C for {{ (((trigger.for.seconds) | int) / 60) | round(0)
+          }} minutes.]
 
           '
   mode: single
@@ -1834,6 +1835,10 @@
     - condition: state
       entity_id: sensor.patricks_iphone_13_activity
       state: Automotive
+    - condition: template
+      value_template:
+        "{{ now() - state_attr('automation.automatic_open_garage_and_gate_when_kathleen_arrives_home_in_when_driving',
+        'last_triggered') > timedelta(seconds=30) }}"
   action:
     - delay:
         hours: 0
@@ -1842,15 +1847,6 @@
         milliseconds: 0
     - service: script.open_gate_and_garage
       data: {}
-    - delay:
-        hours: 0
-        minutes: 1
-        seconds: 15
-        milliseconds: 0
-      enabled: false
-    - service: script.close_gate_and_garage
-      data: {}
-      enabled: false
   mode: single
 - id: "1679726945385"
   alias: Automatic - open garage and gate when KATHLEEN arrives home in when driving
@@ -1869,6 +1865,10 @@
     - condition: state
       entity_id: sensor.kathleens_iphone_activity
       state: Automotive
+    - condition: template
+      value_template:
+        "{{ now() - state_attr('automation.automatic_open_garage_when_person_arrives_home_in_when_driving',
+        'last_triggered') > timedelta(seconds=30) }}"
   action:
     - delay:
         hours: 0
@@ -1877,15 +1877,6 @@
         milliseconds: 0
     - service: script.open_gate_and_garage
       data: {}
-    - delay:
-        hours: 0
-        minutes: 1
-        seconds: 15
-        milliseconds: 0
-      enabled: false
-    - service: script.close_gate_and_garage
-      data: {}
-      enabled: false
   mode: single
 - id: "1679792693634"
   alias: Button - Garage, control gate and garage door
@@ -2440,7 +2431,7 @@
                 title: Pool heater
                 message:
                   Turned off pool heater because importing power from grid for {{
-                  (((trigger.for.seconds) | int) / 60) | round(0) }} mins
+                  (((trigger.for.seconds) | int) / 60) | round(0) }} minutes.
         - conditions:
             - condition: trigger
               id:
@@ -2764,4 +2755,180 @@
           - cover.blind_3
           - cover.blind_4
           - cover.blind_5
+  mode: single
+- id: "1697950024288"
+  alias: Light - front hall lamp RED when front door / gate open or unlocked 15 mins
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - lock.yale_smartlock_front_door
+      to: unlocked
+      for:
+        hours: 0
+        minutes: 15
+        seconds: 0
+    - platform: state
+      entity_id:
+        - binary_sensor.front_door_aqara_contact
+      to: "on"
+      for:
+        hours: 0
+        minutes: 15
+        seconds: 0
+    - platform: state
+      entity_id:
+        - cover.garage_door
+      to: open
+      for:
+        hours: 0
+        minutes: 15
+        seconds: 0
+    - platform: state
+      entity_id:
+        - cover.driveway_gate
+      for:
+        hours: 0
+        minutes: 15
+        seconds: 0
+      to: open
+  condition: []
+  action:
+    - service: light.turn_on
+      data:
+        rgb_color:
+          - 255
+          - 0
+          - 0
+        brightness_pct: 100
+      target:
+        entity_id: light.front_hall_lamp
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: lock.yale_smartlock_front_door
+              state: unlocked
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Security alert!
+                message:
+                  Front door has been unlocked for {{ (((trigger.for.seconds) | int)
+                  / 60) | round(0) }} minutes. Will try and lock it now, but please double
+                  check it.
+                data:
+                  push:
+                    sound:
+                      name: default
+                      critical: 1
+                      volume: 0.5
+            - service: lock.lock
+              data: {}
+              target:
+                entity_id: lock.yale_smartlock_front_door
+        - conditions:
+            - condition: state
+              entity_id: binary_sensor.front_door_aqara_contact
+              state: "on"
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Security alert!
+                message:
+                  Front door has been open for {{ (((trigger.for.seconds) | int)
+                  / 60) | round(0) }} minutes. Please go and close it.
+                data:
+                  push:
+                    sound:
+                      name: default
+                      critical: 1
+                      volume: 0.5
+        - conditions:
+            - condition: state
+              entity_id: cover.garage_door
+              state: open
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Security alert!
+                message:
+                  Garage door has been open for {{ (((trigger.for.seconds) | int)
+                  / 60) | round(0) }} minutes. Please go and close it.
+                data:
+                  push:
+                    sound:
+                      name: default
+                      critical: 1
+                      volume: 0.5
+        - conditions:
+            - condition: state
+              entity_id: cover.driveway_gate
+              state: open
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Security alert!
+                message:
+                  Driveway gate has been open for {{ (((trigger.for.seconds) | int)
+                  / 60) | round(0) }} minutes. Please go and close it.
+                data:
+                  push:
+                    sound:
+                      name: default
+                      critical: 1
+                      volume: 0.5
+  mode: single
+- id: "1697960300615"
+  alias: Light - front hall lamp REMOVE RED when front door / gate closed
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - lock.yale_smartlock_front_door
+      to: locked
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 0
+    - platform: state
+      entity_id:
+        - binary_sensor.front_door_aqara_contact
+      to: "off"
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 0
+    - platform: state
+      entity_id:
+        - cover.garage_door
+      to: closed
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 0
+    - platform: state
+      entity_id:
+        - cover.driveway_gate
+      to: closed
+  condition:
+    - condition: template
+      value_template: "{{ is_state_attr('light.front_hall_lamp' , 'rgb_color' ,
+        (255, 0, 0)) }}"
+  action:
+    - if:
+        - condition: state
+          entity_id: light.led_strip_front_hall_dimmer
+          state: "on"
+      then:
+        - service: light.turn_on
+          data:
+            color_temp: 358
+            brightness_pct: 40
+          target:
+            entity_id: light.front_hall_lamp
+      else:
+        - service: light.turn_off
+          data: {}
+          target:
+            entity_id: light.front_hall_lamp
   mode: single
