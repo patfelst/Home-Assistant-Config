@@ -156,6 +156,8 @@ config:
           element: light.jess-led-strip
         - entity: light.workshop_rgb_light
           element: light.workshop-lamp-rgb
+        - entity: light.front_hall_lamp
+          element: light.front-hall-lamp
       tap_action: light.toggle
       hold_action: more-info
       state_action:

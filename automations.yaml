@@ -325,8 +325,8 @@
         entity_id: light.led_strip_front_hall_dimmer
     - service: light.turn_on
       data:
-        brightness_pct: 30
         color_temp: 358
+        brightness_pct: 18
       target:
         entity_id: light.front_lounge_sideboard_lamp
     - service: light.turn_on
@@ -879,15 +879,24 @@
           - light.garage_downlights
     - if:
         - condition: time
+          after: input_datetime.lights_off_time_1
+      then:
+        - service: light.turn_off
+          data: {}
+          target:
+            entity_id:
+              - light.front_garden_lights
+              - light.rear_garden_lights
+    - if:
+        - condition: time
           after: input_datetime.lights_off_time_2
       then:
         - service: light.turn_off
           data: {}
           target:
             entity_id:
-              - light.back_yard_lights
               - light.pool_light_controller_pool_lights
-              - light.front_yard_lights
+              - light.led_strip_fire_pit_dimmer
   mode: restart
 - id: "1669632348299"
   alias: Motion - Butler's pantry lights ON
