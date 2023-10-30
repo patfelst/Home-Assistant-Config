@@ -180,7 +180,7 @@ globals:
   # - interval: 2s
   #   then:
   #     # - light.turn_on: five_rgb
-  #     - light.addressable_set:
+  #     - light.addressa ble_set:
   #         id: five_rgb
   #         range_from: 0
   #         range_to: 4

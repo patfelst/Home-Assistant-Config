@@ -313,7 +313,7 @@
           - light.back_lounge_sideboard_lamp
     - service: light.turn_on
       data:
-        brightness_pct: 40
+        brightness_pct: 35
         color_temp: 358
       target:
         entity_id:
@@ -437,41 +437,61 @@
         - binary_sensor.workshop_ceiling_motion_occupancy
       from: "off"
       to: "on"
-      enabled: false
+      enabled: true
+      id: motion detected
     - platform: state
       entity_id:
         - binary_sensor.ld2410_mmwave_presence
       to: "on"
+      id: motion detected
+    - platform: state
+      entity_id:
+        - binary_sensor.ld2410_mmwave_presence
+      to: "off"
+      for:
+        hours: 0
+        minutes: 4
+        seconds: 0
+    - platform: state
+      entity_id:
+        - binary_sensor.workshop_ceiling_motion_occupancy
+      to: "off"
+      for:
+        hours: 0
+        minutes: 4
+        seconds: 0
   condition: []
   action:
-    - service: light.turn_on
-      data:
-        brightness_pct: 100
-      target:
-        entity_id:
-          - light.workshop_downlight
-          - light.led_strip_workshop_shelf_dimmer
-    - wait_for_trigger:
-        - platform: state
-          entity_id:
-            - binary_sensor.workshop_ceiling_motion_occupancy
-          to: "off"
-          enabled: false
-        - platform: state
-          entity_id:
-            - binary_sensor.ld2410_mmwave_presence
-          to: "off"
-    - delay:
-        hours: 0
-        minutes: 5
-        seconds: 0
-        milliseconds: 0
-    - service: light.turn_off
-      data: {}
-      target:
-        entity_id:
-          - light.workshop_downlight
-          - light.led_strip_workshop_shelf_dimmer
+    - if:
+        - condition: trigger
+          id:
+            - motion detected
+      then:
+        - if:
+            - condition: state
+              entity_id: input_boolean.sleep_mode
+              state: "on"
+          then:
+            - service: light.turn_on
+              data:
+                brightness_pct: 33
+              target:
+                entity_id: light.led_strip_workshop_shelf_dimmer
+          else:
+            - service: light.turn_on
+              data:
+                brightness_pct: 100
+              target:
+                entity_id:
+                  - light.workshop_downlight
+                  - light.led_strip_workshop_shelf_dimmer
+      else:
+        - service: light.turn_off
+          data: {}
+          target:
+            entity_id:
+              - light.workshop_downlight
+              - light.led_strip_workshop_shelf_dimmer
   mode: restart
 - id: "1668855016367"
   alias: Auto off - all lights and power when last person leaves house
@@ -980,66 +1000,6 @@
           - media_player.workshop_speaker
         message: "{{ trigger.entity_id | replace('person.', '') }} is home"
   mode: single
-- id: "1669800353514"
-  alias: Motion - WIR downlights
-  description: Bright during day, dim at night
-  trigger:
-    - platform: state
-      entity_id:
-        - binary_sensor.wir_sensor_occupancy
-      to: "on"
-      from: "off"
-  condition: []
-  action:
-    - choose:
-        - conditions:
-            - condition: state
-              entity_id: input_boolean.sleep_mode
-              state: "off"
-          sequence:
-            - service: light.turn_on
-              data:
-                brightness_pct: 100
-              target:
-                entity_id: light.wir_downlight
-            - wait_for_trigger:
-                - platform: state
-                  entity_id:
-                    - binary_sensor.wir_sensor_occupancy
-                  from: "on"
-                  to: "off"
-            - delay:
-                hours: 0
-                minutes: 2
-                seconds: 0
-                milliseconds: 0
-    - choose:
-        - conditions:
-            - condition: state
-              entity_id: input_boolean.sleep_mode
-              state: "on"
-          sequence:
-            - service: light.turn_on
-              data:
-                brightness_pct: 7
-              target:
-                entity_id: light.wir_downlight
-            - wait_for_trigger:
-                - platform: state
-                  entity_id:
-                    - binary_sensor.wir_sensor_occupancy
-                  from: "on"
-                  to: "off"
-            - delay:
-                hours: 0
-                minutes: 0
-                seconds: 30
-                milliseconds: 0
-    - service: light.turn_off
-      data: {}
-      target:
-        entity_id: light.wir_downlight
-  mode: restart
 - id: "1669888397242"
   alias: Notify - Leaving home and a door left open
   description: ""
@@ -1508,8 +1468,10 @@
         message:
           "{% set ups_msg = trigger.event.data.notify_msg | replace('UPS@localhost
           ', '') %} {% if 'battery' in ups_msg %}\n  Power outage! Running on UPS.\n{%
-          elif 'line' in ups_msg %}\n  Power restored. UPS charging.\n{% endif -%} Battery
-          level is {{ states('sensor.ups_battery_charge') }}%\n"
+          elif 'line' in ups_msg %}\n  Power restored. UPS charging.\n{% endif -%} {%
+          set ups_msg_2 = (states('sensor.ups_battery_charge') | int) %} Battery level
+          is  {%- if ups_msg_2 is number %}\n  {{ ups_msg_2 }}%\n{% else %}\n  {{ states('sensor.ups_battery_charge')
+          }}\n{% endif -%}\n"
   mode: single
 - id: "1675156383173"
   alias: Notify - Leaving home and a window left open
@@ -1614,7 +1576,7 @@
           importing power)
   mode: single
 - id: "1677320260752"
-  alias: Lights - garden lights off (first ~8pm)
+  alias: Lights - garden lights off (first time of day)
   description: ""
   trigger:
     - platform: numeric_state
@@ -1632,6 +1594,7 @@
         entity_id:
           - light.front_garden_lights
           - light.rear_garden_lights
+          - light.front_lounge_sideboard_lamp
   mode: single
 - id: "1677793921989"
   alias: Button - Kathleen's bedside
@@ -1808,7 +1771,7 @@
               milliseconds: 0
   mode: restart
 - id: "1678699026931"
-  alias: Lights - pool & fire-pit lights off (second ~8:30pm)
+  alias: Lights - pool & fire-pit lights off (second time of day)
   description: ""
   trigger:
     - platform: numeric_state
@@ -2013,13 +1976,6 @@
       power_sensor: sensor.washing_machine_current_power
       starting_threshold: 100
       actions:
-        - service: tts.cloud_say
-          data:
-            cache: false
-            entity_id:
-              - media_player.back_longe_speaker
-              - media_player.workshop_speaker
-            message: Washing machine finished, please hang out the washing
         - service: notify.patrick_and_kathleen
           data:
             title: Washing machine finish
@@ -2028,23 +1984,29 @@
               | timestamp_custom('%I:%M %p') }})
 
               "
-        - delay:
-            hours: 0
-            minutes: 10
-            seconds: 0
-            milliseconds: 0
-        - service: tts.cloud_say
-          data:
-            cache: false
-            entity_id:
-              - media_player.back_longe_speaker
-              - media_player.workshop_speaker
-            message: Washing machine finished, please hang out the washing
+        - if:
+            - condition: sun
+              before: sunset
+          then:
+            - service: light.turn_on
+              data:
+                color_name: purple
+                brightness_pct: 100
+              target:
+                entity_id: light.back_lounge_sideboard_lamp
+          else:
+            - service: light.turn_on
+              data:
+                color_name: purple
+                brightness_pct: 50
+              target:
+                entity_id: light.back_lounge_sideboard_lamp
       pre_actions:
         - service: notify.mobile_app_patricks_iphone_13
           data:
             title: Washing machine started
             message: Sit back and relax while the machines do your work!
+          enabled: false
       starting_hysteresis: 5
       finishing_threshold: 1
 - id: "1681615571224"
@@ -2656,13 +2618,13 @@
           is above {{ trigger.above }} and exporting more than 5kW (nobody is home)
   mode: single
 - id: "1695267626675"
-  alias: "Blinds - open all (except #1) in the afternoon when sun < 20°"
+  alias: "Blinds - open all (except #1) in the afternoon when sun < 25°"
   description: ""
   trigger:
     - platform: numeric_state
       entity_id: sun.sun
       attribute: elevation
-      below: 20
+      below: 25
   condition: []
   action:
     - service: cover.open_cover
@@ -2708,7 +2670,7 @@
         minutes: 0
         seconds: 2
         milliseconds: 0
-      enabled: false
+      enabled: true
     - service: cover.close_cover
       data: {}
       target:
@@ -2777,6 +2739,7 @@
         hours: 0
         minutes: 15
         seconds: 0
+      id: front door lock
     - platform: state
       entity_id:
         - binary_sensor.front_door_aqara_contact
@@ -2785,6 +2748,7 @@
         hours: 0
         minutes: 15
         seconds: 0
+      id: front door
     - platform: state
       entity_id:
         - cover.garage_door
@@ -2793,6 +2757,7 @@
         hours: 0
         minutes: 15
         seconds: 0
+      id: garage door
     - platform: state
       entity_id:
         - cover.driveway_gate
@@ -2801,6 +2766,7 @@
         minutes: 15
         seconds: 0
       to: open
+      id: driveway gate
   condition: []
   action:
     - service: light.turn_on
@@ -2812,11 +2778,19 @@
         brightness_pct: 100
       target:
         entity_id: light.front_hall_lamp
+    - service: tts.cloud_say
+      data:
+        entity_id:
+          - media_player.back_longe_speaker
+          - media_player.workshop_speaker
+        message:
+          Garage door has been open for {{ (((trigger.for.seconds) | int) / 60)
+          | round(0) }} minutes
     - choose:
         - conditions:
-            - condition: state
-              entity_id: lock.yale_smartlock_front_door
-              state: unlocked
+            - condition: trigger
+              id:
+                - front door lock
           sequence:
             - service: notify.mobile_app_patricks_iphone_13
               data:
@@ -2831,14 +2805,23 @@
                       name: default
                       critical: 1
                       volume: 0.5
+            - service: tts.cloud_say
+              data:
+                entity_id:
+                  - media_player.back_longe_speaker
+                  - media_player.workshop_speaker
+                message:
+                  Front door has been unlocked for {{ (((trigger.for.seconds) | int)
+                  / 60) | round(0) }} minutes. Will try and lock it now, but please double
+                  check it.
             - service: lock.lock
               data: {}
               target:
                 entity_id: lock.yale_smartlock_front_door
         - conditions:
-            - condition: state
-              entity_id: binary_sensor.front_door_aqara_contact
-              state: "on"
+            - condition: trigger
+              id:
+                - front door
           sequence:
             - service: notify.mobile_app_patricks_iphone_13
               data:
@@ -2852,10 +2835,18 @@
                       name: default
                       critical: 1
                       volume: 0.5
+            - service: tts.cloud_say
+              data:
+                entity_id:
+                  - media_player.back_longe_speaker
+                  - media_player.workshop_speaker
+                message:
+                  Front door has been open for {{ (((trigger.for.seconds) | int)
+                  / 60) | round(0) }} minutes. Please go and close it.
         - conditions:
-            - condition: state
-              entity_id: cover.garage_door
-              state: open
+            - condition: trigger
+              id:
+                - garage door
           sequence:
             - service: notify.mobile_app_patricks_iphone_13
               data:
@@ -2869,10 +2860,18 @@
                       name: default
                       critical: 1
                       volume: 0.5
+            - service: tts.cloud_say
+              data:
+                entity_id:
+                  - media_player.back_longe_speaker
+                  - media_player.workshop_speaker
+                message:
+                  Garage door has been open for {{ (((trigger.for.seconds) | int)
+                  / 60) | round(0) }} minutes. Please go and close it.
         - conditions:
-            - condition: state
-              entity_id: cover.driveway_gate
-              state: open
+            - condition: trigger
+              id:
+                - driveway gate
           sequence:
             - service: notify.mobile_app_patricks_iphone_13
               data:
@@ -2886,6 +2885,14 @@
                       name: default
                       critical: 1
                       volume: 0.5
+            - service: tts.cloud_say
+              data:
+                entity_id:
+                  - media_player.back_longe_speaker
+                  - media_player.workshop_speaker
+                message:
+                  Driveway gate has been open for {{ (((trigger.for.seconds) | int)
+                  / 60) | round(0) }} minutes. Please go and close it.
   mode: single
 - id: "1697960300615"
   alias: Light - front hall lamp REMOVE RED when front door / gate closed
@@ -2940,4 +2947,233 @@
           data: {}
           target:
             entity_id: light.front_hall_lamp
+  mode: single
+- id: "1698489586090"
+  alias: Button - washing machine
+  description: Turn off PURPLE washing machine light
+  use_blueprint:
+    path: CrazyCoder/zigbee2mqtt_aqara_wireless_switch.yaml
+    input:
+      action_sensor: sensor.button_washing_machine_action
+      press_double:
+        - service: light.toggle
+          data: {}
+          target:
+            entity_id:
+              - light.laundry_downlight
+              - light.laundry_path_bunker_light
+      press_single:
+        - if:
+            - condition: or
+              conditions:
+                - condition: numeric_state
+                  entity_id: sun.sun
+                  attribute: elevation
+                  above: 5
+                - condition: state
+                  entity_id: input_boolean.sleep_mode
+                  state: ""
+          then:
+            - service: light.turn_off
+              data: {}
+              target:
+                entity_id: light.back_lounge_sideboard_lamp
+          else:
+            - if: []
+              then:
+                - service: light.turn_on
+                  data:
+                    brightness_pct: 35
+                    kelvin: 2900
+                  target:
+                    entity_id: light.back_lounge_sideboard_lamp
+- id: "1698533404217"
+  alias: Motion - butlers pantry lights v2
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.butlers_sensor_occupancy
+      to: "on"
+      id: motion detected
+    - platform: state
+      entity_id:
+        - binary_sensor.butlers_sensor_occupancy
+      to: "off"
+      id: no motion
+      for:
+        hours: 0
+        minutes: 4
+        seconds: 0
+  condition: []
+  action:
+    - if:
+        - condition: trigger
+          id:
+            - motion detected
+      then:
+        - if:
+            - condition: state
+              entity_id: input_boolean.sleep_mode
+              state: "on"
+          then:
+            - service: light.turn_on
+              data:
+                brightness_pct: 2
+              target:
+                entity_id:
+                  - light.led_strip_butlers_overhead_cupboards
+          else:
+            - service: light.turn_on
+              data:
+                brightness_pct: 50
+              target:
+                entity_id:
+                  - light.butlers_downlight
+                  - light.led_strip_butlers_overhead_cupboards
+      else:
+        - service: light.turn_off
+          data: {}
+          target:
+            entity_id:
+              - light.butlers_downlight
+              - light.led_strip_butlers_overhead_cupboards
+  mode: single
+- id: "1698534798412"
+  alias: Motion - WIR downlights
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.wir_sensor_occupancy
+      to: "on"
+      id: motion detected
+    - platform: state
+      entity_id:
+        - binary_sensor.wir_sensor_occupancy
+      to: "off"
+      for:
+        hours: 0
+        minutes: 2
+        seconds: 0
+  condition: []
+  action:
+    - if:
+        - condition: trigger
+          id:
+            - motion detected
+      then:
+        - if:
+            - condition: state
+              entity_id: input_boolean.sleep_mode
+              state: "on"
+          then:
+            - service: light.turn_on
+              data:
+                brightness_pct: 7
+              target:
+                entity_id: light.wir_downlight
+          else:
+            - service: light.turn_on
+              data:
+                brightness_pct: 100
+              target:
+                entity_id: light.wir_downlight
+      else:
+        - service: light.turn_off
+          data: {}
+          target:
+            entity_id: light.wir_downlight
+  mode: single
+- id: "1698537751935"
+  alias: Motion - Hallway turn lights v2
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.hallway_sensor_occupancy
+      to: "on"
+      id: motion detected
+    - platform: state
+      entity_id:
+        - binary_sensor.hallway_sensor_occupancy
+      to: "off"
+      for:
+        hours: 0
+        minutes: 2
+        seconds: 40
+  condition:
+    - condition: state
+      entity_id: input_boolean.sleep_mode
+      state: "on"
+  action:
+    - if:
+        - condition: trigger
+          id:
+            - motion detected
+      then:
+        - service: light.turn_on
+          data:
+            brightness_pct: 5
+          target:
+            entity_id: light.led_strip_kitchen_kicker
+        - service: light.turn_on
+          data:
+            brightness_step_pct: 10
+          target:
+            entity_id: light.led_strip_front_hall_dimmer
+      else:
+        - service: light.turn_off
+          data: {}
+          target:
+            entity_id:
+              - light.led_strip_kitchen_kicker
+              - light.led_strip_front_hall_dimmer
+  mode: single
+- id: "1698538309359"
+  alias: Motion - garage lights
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.garage_sensor_occupancy
+      to: "on"
+      id: motion detected
+    - platform: state
+      entity_id:
+        - cover.garage_door
+      to: opening
+      id: motion detected
+    - platform: state
+      entity_id:
+        - binary_sensor.garage_sensor_occupancy
+      to: "off"
+      for:
+        hours: 0
+        minutes: 7
+        seconds: 0
+    - platform: state
+      entity_id:
+        - cover.garage_door
+      to: closed
+      for:
+        hours: 0
+        minutes: 7
+        seconds: 0
+  condition: []
+  action:
+    - if:
+        - condition: trigger
+          id:
+            - motion detected
+      then:
+        - service: light.turn_on
+          data: {}
+          target:
+            entity_id: light.garage_downlights
+      else:
+        - service: light.turn_off
+          data: {}
+          target:
+            entity_id: light.garage_downlights
   mode: single

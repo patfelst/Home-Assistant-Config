@@ -1,0 +1,355 @@
+substitutions:
+  devicename: "hlk-ld1115h-mmwave" #Rename the device what you want.
+  led_brightness: "0.75"
+
+esphome:
+  friendly_name: LD1115H
+  name: $devicename
+  on_boot:    #LD1115H Initial Setting
+    - priority: -200
+      then:
+        - uart.write:
+            id: LD1115H_UART_BUS
+            data: !lambda |-
+              std::string th1st = "th1=" + str_sprintf("%.0f",id(LD1115H_TH1).state) +" \n";
+              return std::vector<uint8_t>(th1st.begin(), th1st.end());
+        - uart.write:
+            id: LD1115H_UART_BUS
+            data: !lambda |-
+              std::string th2st = "th2=" + str_sprintf("%.0f",id(LD1115H_TH2).state) +" \n";
+              return std::vector<uint8_t>(th2st.begin(), th2st.end());
+    - priority: 600
+      then:
+        - light.turn_on: rgb_led_strip
+        - light.addressable_set:
+            id: rgb_led_strip
+            range_from: 0
+            range_to: 3
+            color_brightness: ${led_brightness}
+            red: 0.0
+            green: 1.0
+            blue: 0.0
+        - delay: 400ms
+        - light.addressable_set:
+            id: rgb_led_strip
+            range_from: 0
+            range_to: 3
+            color_brightness: ${led_brightness}
+            red: 0.0
+            green: 0.0
+            blue: 0.0
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf  #Suggest Use ESP-IDF Framework, or Plug Out the UART Cable Might Cause ESP32 Hang. 
+    version: recommended
+external_components:
+  - source:
+      type: git
+      url: https://github.com/ssieb/custom_components #Thanks for @ssieb components.
+    components: [ serial ]
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "f8jKtVJ87pTsOni10+ZrWcIuinY9Zmjd6diAd5BHyO0="
+
+ota:
+  password: "17f9989b8959b9eac4ba0dd49f23bbe8"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  power_save_mode: LIGHT
+
+logger:
+  level: INFO  #You Can Use "INFO" Level
+  baud_rate: 0
+
+button:
+  - platform: restart
+    name: ESP32 restart
+
+light:
+  - platform: esp32_rmt_led_strip
+    rgb_order: GRB
+    pin: GPIO25
+    num_leds: 4
+    rmt_channel: 0
+    chipset: ws2812
+    name: "RGB LED"
+    id: rgb_led_strip
+    default_transition_length: 10ms
+
+uart:
+  id: LD1115H_UART_BUS
+  rx_pin: GPIO19  #For ESP32, you can use any pin, Recommend Use UART_2, Don't use UART_0, It might Cause Boot Fail or System Hang
+  tx_pin: GPIO21  #For ESP32, you can use any pin, Recommend Use UART_2, Don't use UART_0, It might Cause Boot Fail or System Hang
+  baud_rate: 115200
+  data_bits: 8
+  stop_bits: 1
+  parity: NONE
+  setup_priority: 200 #Set Priority To Prevent Boot Loop or Fail
+#  debug:
+#    direction: BOTH
+#    dummy_receiver: false
+#    after:
+#      delimiter: "\n"
+#    sequence:
+#      - lambda: UARTDebug::log_string(direction, bytes);
+globals:
+  - id: LD1115H_Last_Time
+    type: time_t
+    restore_value: no
+    initial_value: time(NULL)
+  - id: LD1115H_Last_Mov_Time
+    type: time_t
+    restore_value: no
+    initial_value: time(NULL)
+  - id: LD1115H_Clearence_Status
+    type: bool
+    restore_value: no
+    initial_value: "false"
+#web_server:   #Avoid Using Web Server To Prevent Hang
+#  port: 80
+
+interval:
+  - interval: 1s #Clearance Scan Time
+    setup_priority: -200
+    then:
+      lambda: |-
+        if ((time(NULL)-id(LD1115H_Last_Time))>id(LD1115H_Clear_Time).state) {
+          if ((id(LD1115H_Clearence_Status) == false) || (id(LD1115H_Occupancy).state != "Clearance")) {
+            id(LD1115H_Occupancy).publish_state("Clearance");
+            id(LD1115H_Clearence_Status) = true;
+          }
+          if (id(LD1115H_MovOcc_Binary).state == true) {
+            id(LD1115H_MovOcc_Binary).publish_state(false);
+          }
+          if (id(LD1115H_Mov_Binary).state == true) {
+            id(LD1115H_Mov_Binary).publish_state(false);
+          }
+        }
+
+number:
+  - platform: template
+    name: TH1 #TH1 is Movement/Motion Sensitivity
+    id: LD1115H_TH1
+    icon: "mdi:cogs"
+    optimistic: true
+    restore_value: true #If you don't want to store the setting at ESP, set it to false.
+    initial_value: "120" #Default TH1 Setting
+    min_value: 20
+    max_value: 1200
+    step: 10
+    set_action:
+      then:
+        - uart.write:
+            id: LD1115H_UART_BUS
+            data: !lambda |-
+              std::string th1st = "th1=" + str_sprintf("%.0f",x) +" \n";
+              return std::vector<uint8_t>(th1st.begin(), th1st.end());
+  - platform: template
+    name: TH2 #TH2 is Occupancy/Presence Sensitivity
+    id: LD1115H_TH2
+    icon: "mdi:cogs"
+    optimistic: true
+    restore_value: true #If you don't want to store the setting at ESP, set it to false.
+    initial_value: "250" #Default TH2 Setting
+    min_value: 50
+    max_value: 2500
+    step: 10
+    set_action:
+      then:
+        - uart.write:
+            id: LD1115H_UART_BUS
+            data: !lambda |-
+              std::string th2st = "th2=" + str_sprintf("%.0f",x) +" \n";
+              return std::vector<uint8_t>(th2st.begin(), th2st.end());
+  - platform: template
+    name: Clearence Time
+    id: LD1115H_Clear_Time
+    icon: "mdi:cogs"
+    optimistic: true
+    restore_value: true #If you don't want to store the setting at ESP, set it to false.
+    initial_value: "5" #LD1115H Mov/Occ > Clearence Time Here
+    min_value: 0.5
+    max_value: 20
+    step: 0.5
+  - platform: template
+    name: Movement Time
+    id: LD1115H_Mov_Time
+    icon: "mdi:cogs"
+    optimistic: true
+    restore_value: true #If you don't want to store the setting at ESP, set it to false.
+    initial_value: "1" #LD1115H Mov > Occ Time Here
+    min_value: 0.5
+    max_value: 10
+    step: 0.5
+
+sensor:
+  - platform: wifi_signal
+    name: WiFi Signal
+    update_interval: 60s
+  - platform: uptime
+    name: Uptime
+  - platform: template
+    name: Spectral line
+    id: LD1115H_Spectral
+    icon: "mdi:radar"
+    unit_of_measurement: ""
+    accuracy_decimals: 0
+  - platform: template
+    name: Signal Strength
+    id: LD1115H_Signal
+    icon: "mdi:signal-distance-variant"
+    unit_of_measurement: ""
+    accuracy_decimals: 0
+    filters:    # Use Fliter To Debounce
+    - sliding_window_moving_average:
+        window_size: 8
+        send_every: 2
+    - heartbeat: 0.2s
+    on_value:
+      then:
+        - light.addressable_set:
+            id: rgb_led_strip
+            range_from: 3
+            range_to: 3
+            # Sig strenght max is about 26,000
+            color_brightness: !lambda |-
+              float bright = (float)x;
+              const float divisor = 10000.0;
+              if (bright > divisor) bright = divisor;
+              return bright / divisor;
+            red: 0.0
+            green: 0.0
+            blue: 1.0
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+    ssid:
+      name: SSID
+    bssid:
+      name: BSSID
+    mac_address:
+      name: Mac Address
+
+  - platform: serial
+    uart_id: LD1115H_UART_BUS
+    name: UART Text
+    id: LD1115H_UART_Text
+    icon: "mdi:format-text"
+    internal: True #If Don't Want to See UART Receive Data, Set To True
+    on_value:
+      lambda: |-
+        if (id(LD1115H_UART_Text).state.substr(0,3) == "occ") {
+          id(LD1115H_Signal).publish_state(atof(id(LD1115H_UART_Text).state.substr(7).c_str()));
+          id(LD1115H_Spectral).publish_state(atof(id(LD1115H_UART_Text).state.substr(5,2).c_str()));
+          if ((time(NULL)-id(LD1115H_Last_Mov_Time))>id(LD1115H_Mov_Time).state) {
+            id(LD1115H_Occupancy).publish_state("Occupancy");
+            if (id(LD1115H_MovOcc_Binary).state == false) {
+              id(LD1115H_MovOcc_Binary).publish_state(true);
+            }
+            if (id(LD1115H_Mov_Binary).state == true) {
+              id(LD1115H_Mov_Binary).publish_state(false);
+            }
+          }
+          if (id(LD1115H_MovOcc_Binary).state == false) {
+            id(LD1115H_MovOcc_Binary).publish_state(true);
+          }
+          id(LD1115H_Last_Time) = time(NULL);
+          if (id(LD1115H_Clearence_Status) == true) {
+            id(LD1115H_Clearence_Status) = false;
+          }
+        }
+        else if (id(LD1115H_UART_Text).state.substr(0,3) == "mov") {
+          id(LD1115H_Signal).publish_state(atof(id(LD1115H_UART_Text).state.substr(7).c_str()));
+          id(LD1115H_Spectral).publish_state(atof(id(LD1115H_UART_Text).state.substr(5,2).c_str()));
+          id(LD1115H_Occupancy).publish_state("Movement");
+          if (id(LD1115H_MovOcc_Binary).state == false) {
+            id(LD1115H_MovOcc_Binary).publish_state(true);
+          }
+          if (id(LD1115H_Mov_Binary).state == false) {
+            id(LD1115H_Mov_Binary).publish_state(true);
+          }
+          id(LD1115H_Last_Mov_Time) = time(NULL);
+          id(LD1115H_Last_Time) = time(NULL);
+          if (id(LD1115H_Clearence_Status) == true) {
+            id(LD1115H_Clearence_Status) = false;
+          }
+        }
+
+  - platform: template
+    name: Occupancy Status
+    id: LD1115H_Occupancy
+    icon: "mdi:motion-sensor"
+    on_value:
+      - if:
+          condition:
+            # Checks if "my_text_sensor" has state "Hello World"
+            text_sensor.state:
+              id: LD1115H_Occupancy
+              state: 'Occupancy'
+          then:
+            - light.addressable_set:
+                id: rgb_led_strip
+                range_from: 0
+                range_to: 0
+                color_brightness: ${led_brightness}
+                red: 0.0
+                green: 1.0
+                blue: 0.0
+      - if:
+          condition:
+            # Checks if "my_text_sensor" has state "Hello World"
+            text_sensor.state:
+              id: LD1115H_Occupancy
+              state: 'Clearance'
+          then:
+            - light.addressable_set:
+                id: rgb_led_strip
+                range_from: 0
+                range_to: 0
+                color_brightness: ${led_brightness}
+                red: 0.0
+                green: 0.0
+                blue: 0.0
+
+binary_sensor:
+  # API connection status
+  - platform: status
+    name: Status
+
+  - platform: template
+    name: Occupancy or Movement
+    id: LD1115H_MovOcc_Binary
+    device_class: occupancy
+
+  - platform: template
+    name: Movement
+    id: LD1115H_Mov_Binary
+    device_class: motion
+    on_press:
+      then:
+        - light.addressable_set:
+            id: rgb_led_strip
+            range_from: 2
+            range_to: 2
+            color_brightness: ${led_brightness}
+            red: 1.0
+            green: 1.0
+            blue: 0.0
+    on_release:
+      then:
+        - light.addressable_set:
+            id: rgb_led_strip
+            range_from: 2
+            range_to: 2
+            color_brightness: ${led_brightness}
+            red: 0.0
+            green: 0.0
+            blue: 0.0

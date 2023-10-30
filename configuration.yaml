@@ -1,6 +1,13 @@
 # Loads default set of integrations. Do not remove.
 default_config:
 
+zone:
+  - name: Home
+    latitude: !secret home_lat
+    longitude: !secret home_long
+    radius: 200
+    icon: mdi:home
+
 logbook:
   exclude:
     entities:
@@ -20,6 +27,15 @@ notify:
     services:
       - service: mobile_app_patricks_iphone_13
       - service: mobile_app_kathleens_iphone
+
+#CPU Temperature
+command_line:
+  - sensor:
+      name: CPU Temperature
+      command: "cat /sys/class/thermal/thermal_zone1/temp"
+      scan_interval: 15
+      unit_of_measurement: "°C"
+      value_template: "{{ value | multiply(0.001) | round(1) }}"
 
 sensor:
   - platform: statistics
