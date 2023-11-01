@@ -416,10 +416,6 @@
     - if:
         - condition: or
           conditions:
-            - condition: state
-              entity_id: sun.sun
-              attribute: rising
-              state: true
             - condition: time
               after: input_datetime.lights_off_time_1
       then:
@@ -441,12 +437,12 @@
       id: motion detected
     - platform: state
       entity_id:
-        - binary_sensor.ld2410_mmwave_presence
+        - binary_sensor.hlk_ld1115h_mmwave_occupancy_or_movement
       to: "on"
       id: motion detected
     - platform: state
       entity_id:
-        - binary_sensor.ld2410_mmwave_presence
+        - binary_sensor.hlk_ld1115h_mmwave_occupancy_or_movement
       to: "off"
       for:
         hours: 0
@@ -1827,12 +1823,12 @@
     - platform: state
       entity_id:
         - person.kathleen
-      from: not_home
-      to: home
       for:
         hours: 0
         minutes: 0
         seconds: 0
+      from: not_home
+      to: home
   condition:
     - condition: state
       entity_id: sensor.kathleens_iphone_activity
@@ -2974,6 +2970,12 @@
                   entity_id: input_boolean.sleep_mode
                   state: ""
           then:
+            - service: light.turn_on
+              data:
+                kelvin: 2900
+                brightness_pct: 40
+              target:
+                entity_id: light.back_lounge_sideboard_lamp
             - service: light.turn_off
               data: {}
               target:
@@ -3102,6 +3104,7 @@
         hours: 0
         minutes: 2
         seconds: 40
+      enabled: false
   condition:
     - condition: state
       entity_id: input_boolean.sleep_mode
@@ -3129,6 +3132,28 @@
             entity_id:
               - light.led_strip_kitchen_kicker
               - light.led_strip_front_hall_dimmer
+      enabled: false
+    - service: light.turn_on
+      data:
+        brightness_pct: 10
+      target:
+        entity_id: light.led_strip_front_hall_dimmer
+    - service: light.turn_on
+      data:
+        brightness_pct: 5
+      target:
+        entity_id: light.led_strip_kitchen_kicker
+    - delay:
+        hours: 0
+        minutes: 2
+        seconds: 45
+        milliseconds: 0
+    - service: light.turn_off
+      data: {}
+      target:
+        entity_id:
+          - light.led_strip_kitchen_kicker
+          - light.led_strip_front_hall_dimmer
   mode: single
 - id: "1698538309359"
   alias: Motion - garage lights
@@ -3176,4 +3201,24 @@
           data: {}
           target:
             entity_id: light.garage_downlights
+  mode: single
+- id: "1698828221729"
+  alias: BLE iPhone to Shelly turn front yard lights on
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - device_tracker.patricks_iphone_bluetooth
+      to: home
+  condition:
+    - condition: time
+      after: 07:00:00
+      before: "21:00:00"
+  action:
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        message:
+          Your iPhone was detect as HOME due to its BLE connection with Shelly
+          front garden lights
+        title: BLE iPhone came home
   mode: single
