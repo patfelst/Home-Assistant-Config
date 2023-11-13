@@ -387,11 +387,9 @@
         - cover.driveway_gate
       to: opening
   condition:
-    - condition: numeric_state
-      entity_id: sun.sun
-      attribute: elevation
-      below: 0
-      enabled: true
+    - condition: sun
+      after: sunset
+      before: sunrise
     - condition: state
       entity_id: input_boolean.disable_front_yard_motion_lights
       state: "off"
@@ -418,6 +416,8 @@
           conditions:
             - condition: time
               after: input_datetime.lights_off_time_1
+            - condition: sun
+              before: sunrise
       then:
         - service: light.turn_off
           data: {}
@@ -433,7 +433,7 @@
         - binary_sensor.workshop_ceiling_motion_occupancy
       from: "off"
       to: "on"
-      enabled: true
+      enabled: false
       id: motion detected
     - platform: state
       entity_id:
@@ -456,6 +456,7 @@
         hours: 0
         minutes: 4
         seconds: 0
+      enabled: false
   condition: []
   action:
     - if:
@@ -631,6 +632,12 @@
             - action: URI
               title: View solar page
               uri: /lovelace/solar
+    - service: notify.lg_webos_smart_tv
+      data:
+        title: Solar report
+        message:
+          "Solar energy: Today you generated {{ (states('sensor.symo_10_0_3_m_1_energy_day')
+          | float) | round(1) }} kWh."
   mode: single
 - id: "1669522933161"
   alias: Soldering - workshop soldering irons OFF when NO MOTION
@@ -894,8 +901,12 @@
           - light.front_north_side_flood
           - light.garage_downlights
     - if:
-        - condition: time
-          after: input_datetime.lights_off_time_1
+        - condition: or
+          conditions:
+            - condition: time
+              after: input_datetime.lights_off_time_1
+            - condition: sun
+              before: sunrise
       then:
         - service: light.turn_off
           data: {}
@@ -904,8 +915,12 @@
               - light.front_garden_lights
               - light.rear_garden_lights
     - if:
-        - condition: time
-          after: input_datetime.lights_off_time_2
+        - condition: or
+          conditions:
+            - condition: time
+              after: input_datetime.lights_off_time_2
+            - condition: sun
+              before: sunrise
       then:
         - service: light.turn_off
           data: {}
@@ -1539,8 +1554,10 @@
   condition:
     - condition: numeric_state
       entity_id: zone.home
-      attribute: persons
       above: 0
+    - condition: state
+      entity_id: input_boolean.sleep_mode
+      state: "off"
   action:
     - service: climate.turn_on
       data: {}
@@ -1997,6 +2014,12 @@
                 brightness_pct: 50
               target:
                 entity_id: light.back_lounge_sideboard_lamp
+        - service: notify.lg_webos_smart_tv
+          data:
+            title: Washing machine finished
+            message:
+              Washing machine finished - please hang out ({{ (now()) | as_timestamp
+              | timestamp_custom('%I:%M %p') }})
       pre_actions:
         - service: notify.mobile_app_patricks_iphone_13
           data:
@@ -2109,6 +2132,14 @@
       after: "23:00:00"
       before: 06:00:00
       enabled: true
+    - condition: template
+      value_template:
+        "{{ now() - states.cover.driveway_gate.last_changed > timedelta(seconds=120)
+        }}"
+    - condition: template
+      value_template:
+        "{{ now() - states.cover.garage_door.last_changed > timedelta(seconds=120)
+        }}"
   action:
     - service: notify.patrick_and_kathleen
       data:
@@ -2582,7 +2613,6 @@
       below: -5
     - condition: numeric_state
       entity_id: zone.home
-      attribute: persons
       below: 1
   action:
     - service: climate.turn_on
@@ -2700,7 +2730,7 @@
     - condition: numeric_state
       entity_id: climate.ac_kitchen
       attribute: current_temperature
-      above: 20
+      above: 22
     - condition: numeric_state
       entity_id: sensor.solarnet_energy_day
       above: 9000
@@ -2710,7 +2740,7 @@
         title: Closed blinds to reduce heat
         message:
           Closed rear blinds 1, and 3-5 as it's {{ trigger.now | as_timestamp
-          | timestamp_custom('%I:%M %p') }} and kitchen temperature is above 20°C  ({{
+          | timestamp_custom('%I:%M %p') }} and kitchen temperature is above 22°C  ({{
           state_attr('climate.ac_kitchen', 'current_temperature') | float | round(1)
           }}°C), solar energy for the day is above 9,000Wh ({{ states('sensor.solarnet_energy_day')
           | float | round(1) }}Wh)
@@ -2763,7 +2793,10 @@
         seconds: 0
       to: open
       id: driveway gate
-  condition: []
+  condition:
+    - condition: state
+      entity_id: input_boolean.garage_door_alerts
+      state: "on"
   action:
     - service: light.turn_on
       data:
@@ -3203,7 +3236,7 @@
             entity_id: light.garage_downlights
   mode: single
 - id: "1698828221729"
-  alias: BLE iPhone to Shelly turn front yard lights on
+  alias: BLE iPhone to BLE gateway device (Olimex PoE)
   description: ""
   trigger:
     - platform: state
@@ -3217,8 +3250,70 @@
   action:
     - service: notify.mobile_app_patricks_iphone_13
       data:
-        message:
-          Your iPhone was detect as HOME due to its BLE connection with Shelly
-          front garden lights
+        message: Your iPhone was detect as HOME via Bluetooth Proxy (Olimex PoE)
         title: BLE iPhone came home
+  mode: single
+- id: "1699674375223"
+  alias: Notify - leaving home
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - device_tracker.patricks_iphone_13
+      to: not_home
+  condition: []
+  action:
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: Left Home
+        message: You just left Home zone
+  mode: single
+- id: "1699674451832"
+  alias: Notify - arrive home
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - device_tracker.patricks_iphone_13
+      to: home
+  condition: []
+  action:
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: Arrived Home
+        message: You just arrived in Home zone
+  mode: single
+- id: "1699759355459"
+  alias: Light - workshop 16x16 matrix ON
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - light.workshop_downlight
+      to: "on"
+  condition: []
+  action:
+    - service: light.turn_on
+      data: {}
+      target:
+        entity_id: light.wled_16x16_matrix
+  mode: single
+- id: "1699759417101"
+  alias: Light - workshop 16x16 RGB matrix OFF after 30 mins
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - light.wled_16x16_matrix
+      to: "on"
+      for:
+        hours: 0
+        minutes: 30
+        seconds: 0
+  condition: []
+  action:
+    - service: light.turn_off
+      data: {}
+      target:
+        entity_id: light.wled_16x16_matrix
   mode: single
