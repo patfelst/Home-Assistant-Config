@@ -158,6 +158,8 @@ config:
           element: light.workshop-lamp-rgb
         - entity: light.front_hall_lamp
           element: light.front-hall-lamp
+        - entity: light.back_lounge_sideboard_lamp
+          element: light.table-lamp-back-lounge
       tap_action: light.toggle
       hold_action: more-info
       state_action:
@@ -242,8 +244,6 @@ config:
           element: light.front-lounge-sideboard-lamp
         - entity: light.kitchen_pendant
           element: light.kitchen-pendant
-        - entity: light.back_lounge_sideboard_lamp
-          element: light.table-lamp-back-lounge
         - entity: light.back_lounge_pendant
           element: light.tv-pendant
         - entity: light.lamp_rhs_fireplace
