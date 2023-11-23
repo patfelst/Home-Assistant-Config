@@ -62,5 +62,5 @@ esp32_ble_tracker:
         - lambda: |-
              ESP_LOGD("ble_auto", "The scan has ended!");
 
-# bluetooth_proxy:
-#   active: False
+bluetooth_proxy:
+  active: False

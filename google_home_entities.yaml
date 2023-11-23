@@ -1,6 +1,9 @@
 google_actions:
   filter:
     include_entities:
+      - script.sunset_lights
+      - script.tv_on
+      - script.tv_off
       - climate.ac
       - cover.all_blinds
       - cover.blind_1
@@ -12,7 +15,6 @@ google_actions:
       - cover.garage_door
       - fan.19_rack_fans
       - fan.workshop_ceiling_fan
-      - script.sunset_lights
       - switch.workshop_power_strip
       - switch.gas_heater
       - switch.pool_robot

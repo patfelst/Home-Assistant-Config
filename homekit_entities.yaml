@@ -8,6 +8,8 @@
     #   - binary_sensor.*_occupancy
     include_entities:
       - script.sunset_lights
+      - script.tv_on
+      - script.tv_off
       - cover.garage_door
       - cover.driveway_gate
       - cover.pedestrian_gate

@@ -1,179 +1,260 @@
 pool_light_synchronise:
   alias: Pool light synchronise
   sequence:
-  - service: light.turn_off
-    data: {}
-    target:
-      entity_id: light.pool_lights
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 4
-      milliseconds: 0
-  - service: light.turn_on
-    data: {}
-    target:
-      entity_id: light.pool_lights
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 0
-      milliseconds: 500
-  - repeat:
-      count: 2
-      sequence:
-      - service: light.turn_off
-        data: {}
-        target:
-          entity_id: light.pool_lights
-      - delay:
-          hours: 0
-          minutes: 0
-          seconds: 0
-          milliseconds: 500
-      - service: light.turn_on
-        data: {}
-        target:
-          entity_id: light.pool_lights
-      - delay:
-          hours: 0
-          minutes: 0
-          seconds: 0
-          milliseconds: 500
+    - service: light.turn_off
+      data: {}
+      target:
+        entity_id: light.pool_lights
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 4
+        milliseconds: 0
+    - service: light.turn_on
+      data: {}
+      target:
+        entity_id: light.pool_lights
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 0
+        milliseconds: 500
+    - repeat:
+        count: 2
+        sequence:
+          - service: light.turn_off
+            data: {}
+            target:
+              entity_id: light.pool_lights
+          - delay:
+              hours: 0
+              minutes: 0
+              seconds: 0
+              milliseconds: 500
+          - service: light.turn_on
+            data: {}
+            target:
+              entity_id: light.pool_lights
+          - delay:
+              hours: 0
+              minutes: 0
+              seconds: 0
+              milliseconds: 500
   mode: single
 pool_light_set_colour:
   alias: Pool light set colour
   sequence:
-  - service: script.pool_light_synchronise
-    data: {}
-  - repeat:
-      count: '{{ colour_number|int - 1 }}'
-      sequence:
-      - service: light.turn_off
-        data: {}
-        target:
-          entity_id: light.pool_lights
-      - delay:
-          hours: 0
-          minutes: 0
-          seconds: 0
-          milliseconds: 500
-      - service: light.turn_on
-        data: {}
-        target:
-          entity_id: light.pool_lights
-      - delay:
-          hours: 0
-          minutes: 0
-          seconds: 0
-          milliseconds: 500
+    - service: script.pool_light_synchronise
+      data: {}
+    - repeat:
+        count: "{{ colour_number|int - 1 }}"
+        sequence:
+          - service: light.turn_off
+            data: {}
+            target:
+              entity_id: light.pool_lights
+          - delay:
+              hours: 0
+              minutes: 0
+              seconds: 0
+              milliseconds: 500
+          - service: light.turn_on
+            data: {}
+            target:
+              entity_id: light.pool_lights
+          - delay:
+              hours: 0
+              minutes: 0
+              seconds: 0
+              milliseconds: 500
   mode: single
 pool_light_set_intensity:
   alias: Pool light set intensity
   sequence:
-  - service: script.pool_light_synchronise
-    data: {}
-  - repeat:
-      count: '6'
-      sequence:
-      - service: light.turn_off
-        data: {}
-        target:
-          entity_id: light.pool_lights
-      - delay:
-          hours: 0
-          minutes: 0
-          seconds: 0
-          milliseconds: 500
-      - service: light.turn_on
-        data: {}
-        target:
-          entity_id: light.pool_lights
-      - delay:
-          hours: 0
-          minutes: 0
-          seconds: 0
-          milliseconds: 500
-  - service: light.turn_off
-    data: {}
-    target:
-      entity_id: light.pool_lights
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 4
-      milliseconds: 0
-  - service: light.turn_on
-    data: {}
-    target:
-      entity_id: light.pool_lights
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 0
-      milliseconds: 500
-  - service: light.turn_off
-    data: {}
-    target:
-      entity_id: light.pool_lights
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 0
-      milliseconds: 500
-  - service: light.turn_on
-    data: {}
-    target:
-      entity_id: light.pool_lights
-  - stop: Now do single swich (off-on) on pool light and wait 3 sec to see next intensity
-      level. Do a doulbe switch to save and exit.
-    error: true
-    enabled: true
+    - service: script.pool_light_synchronise
+      data: {}
+    - repeat:
+        count: "6"
+        sequence:
+          - service: light.turn_off
+            data: {}
+            target:
+              entity_id: light.pool_lights
+          - delay:
+              hours: 0
+              minutes: 0
+              seconds: 0
+              milliseconds: 500
+          - service: light.turn_on
+            data: {}
+            target:
+              entity_id: light.pool_lights
+          - delay:
+              hours: 0
+              minutes: 0
+              seconds: 0
+              milliseconds: 500
+    - service: light.turn_off
+      data: {}
+      target:
+        entity_id: light.pool_lights
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 4
+        milliseconds: 0
+    - service: light.turn_on
+      data: {}
+      target:
+        entity_id: light.pool_lights
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 0
+        milliseconds: 500
+    - service: light.turn_off
+      data: {}
+      target:
+        entity_id: light.pool_lights
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 0
+        milliseconds: 500
+    - service: light.turn_on
+      data: {}
+      target:
+        entity_id: light.pool_lights
+    - stop:
+        Now do single swich (off-on) on pool light and wait 3 sec to see next intensity
+        level. Do a doulbe switch to save and exit.
+      error: true
+      enabled: true
   mode: single
 open_gate_and_garage:
   alias: Open Gate and Garage
   sequence:
-  - service: cover.open_cover
-    data: {}
-    target:
-      entity_id:
-      - cover.driveway_gate
-      - cover.garage_door
+    - service: cover.open_cover
+      data: {}
+      target:
+        entity_id:
+          - cover.driveway_gate
+          - cover.garage_door
   mode: single
   icon: mdi:gate-open
 close_gate_and_garage:
   alias: Close Gate and Garage
   sequence:
-  - repeat:
-      count: '6'
-      sequence:
-      - service: light.toggle
-        data: {}
-        target:
-          entity_id:
-          - light.front_porch
-          - light.garage_downlights
-      - delay:
-          hours: 0
-          minutes: 0
-          seconds: 0
-          milliseconds: 500
-    enabled: false
-  - service: cover.close_cover
-    data: {}
-    target:
-      entity_id:
-      - cover.driveway_gate
-      - cover.garage_door
+    - repeat:
+        count: "6"
+        sequence:
+          - service: light.toggle
+            data: {}
+            target:
+              entity_id:
+                - light.front_porch
+                - light.garage_downlights
+          - delay:
+              hours: 0
+              minutes: 0
+              seconds: 0
+              milliseconds: 500
+      enabled: false
+    - service: cover.close_cover
+      data: {}
+      target:
+        entity_id:
+          - cover.driveway_gate
+          - cover.garage_door
   mode: single
   icon: mdi:gate-arrow-right
 sunset_lights:
   alias: Sunset Lights
   sequence:
-  - service: automation.trigger
-    data:
-      skip_condition: true
-    target:
-      entity_id: automation.lights_on_at_sunset
+    - service: automation.trigger
+      data:
+        skip_condition: true
+      target:
+        entity_id: automation.lights_on_at_sunset
   mode: single
   icon: mdi:sun-wireless-outline
+tv_off:
+  alias: TV Off
+  sequence:
+    - service: media_player.turn_off
+      data: {}
+      target:
+        device_id: de8b43dac46be967e9f4d0db52519d26
+    - if:
+        - condition: state
+          entity_id: binary_sensor.colour_and_light_sensor_fetch_tv_power
+          state: "on"
+      then:
+        - service: remote.send_command
+          data:
+            device: lgtv
+            command: power
+            num_repeats: 1
+            hold_secs: 0.3
+          target:
+            device_id: 688ca04b397fd4dcdf3b94135f4a157d
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 20
+        milliseconds: 0
+    - service: media_player.turn_off
+      data: {}
+      target:
+        device_id: de8b43dac46be967e9f4d0db52519d26
+  mode: single
+  icon: mdi:television-off
+tv_on:
+  alias: TV on
+  sequence:
+    - if:
+        - condition: state
+          entity_id: binary_sensor.colour_and_light_sensor_fetch_tv_power
+          state: "off"
+      then:
+        - service: remote.send_command
+          data:
+            device: lgtv
+            command: power
+            num_repeats: 1
+            hold_secs: 0.3
+            delay_secs: 0
+          target:
+            device_id: 688ca04b397fd4dcdf3b94135f4a157d
+    - service: wake_on_lan.send_magic_packet
+      data:
+        mac: 14:c9:13:e4:47:2a
+        broadcast_port: 9
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 5
+        milliseconds: 0
+    - service: remote.send_command
+      data:
+        delay_secs: 0.7
+        device: lgtv
+        command:
+          - 9
+          - 0
+        num_repeats: 1
+        hold_secs: 0.3
+      target:
+        device_id: 688ca04b397fd4dcdf3b94135f4a157d
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 6
+        milliseconds: 0
+    - service: media_player.select_source
+      data:
+        source: FetchTV
+      target:
+        device_id: de8b43dac46be967e9f4d0db52519d26
+  mode: single
+  icon: mdi:television

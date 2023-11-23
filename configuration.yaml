@@ -1,11 +1,13 @@
 # Loads default set of integrations. Do not remove.
 default_config:
 
+wake_on_lan:
+
 zone:
   - name: Home
     latitude: !secret home_lat
     longitude: !secret home_long
-    radius: 300
+    radius: 320
     icon: mdi:home
 
 logbook:
