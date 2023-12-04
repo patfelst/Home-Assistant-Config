@@ -3,6 +3,16 @@ default_config:
 
 wake_on_lan:
 
+# Text to speech
+tts:
+  - platform: google_translate
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+homekit: !include homekit_entities.yaml
+cloud: !include google_home_entities.yaml
+
 zone:
   - name: Home
     latitude: !secret home_lat
@@ -318,7 +328,7 @@ light:
       - light.back_lounge_pendant
       - light.back_lounge_sideboard_lamp
       - light.lamp_rhs_fireplace
-      - light.led_strip_bookshlelf_dimmer
+      - light.twinkly_back_lounge
 
       # Group: Back yard lights
       - light.alfresco_downlights
@@ -359,7 +369,7 @@ light:
       - light.back_lounge_pendant
       - light.back_lounge_sideboard_lamp
       - light.lamp_rhs_fireplace
-      - light.led_strip_bookshlelf_dimmer
+      - light.twinkly_back_lounge
   - platform: group
     name: "Back yard lights"
     entities:
@@ -369,13 +379,3 @@ light:
       - light.rear_garden_lights
       - light.led_strip_fire_pit_dimmer
       - light.pool_light_controller_pool_lights
-
-# Text to speech
-tts:
-  - platform: google_translate
-
-automation: !include automations.yaml
-script: !include scripts.yaml
-scene: !include scenes.yaml
-homekit: !include homekit_entities.yaml
-cloud: !include google_home_entities.yaml

@@ -7,9 +7,10 @@
     # include_entity_globs:
     #   - binary_sensor.*_occupancy
     include_entities:
-      - script.sunset_lights
-      - script.tv_on
-      - script.tv_off
+      # - script.sunset_lights
+      # - script.tv_on
+      # - script.tv_news
+      # - script.tv_off
       - cover.garage_door
       - cover.driveway_gate
       - cover.pedestrian_gate
@@ -65,6 +66,7 @@
       - light.jess_wled_mk2
       - light.led_strip_fire_pit_dimmer
       - light.pool_light_controller_pool_lights
+      - light.twinkly_back_lounge
   entity_config:
     fan.19_rack_fans:
       name: Rack fans

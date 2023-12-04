@@ -3,8 +3,11 @@ google_actions:
     include_entities:
       - script.sunset_lights
       - script.tv_on
+      - script.tv_news
       - script.tv_off
+
       - climate.ac
+
       - cover.all_blinds
       - cover.blind_1
       - cover.blind_2
@@ -12,51 +15,46 @@ google_actions:
       - cover.blind_4
       - cover.blind_5
       - cover.interior_roller_blind # workshop blind
+
       - cover.garage_door
+      - cover.driveway_gate
+
       - fan.19_rack_fans
       - fan.workshop_ceiling_fan
+
       - switch.workshop_power_strip
       - switch.gas_heater
       - switch.pool_robot
       - switch.pool_pump
+
       - light.all_lights
-      - light.alfresco_downlights
+
+      - light.front_yard_lights # Group
+      - light.front_garden_lights
+
+      - light.kitchen_lights # Group
+      - light.kitchen_downlights
+      - light.dining_downlight
+
       - light.back_lounge_downlights
       - light.back_lounge_pendant
       - light.back_lounge_sideboard_lamp
-      - light.butlers_downlight
-      - light.courtyard_flood_light
-      - light.dining_downlight
-      - light.front_hall_lamp
-      - light.front_lounge_downlight
-      - light.front_lounge_pendant
-      - light.front_lounge_sideboard_lamp
-      - light.front_north_side_flood
-      - light.front_porch
-      - light.front_garden_lights
-      - light.front_stone_up_down
-      - light.garage_downlights
-      - light.kitchen_downlights
-      - light.kitchen_hall_downlights
-      - light.kitchen_pendant
       - light.lamp_rhs_fireplace
+      - light.twinkly_back_lounge
+
       - light.laundry_downlight
       - light.laundry_path_bunker_light
-      - light.led_strip_butlers_overhead_cupboards
-      - light.led_strip_kitchen_kicker
-      - light.meterbox_bunker
+
+      - light.back_yard_lights # Group
+      - light.alfresco_downlights
       - light.pool_perimeter_downlights
       - light.rear_flood_light
       - light.rear_garden_lights
-      - light.stairs_light
-      - light.wir_downlight
-      - light.bedside_lamp_kathleen
+
       - light.workshop_downlight
       - light.workshop_rgb_light
       - light.led_strip_workshop_shelf_dimmer
       - light.jess_wled_mk2
-      - light.led_strip_fire_pit_dimmer
-      - light.led_strip_front_hall_dimmer
       - light.pool_light_controller_pool_lights
   # entity_config:
   #   script.sunset_lights:
