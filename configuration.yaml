@@ -46,26 +46,11 @@ command_line:
       name: CPU Temperature
       command: "cat /sys/class/thermal/thermal_zone1/temp"
       scan_interval: 15
+      unique_id: ee6886b7-d378-4d10-ab4f-5ad0731f9aba
       unit_of_measurement: "°C"
       value_template: "{{ value | multiply(0.001) | round(1) }}"
 
 sensor:
-  - platform: statistics
-    name: "Max daily solar production over last year"
-    entity_id: sensor.symo_10_0_3_m_1_energy_day
-    state_characteristic: value_max
-    sampling_size: 3153600 # With HA 2022.12, this is now optional
-    max_age:
-      days: 365
-
-  - platform: statistics
-    name: "Date of max daily solar production over last year"
-    entity_id: sensor.symo_10_0_3_m_1_energy_day
-    state_characteristic: datetime_value_max
-    sampling_size: 3153600 # With HA 2022.12, this is now optional
-    max_age:
-      days: 365
-
   - platform: filter
     name: Filtered pool pump power Lowpass Filter
     unique_id: id_pool_pump_power_lowpass_filter
@@ -259,6 +244,20 @@ template:
         state: >
           {{ states('sensor.driveway_gate_light_beam') | float > 3.0 }}
 
+  - trigger:
+      - platform: time_pattern
+        minutes: "/5"
+    sensor:
+      - name: "Max daily solar this year"
+        unique_id: 6076d27d-50c3-445f-b05a-dfb24ea64c4a
+        unit_of_measurement: kWh
+        state_class: total_increasing
+        state: >
+          {% set solar_energy = states('sensor.solarnet_energy_day') | float %}
+          {% if solar_energy > this.state | float %}
+            {{ solar_energy | round(1) }}
+          {% endif %}
+
 binary_sensor:
   - platform: group
     name: "Shelly overheating sensors"
@@ -337,6 +336,7 @@ light:
       - light.rear_garden_lights
       - light.led_strip_fire_pit_dimmer
       - light.pool_light_controller_pool_lights
+      - light.inflatable_santa
 
   - platform: group
     name: "Front yard lights"
@@ -379,3 +379,4 @@ light:
       - light.rear_garden_lights
       - light.led_strip_fire_pit_dimmer
       - light.pool_light_controller_pool_lights
+      - light.inflatable_santa
