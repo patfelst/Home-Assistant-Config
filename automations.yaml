@@ -3426,3 +3426,31 @@
         data: {}
         enabled: true
   mode: single
+- id: '1702902190318'
+  alias: Max day solar - update value and date
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - sensor.solarnet_energy_day
+  condition:
+  - condition: numeric_state
+    entity_id: sensor.solarnet_energy_day
+    above: input_number.max_day_solar_amount
+  action:
+  - service: input_number.set_value
+    target:
+      entity_id: input_number.max_day_solar_amount
+    data:
+      value: '{{ trigger.to_state.state | float(0) | round(1) }}'
+  - service: input_datetime.set_datetime
+    target:
+      entity_id: input_datetime.max_day_solar_date
+    data:
+      date: '{{ now().strftime(''%Y-%m-%d'') }}'
+  - service: notify.mobile_app_patricks_iphone_13
+    data:
+      title: New day solar maximum ths year!
+      message: Just made a new maximum daily solar this year of {{ trigger.to_state.state
+        | float(0) | round(1) }} kWh
+  mode: single
