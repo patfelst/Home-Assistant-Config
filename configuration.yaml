@@ -3,10 +3,6 @@ default_config:
 
 wake_on_lan:
 
-# Text to speech
-tts:
-  - platform: google_translate
-
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
@@ -243,20 +239,6 @@ template:
           milliseconds: 1500
         state: >
           {{ states('sensor.driveway_gate_light_beam') | float > 3.0 }}
-
-  # - trigger:
-  #     - platform: time_pattern
-  #       minutes: "/5"
-  #   sensor:
-  #     - name: "Max daily solar this year"
-  #       unique_id: 6076d27d-50c3-445f-b05a-dfb24ea64c4a
-  #       unit_of_measurement: kWh
-  #       state_class: total_increasing
-  #       state: >
-  #         {% set solar_energy = states('sensor.solarnet_energy_day') | float %}
-  #         {% if solar_energy > this.state | float %}
-  #           {{ solar_energy | round(1) }}
-  #         {% endif %}
 
 binary_sensor:
   - platform: group

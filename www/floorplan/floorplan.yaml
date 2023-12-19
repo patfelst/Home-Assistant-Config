@@ -152,8 +152,6 @@ config:
               return style;
     - name: RGB Lights
       entities:
-        - entity: light.jess_wled_mk2
-          element: light.jess-led-strip
         - entity: light.workshop_rgb_light
           element: light.workshop-lamp-rgb
         - entity: light.front_hall_lamp
