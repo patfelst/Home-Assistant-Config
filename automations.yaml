@@ -597,23 +597,51 @@
       at: "20:30:00"
   condition: []
   action:
-    - service: notify.mobile_app_patricks_iphone_13
-      data:
-        title: Solar generated daily report!
-        message:
-          Today you generated {{ (states('sensor.solarnet_energy_day') | float)
-          | round(1) }} kWh.
-        data:
-          actions:
-            - action: URI
-              title: View solar page
-              uri: /lovelace/solar
-    - service: notify.lg_webos_smart_tv
-      data:
-        title: Solar report
-        message:
-          "Solar energy: Today you generated {{ (states('sensor.solarnet_energy_day')
-          | float) | round(1) }} kWh."
+    - if:
+        - condition: numeric_state
+          entity_id: sensor.solarnet_energy_day
+          above: input_number.max_day_solar_amount
+      then:
+        - service: input_number.set_value
+          target:
+            entity_id: input_number.max_day_solar_amount
+          data:
+            value: "{{ states('sensor.solarnet_energy_day') | float(0) | round(1) }}"
+        - service: input_datetime.set_datetime
+          target:
+            entity_id: input_datetime.max_day_solar_date
+          data:
+            date: "{{ now().strftime('%Y-%m-%d') }}"
+        - service: notify.patrick_and_kathleen
+          data:
+            title: New solar max!
+            message:
+              New maximum daily solar this year of {{ states('input_number.max_day_solar_amount')
+              | float(0) | round(1) }} kWh
+        - service: notify.lg_webos_smart_tv
+          data:
+            title: New Solar Max!
+            message:
+              "Solar energy: New maximum daily solar this year of {{ states('input_number.max_day_solar_amount')
+              | float(0) | round(1) }} kWh"
+      else:
+        - service: notify.patrick_and_kathleen
+          data:
+            title: Solar generated daily report
+            message:
+              Today you generated {{ states('sensor.solarnet_energy_day') | float(0)
+              | round(1) }} kWh.
+            data:
+              actions:
+                - action: URI
+                  title: View solar page
+                  uri: /lovelace/solar
+        - service: notify.lg_webos_smart_tv
+          data:
+            title: Solar generated daily report
+            message:
+              Today you generated {{ states('sensor.solarnet_energy_day') | float(0)
+              | round(1) }} kWh.
   mode: single
 - id: "1669522933161"
   alias: Soldering - workshop soldering irons OFF when NO MOTION
@@ -1021,7 +1049,10 @@
           {{ doors | join(', ') | replace(\"aqara contact\", \"\") }}\n  {% endif %}"
         data:
           push:
-            interruption-level: critical
+            sound:
+              name: default
+              critical: 1
+              volume: 0.5
   mode: single
 - id: "1669961250496"
   alias: Notify - Door opened when nobody is home
@@ -1413,7 +1444,10 @@
           it now, but please go home and double check it.
         data:
           push:
-            interruption-level: critical
+            sound:
+              name: default
+              critical: 1
+              volume: 0.5
     - if:
         - condition: state
           entity_id: binary_sensor.front_door_aqara_contact
@@ -1491,7 +1525,10 @@
           %}"
         data:
           push:
-            interruption-level: critical
+            sound:
+              name: default
+              critical: 1
+              volume: 0.5
   mode: single
 - id: "1675158213480"
   alias: Notify - Water leak
@@ -1821,6 +1858,11 @@
       entity_id:
         - device_tracker.patricks_iphone_bluetooth
       to: home
+      enabled: false
+    - platform: state
+      entity_id:
+        - device_tracker.holy_iot_f685_patrick
+      to: home
   condition:
     - condition: state
       entity_id: sensor.patricks_iphone_13_activity
@@ -1851,6 +1893,11 @@
         minutes: 0
         seconds: 0
       from: not_home
+      to: home
+      enabled: false
+    - platform: state
+      entity_id:
+        - device_tracker.holy_iot_17ee_kathleen
       to: home
   condition:
     - condition: state
@@ -3483,32 +3530,212 @@
               data: {}
               enabled: true
   mode: single
-- id: "1702902190318"
-  alias: Max day solar - update value and date
+- id: "1702965547271"
+  alias: Awtrix - pool temperature
+  description: ""
+  use_blueprint:
+    path: smarthomejunkie/awtrix_create_sensor_app.yaml
+    input:
+      awtrix_displays:
+        - 90c7f72628fd10fb50e521f03eab0814
+      toggle_helper: input_boolean.awtrix_display_pool_temp
+      my_sensor: input_number.pool_temperature_while_pump_on
+      text_color:
+        - 0
+        - 157
+        - 255
+      duration: "0"
+      scroll: true
+      my_template_sensor:
+        "{{ states('input_number.pool_temperature_while_pump_on')
+        }} C"
+      my_icon: "48965"
+      push_icon: "0"
+- id: "1702969140624"
+  alias: Awtrix - global app cycle time
+  description: ""
+  use_blueprint:
+    path: smarthomejunkie/awtrix_set_transition_time.yaml
+    input:
+      awtrix_displays:
+        - 90c7f72628fd10fb50e521f03eab0814
+      apptime_helper: input_number.awtrix_global_app_display_duration
+- id: "1702969449628"
+  alias: Awtrix - toggle date
+  description: ""
+  use_blueprint:
+    path: smarthomejunkie/awtrix_toggle_stock_app.yaml
+    input:
+      awtrix_displays:
+        - 90c7f72628fd10fb50e521f03eab0814
+      stock_app: Date
+      toggle_helper: input_boolean.awtrix_toggle_date
+- id: "1702969567862"
+  alias: Awtrix - toggle time
+  description: ""
+  use_blueprint:
+    path: smarthomejunkie/awtrix_toggle_stock_app.yaml
+    input:
+      awtrix_displays:
+        - 90c7f72628fd10fb50e521f03eab0814
+      toggle_helper: input_boolean.awtrix_toggle_time
+      stock_app: Time
+- id: "1702969600588"
+  alias: Awtrix - toggle temperature
+  description: ""
+  use_blueprint:
+    path: smarthomejunkie/awtrix_toggle_stock_app.yaml
+    input:
+      awtrix_displays:
+        - 90c7f72628fd10fb50e521f03eab0814
+      toggle_helper: input_boolean.awtrix_toggle_temperature
+      stock_app: Temperature
+- id: "1702969619354"
+  alias: Awtrix - toggle humidity
+  description: ""
+  use_blueprint:
+    path: smarthomejunkie/awtrix_toggle_stock_app.yaml
+    input:
+      awtrix_displays:
+        - 90c7f72628fd10fb50e521f03eab0814
+      toggle_helper: input_boolean.awtrix_toggle_humidity
+      stock_app: Humidity
+- id: "1702969638508"
+  alias: Awtrix - toggle battery
+  description: ""
+  use_blueprint:
+    path: smarthomejunkie/awtrix_toggle_stock_app.yaml
+    input:
+      awtrix_displays:
+        - 90c7f72628fd10fb50e521f03eab0814
+      toggle_helper: input_boolean.awtrix_toggle_battery
+      stock_app: Battery
+- id: "1702983366732"
+  alias: Awtrix - day solar
+  description: ""
+  use_blueprint:
+    path: smarthomejunkie/awtrix_create_sensor_app.yaml
+    input:
+      awtrix_displays:
+        - 90c7f72628fd10fb50e521f03eab0814
+      toggle_helper: input_boolean.awtrix_toggle_day_solar_energy
+      my_sensor: sensor.solarnet_energy_day
+      text_color:
+        - 255
+        - 200
+        - 0
+      duration: "0"
+      scroll: true
+      my_template_sensor:
+        Day {{ states('sensor.solarnet_energy_day')|float|round(1)
+        }} kWh
+      push_icon: "2"
+      scrollspeed: 100
+      my_icon: "1246"
+      text_case: "2"
+- id: "1702985039027"
+  alias: Awtrix - real time import/export power
+  description: ""
+  use_blueprint:
+    path: smarthomejunkie/awtrix_create_sensor_app.yaml
+    input:
+      awtrix_displays:
+        - 90c7f72628fd10fb50e521f03eab0814
+      toggle_helper: input_boolean.awtrix_toggle_import_export_power
+      my_sensor: sensor.solarnet_power_grid
+      use_threshold: true
+      threshold_value: "0.0"
+      low_value_text_color:
+        - 0
+        - 255
+        - 0
+      high_value_text_color:
+        - 255
+        - 0
+        - 0
+      scroll: true
+      my_icon:
+        "{% if states('sensor.solarnet_power_grid') | float < 0 %} 56656{%
+        else %} 56657{% endif %}"
+      display_abs_value: true
+- id: "1703060969304"
+  alias: Pool temperature - store value when pump on
+  description:
+    "Use an input_number to store estimated pool temperature. Pool temperature
+    at heater inlet pipe is only accurate while pump in on (between 8am-5pm). After
+    heater turns off, temperature drops at a rate of approx 2.0°C over 15 hours, but
+    is falsely indicated as dropping much faster at the heater inlet pipe.
+
+    Updates are slow, approx once per hour, hence in the morning, add an update at
+    8:15am to allow pump to circulate water and let measured temp stabilise to correct
+    / meaningful value."
+  trigger:
+    - platform: state
+      entity_id:
+        - sensor.rostrevor_pool_inlet_water_temp_t02
+    - platform: time
+      at: 08:15:00
+  condition:
+    - condition: state
+      entity_id: switch.pool_pump
+      state: "on"
+      for:
+        hours: 0
+        minutes: 7
+        seconds: 0
+  action:
+    - service: input_number.set_value
+      target:
+        entity_id: input_number.pool_temperature_while_pump_on
+      data:
+        value:
+          "{{ states('sensor.rostrevor_pool_inlet_water_temp_t02') | float(0)
+          }}"
+  mode: single
+- id: "1703373162834"
+  alias: Notify - CCTV motion when nobody home or sleeping
   description: ""
   trigger:
     - platform: state
       entity_id:
-        - sensor.solarnet_energy_day
+        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_1_linedetection
+        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_6_linedetection
+        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_4_linedetection
+        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_5_linedetection
+        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_8_linedetection
+        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_2_fielddetection
+        - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_3_fielddetection
+      to: "on"
   condition:
-    - condition: numeric_state
-      entity_id: sensor.solarnet_energy_day
-      above: input_number.max_day_solar_amount
+    - condition: or
+      conditions:
+        - condition: and
+          conditions:
+            - condition: state
+              entity_id: person.patrick
+              state: not_home
+            - condition: state
+              entity_id: person.kathleen
+              state: not_home
+        - condition: state
+          entity_id: input_boolean.sleep_mode
+          state: "on"
+      enabled: true
   action:
-    - service: input_number.set_value
-      target:
-        entity_id: input_number.max_day_solar_amount
-      data:
-        value: "{{ trigger.to_state.state | float(0) | round(1) }}"
-    - service: input_datetime.set_datetime
-      target:
-        entity_id: input_datetime.max_day_solar_date
-      data:
-        date: "{{ now().strftime('%Y-%m-%d') }}"
     - service: notify.mobile_app_patricks_iphone_13
       data:
-        title: New day solar maximum ths year!
+        title: CCTV motion
         message:
-          Just made a new maximum daily solar this year of {{ trigger.to_state.state
-          | float(0) | round(1) }} kWh
+          "{{ trigger.to_state.attributes.friendly_name }} at {{ trigger.to_state.last_updated
+          | as_timestamp | timestamp_custom('%I:%M %p') }}"
+        data:
+          push:
+            sound:
+              name: US-EN-Morgan-Freeman-Motion-Detected.wav
+              critical: 1
+              volume: 0.75
+          actions:
+            - action: URI
+              title: Go to CCTV page in HA
+              uri: /lovelace/cctv
   mode: single

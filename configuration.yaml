@@ -13,7 +13,7 @@ zone:
   - name: Home
     latitude: !secret home_lat
     longitude: !secret home_long
-    radius: 320
+    radius: 200
     icon: mdi:home
 
 logbook:
