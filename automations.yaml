@@ -1856,11 +1856,6 @@
       enabled: false
     - platform: state
       entity_id:
-        - device_tracker.patricks_iphone_bluetooth
-      to: home
-      enabled: false
-    - platform: state
-      entity_id:
         - device_tracker.holy_iot_f685_patrick
       to: home
   condition:
@@ -2782,9 +2777,10 @@
   description: ""
   trigger:
     - platform: numeric_state
-      entity_id: sun.sun
+      entity_id:
+        - sun.sun
       attribute: elevation
-      below: 3.5
+      below: 4.5
   condition: []
   action:
     - service: cover.open_cover
@@ -3549,7 +3545,7 @@
       my_template_sensor:
         "{{ states('input_number.pool_temperature_while_pump_on')
         }} C"
-      my_icon: "48965"
+      my_icon: "10497"
       push_icon: "0"
 - id: "1702969140624"
   alias: Awtrix - global app cycle time
@@ -3629,7 +3625,7 @@
       my_template_sensor:
         Day {{ states('sensor.solarnet_energy_day')|float|round(1)
         }} kWh
-      push_icon: "2"
+      push_icon: "1"
       scrollspeed: 100
       my_icon: "1246"
       text_case: "2"
@@ -3739,3 +3735,40 @@
               title: Go to CCTV page in HA
               uri: /lovelace/cctv
   mode: single
+- id: "1703547741330"
+  alias: Awtrix - back lounge temperature
+  description: ""
+  use_blueprint:
+    path: smarthomejunkie/awtrix_create_sensor_app.yaml
+    input:
+      awtrix_displays:
+        - 90c7f72628fd10fb50e521f03eab0814
+      toggle_helper: input_boolean.awtrix_toggle_room_temperature
+      my_sensor: sensor.back_lounge_temperature_from_ac
+      my_template_sensor:
+        "{{ states('sensor.back_lounge_temperature_from_ac') }}
+        C"
+      my_icon: "2355"
+      push_icon: "0"
+      text_color:
+        - 0
+        - 255
+        - 51
+- id: "1703655196966"
+  alias: Button - workshop
+  description: ""
+  use_blueprint:
+    path: CrazyCoder/zigbee2mqtt_aqara_wireless_switch.yaml
+    input:
+      action_sensor: sensor.button_soldering_iron_action
+      press_single:
+        - service: switch.toggle
+          target:
+            entity_id: switch.workshop_power_strip
+          data: {}
+      press_double:
+        - service: light.toggle
+          target:
+            entity_id: light.led_strip_workshop_shelf_dimmer
+          data:
+            brightness_pct: 100
