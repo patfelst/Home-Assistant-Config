@@ -40,7 +40,7 @@ esp32:
 
 # Enable logging
 logger:
-  level: ERROR
+  level: DEBUG
 
 # Enable Home Assistant API
 # Note: API password is unnecessary when using encryption key
@@ -113,10 +113,14 @@ color:
     red: 0%
     green: 0%
     blue: 100%
-  - id: my_gray
+  - id: mid_gray
     red: 50%
     green: 50%
     blue: 50%
+  - id: dark_gray
+    red: 20%
+    green: 20%
+    blue: 20%
   - id: my_white
     red: 100%
     green: 100%
@@ -124,7 +128,7 @@ color:
 
 output:
   - platform: ledc
-    pin: 4
+    pin: GPIO4
     id: backlight
 
 spi:
@@ -134,7 +138,11 @@ spi:
 display:
   - platform: ili9xxx
     model: ST7789V
-    # dimensions: "240x135" # Don't set this option, display is corrupted even if you set the correct dimensions
+    dimensions:
+      width: 240
+      offset_width: 40
+      height: 135
+      offset_height: 52
     auto_clear_enabled: True
     data_rate: 40MHz # Display is corrupted at 80MHz
     invert_colors: true # Very important
@@ -142,7 +150,10 @@ display:
     dc_pin: GPIO16
     reset_pin: GPIO23
     update_interval: 1s
-    rotation: 270
+    # transform achieves a rotation of 270° (landscape, inverted)
+    transform:
+      swap_xy: True
+      mirror_y: True
     lambda: |-
       static int cal_msg_timout = 0;
 
@@ -161,14 +172,17 @@ display:
         it.printf(it.get_width() / 2, it.get_height() / 2, id(arial_20), id(my_white), TextAlign::CENTER, "Calibrating to %d ppm", id(co2_cal_val));
       }
       else {
-        it.printf(it.get_width(), it.get_height(), id(arial_20), id(my_gray), TextAlign::BOTTOM_RIGHT, "CO2 PPM");
+        it.rectangle(0, 0, it.get_width()-1, it.get_height()-1, id(dark_gray));
+        it.printf(it.get_width(), it.get_height(), id(arial_20), id(mid_gray), TextAlign::BOTTOM_RIGHT, "CO2 PPM");
         it.printf(it.get_width() / 2, it.get_height() / 2, id(co2_font), id(lcd_txt_colour), TextAlign::CENTER, "%.0f", id(co2).state);
       }
 
       // Blink the update indicator circle
       if (id(co2_updated)) {
         id(co2_updated) = false;
-        it.filled_circle(it.get_width() - 20, 90, 8, id(my_gray));
+        it.filled_circle(it.get_width() - 20, 90, 8, id(mid_gray));
+        // it.filled_circle(240, 90, 8, id(my_gray));
+        ESP_LOGI("Debug", "ttgo resolution: width = %d, height = %d", it.get_width(), it.get_height());
       }
 
 i2c:
