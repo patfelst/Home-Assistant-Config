@@ -151,8 +151,6 @@ display:
       swap_xy: True
       mirror_y: True
     lambda: |-
-      static int cal_msg_timout = 0;
-
       // Indicate forced calibration is in progress
       if (id(co2_calibrate) == true) {
         // Giver user a couple of seconds to read the message
