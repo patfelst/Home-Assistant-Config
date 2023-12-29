@@ -1,37 +1,7 @@
 esphome:
-  # Discussion about multiple ESP devices running same code
-  # ssieb — Today at 10:01 AM
-  # It's much better to have separate yaml files for each device. The dashboard can't actual handle the mac suffix option.  I think you won't be able to OTA flash it.
-  # https://discord.com/channels/429907082951524364/429907082955718657/995849877965770792
   name: co2-workshop
   friendly_name: CO2 Workshop
   comment: SCD-41 CO2 sensor on TTGO T-Display 240x135 TFT and strip of x8 SK6812 RGB LEDs
-  on_boot:
-    priority: 600
-    then:
-      # Cycle through a few effects at startup
-      - light.turn_on:
-          id: led_strip 
-          effect: 'Rainbow width 8'
-          brightness: 100%
-          red: 60%
-          green: 0%
-          blue: 100%
-      - delay: 7s
-      - light.turn_on:
-          id: led_strip 
-          effect: 'None'
-          red: 0%
-          green: 0%
-          blue: 0%
-      - light.addressable_set:
-          # clear all LEDs first
-          id: led_strip
-          range_from: 0
-          range_to: 7
-          red: 0%
-          green: 0%
-          blue: 0%
 
 esp32:
   board: ttgo-t1
@@ -42,10 +12,7 @@ esp32:
 logger:
   level: DEBUG
 
-# Enable Home Assistant API
-# Note: API password is unnecessary when using encryption key
 api:
-
 ota:
 
 wifi:
@@ -60,8 +27,40 @@ button:
   - platform: restart
     name: ESP32 restart
 
+  - platform: template
+    name: SCD-41 Factory Reset
+    on_press: 
+        # Restore calibration to factory settings
+        - scd4x.factory_reset: scd41
+        - delay: 5s
+        - lambda: |-
+            ESP_LOGI("SCD-41 Factory", "Restored factory settings, now restarting ESP32");
+            delay(500);
+            ESP.restart();
+
+  - platform: template
+    name: Force SCD-41 Calibration
+    on_press: 
+      then:
+        - globals.set:
+            id: co2_calibrate
+            value: 'true'
+        # Set all RGB LED segments to orange to indicate calibration
+        - light.addressable_set:
+            id: led_strip
+            range_from: 0
+            range_to: 7
+            color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
+            red: 100%
+            green: 60%
+            blue: 0%
+        # Calibrate SCD-41 CO2 sensor
+        - scd4x.perform_forced_calibration:
+            value: !lambda 'return id(co2_cal_val);'
+            id: scd41
+
 globals:
-  - id: button_timer
+  - id: general_timer
     type: int
     initial_value: '0'
   - id: lcd_txt_colour
@@ -76,9 +75,6 @@ globals:
   - id: co2_cal_val
     type: int
     initial_value: '425' # outside average April 2022 is 419
-  - id: effect_counter
-    type: int
-    initial_value: '0'
 
 font:
   - file: "arial.ttf"
@@ -157,31 +153,24 @@ display:
     lambda: |-
       static int cal_msg_timout = 0;
 
-      // Indicate forced calibration will take place if button_1 is held
-      if (id(button_1).state) {
-        it.printf(it.get_width() / 2, it.get_height() / 2 - 20, id(arial_20), id(my_white), TextAlign::CENTER, "Hold button for 6s");
-        it.printf(it.get_width() / 2, it.get_height() / 2, id(arial_20), id(my_white), TextAlign::CENTER, "to calibrate %d", id(button_timer));
-      }
-      // Indicate forced calibration has taken place
-      else if (id(co2_calibrate)) {
-        // Keep calibration message displayed for 3 seconds
-        if (cal_msg_timout++ > 3) {
+      // Indicate forced calibration is in progress
+      if (id(co2_calibrate) == true) {
+        // Giver user a couple of seconds to read the message
+        if (id(general_timer)++ > 2) {
+          id(general_timer) = 0;
           id(co2_calibrate) = false;
-          cal_msg_timout = 0;
         }
-        it.printf(it.get_width() / 2, it.get_height() / 2, id(arial_20), id(my_white), TextAlign::CENTER, "Calibrating to %d ppm", id(co2_cal_val));
+        it.printf(it.get_width() / 2, it.get_height() / 2 - 15, id(arial_20), id(my_white), TextAlign::CENTER, "Calibrating to %d ppm", id(co2_cal_val));
       }
       else {
         it.rectangle(0, 0, it.get_width()-1, it.get_height()-1, id(dark_gray));
         it.printf(it.get_width(), it.get_height(), id(arial_20), id(mid_gray), TextAlign::BOTTOM_RIGHT, "CO2 PPM");
         it.printf(it.get_width() / 2, it.get_height() / 2, id(co2_font), id(lcd_txt_colour), TextAlign::CENTER, "%.0f", id(co2).state);
       }
-
       // Blink the update indicator circle
-      if (id(co2_updated)) {
+      if (id(co2_updated) == true) {
         id(co2_updated) = false;
         it.filled_circle(it.get_width() - 20, 90, 8, id(mid_gray));
-        // it.filled_circle(240, 90, 8, id(my_gray));
         // ESP_LOGI("Debug", "ttgo resolution: width = %d, height = %d", it.get_width(), it.get_height());
       }
 
@@ -190,12 +179,6 @@ i2c:
     sda: 21
     scl: 22
     scan: true
-
-# text_sensor:
-#   - platform: template
-#     name: Uptime
-#     id: uptime_human
-#     icon: mdi:clock-start
 
 sensor:
   - platform: scd4x
@@ -271,37 +254,6 @@ sensor:
                 - lambda: |-
                     ESP_LOGI("SCD41-CO2", "led_strip == co2_bad");
 
-    # temperature:
-    #   name: Temperature
-    #   accuracy_decimals: 1
-
-  # - platform: uptime
-  #   name: Uptime
-  #   internal: true
-  #   id: uptime_sensor
-  #   update_interval: 30s
-  #   on_raw_value:
-  #     then:
-  #       - text_sensor.template.publish:
-  #           id: uptime_human
-  #           state: !lambda |-
-  #             int seconds = round(id(uptime_sensor).raw_state);
-  #             int days = seconds / (24 * 3600);
-  #             seconds = seconds % (24 * 3600);
-  #             int hours = seconds / 3600;
-  #             seconds = seconds % 3600;
-  #             int minutes = seconds /  60;
-  #             seconds = seconds % 60;
-  #             return (
-  #               (days ? to_string(days) + "d " : "") +
-  #               (hours ? to_string(hours) + "h " : "") +
-  #               (minutes ? to_string(minutes) + "m " : "") +
-  #               (to_string(seconds) + "s")).c_str();
-
-  # - platform: wifi_signal
-  #   name: WiFi Strength
-  #   update_interval: 30s
-
 light:
   # TTGO T-Display dimmable backlight
   - platform: monochromatic
@@ -313,135 +265,14 @@ light:
   - platform: neopixelbus
     id: led_strip
     name: LED strip
-    internal: False
+    internal: True
     variant: SK6812
     pin: GPIO12
     num_leds: 8
     type: GRB
     restore_mode: ALWAYS_OFF
     default_transition_length: 200ms
-    effects:
-      - addressable_rainbow:
-          name: Rainbow width 8
-          speed: 10
-          width: 8
-      - addressable_rainbow:
-          name: Rainbow width 16
-          speed: 20
-          width: 16
-      - addressable_scan:
-          name: Scan 40ms
-          move_interval: 40ms
-          scan_width: 1
-      - strobe:
-          name: Strobe Yellow
-          colors:
-            - state: true
-              # brightness: 100%
-              red: 100%
-              green: 100%
-              blue: 0%
-              duration: 1.5s
-            - state: false
-              duration: 0.3s
-      - strobe:
-          name: Strobe Red
-          colors:
-            - state: true
-              # brightness: 100%
-              red: 100%
-              green: 0%
-              blue: 0%
-              duration: 250ms
-            - state: false
-              duration: 150ms
 
-interval:
-  # - interval: 500ms
-  #   then:
-  #     - lambda: |-
-  #         static int flash_counter = 0;
-  #         int co2_tmp = id(co2).state;
-  #         auto call_on = id(led_strip).turn_on();
-  #         auto call_off = id(led_strip).turn_off();
-
-  #         if (co2_tmp < 700) {
-  #           call_on.set_rgb(0.0, 1.0, 0.0);
-  #           call_on.perform();
-  #         }
-
-  #         else if (co2_tmp >= 700 && co2_tmp < 1000) {
-  #           flash_counter++;
-  #           ESP_LOGI("", "flash_counter=%d", flash_counter);
-  #           if (flash_counter < 4) {
-  #             call_on.set_rgb(1.0, 1.0, 0.0);
-  #             call_on.perform();
-  #           }
-  #           else if (flash_counter < 6) {
-  #             call_off.perform();
-  #             flash_counter = 0;
-  #           }
-  #         }
-  #         else if (co2_tmp >= 1000) {
-  #           call_on.set_rgb(1.0, 0.0, 0.0);
-  #           call_on.perform();
-  #         }
-
-  - interval: 1sec
-    then:
-      # count up when button_1 is held down
-      - lambda: |-
-          if (id(button_1).state)
-            id(button_timer)++;
-          else
-            id(button_timer) = 0;
-      - if:
-          # Indicate button_1 being held down for entry to CO2 calibration mode
-          condition:
-            lambda: 'return (id(button_1).state) && (id(button_timer) < 6);'
-          then:
-            - light.addressable_set:
-                # clear all LEDs first
-                id: led_strip
-                range_from: 0
-                range_to: 7
-                color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
-                red: 0%
-                green: 0%
-                blue: 0%
-            - light.addressable_set:
-                # indicate button_1 is being held (purple)
-                id: led_strip
-                range_from: 0
-                range_to: !lambda |-
-                  return id(button_timer); // Each second increments another LED on the strip
-                color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
-                red: 60%
-                green: 0%
-                blue: 100%
-          else:
-            # Start CO2 calibration if button held for more than 6 seconds
-            - if:
-                condition:
-                  lambda: 'return id(button_timer) >= 6;'
-                then:
-                  - globals.set:
-                      id: co2_calibrate
-                      value: 'true'
-                  # Calibrate SCD-41 CO2 sensor
-                  - scd4x.perform_forced_calibration:
-                      value: !lambda 'return id(co2_cal_val);'
-                      id: scd41
-                  # Set all RGB LED segments to orange to indicate calibration
-                  - light.addressable_set:
-                      id: led_strip
-                      range_from: 0
-                      range_to: 7
-                      color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
-                      red: 100%
-                      green: 60%
-                      blue: 0%
-  
 binary_sensor:
   # Dim the display when workshop lights are off
   - platform: homeassistant
@@ -455,36 +286,7 @@ binary_sensor:
     on_release:
       - light.turn_on:
           id: ttgo_backlight
-          brightness: 10%
-
-  - platform: gpio
-    internal: true
-    id: button_1
-    pin:
-      number: GPIO35
-      inverted: true
-      mode: input
-    filters:
-      - delayed_on: 50ms # debounce
-
-  - platform: gpio
-    internal: true
-    id: button_2
-    pin:
-      number: GPIO0
-      inverted: true
-      mode: input
-    filters:
-      - delayed_on: 50ms # debounce
-    on_press:
-      then:
-        - lambda: |-
-            id(effect_counter)++;
-            // Wrap effect counter to zero when at last effect
-            if (id(effect_counter) > id(led_strip).get_effects().size())
-              id(effect_counter) = 0;
-            id(led_strip).make_call().set_effect(id(effect_counter)).perform();
-            //ESP_LOGW("debug text", "Effect = %d, number of effects: %d", id(effect_counter), id(led_strip).get_effects().size());
+          brightness: 20%
 
 number:
   # This exposes a slider in HA to control LED strip brightness from front end
