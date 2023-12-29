@@ -182,7 +182,7 @@ display:
         id(co2_updated) = false;
         it.filled_circle(it.get_width() - 20, 90, 8, id(mid_gray));
         // it.filled_circle(240, 90, 8, id(my_gray));
-        ESP_LOGI("Debug", "ttgo resolution: width = %d, height = %d", it.get_width(), it.get_height());
+        // ESP_LOGI("Debug", "ttgo resolution: width = %d, height = %d", it.get_width(), it.get_height());
       }
 
 i2c:
@@ -201,6 +201,7 @@ sensor:
   - platform: scd4x
     id: scd41
     i2c_id: bus_a
+    automatic_self_calibration: True
     temperature_offset: 15.5 # this is subtracted from temperature
     update_interval: 15s
     co2:
@@ -465,22 +466,6 @@ binary_sensor:
       mode: input
     filters:
       - delayed_on: 50ms # debounce
-    # Set LED colour to indicate calibration mode, this is set using the 1sec interval to count when button_1 is held
-    on_release: 
-      then:
-        - if:
-            # Keep RGB LEDs orange during calibration
-            condition:
-              lambda: 'return !(id(co2_calibrate));'
-            then:
-              - light.addressable_set:
-                  id: led_strip
-                  color_brightness: !lambda 'return id(led_strip_brightness).state / 100.0;'
-                  range_from: 0
-                  range_to: 7
-                  red: 0.0
-                  green: 0.0
-                  blue: 0.0
 
   - platform: gpio
     internal: true
