@@ -1,0 +1,14 @@
+substitutions:
+  dev_name: "rack-temperature-ds18b20"
+  friend_name: "Rack Temperature DS18B20"
+  ds18b20_internal_addr: "0x183c01a81670ca28"
+  ds18b20_external_addr: "0xf600000dfcb99928"
+
+packages:
+  device_base: !include packages/device-temperature-ds18b20.yaml
+
+wifi:
+  manual_ip:
+    static_ip: 192.168.20.153
+    gateway: 192.168.20.1
+    subnet: 255.255.255.0
