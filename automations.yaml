@@ -2790,7 +2790,7 @@
           - cover.blind_1
   mode: single
 - id: "1696932809329"
-  alias: Blinds - close at 10:30AM if kitchen hot (>22C)
+  alias: Blinds - close at 10:30AM if kitchen hot (>24C)
   description: ""
   trigger:
     - platform: time
@@ -2799,7 +2799,7 @@
     - condition: numeric_state
       entity_id: climate.ac_kitchen
       attribute: current_temperature
-      above: 22
+      above: 24
     - condition: numeric_state
       entity_id: sensor.solarnet_energy_day
       above: 9
