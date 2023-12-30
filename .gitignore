@@ -4,7 +4,8 @@
 !*.yaml
 !.gitignore
 !*.md
-!/esphome/
+!esphome
+!packages
 
 # don't ignore all files in the floorplan sub folder
 # gitignore (unignore) as per https://stackoverflow.com/questions/44568184/gitignore-everything-except-a-subfolder-with-every-content

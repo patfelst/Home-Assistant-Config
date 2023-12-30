@@ -4,50 +4,45 @@ substitutions:
   dot_size: "4"
 
 esphome:
-  name: power-monitor
-  friendly_name: Power Monitor
+  name: ${dev_name}
+  friendly_name: ${friend_name}
   comment: M5Stack Core2 home power visualiser
   platformio_options:
     board_build.f_flash: 80000000L # set FLASH frequency to 80MHz
     board_build.partitions: default_16MB.csv
+  on_boot: 
+    priority: 600
+    then:
+      # This is needed otherwise setting to 100% later doesn't work, no idea why
+      - lambda: "axp192_axp192component->set_brightness(0.5);"
 
 external_components:
+  # also try this custom component, has more features. e.g. 
+  # should be able to set VBUS as an input from external +5V via (Grove port) using AXP192 GPIO0 ==> BUS_PW_EN / N_VBUSEN
+  # https://gitlab.com/geiseri/esphome_extras/-/tree/main/components/axp192
   - source: github://Pionizer/pionizer-axp192
     components: [axp192]
     refresh: 1days
-  # - source: github://gpambrozio/esphome@FT6336U-touch
-  #   components: [ft63x6]
-  - source:
-      type: local
-      path: ext_components/components
 
 esp32:
-  # board: esp32dev
   board: m5stack-core-esp32
   framework:
     type: arduino
-  flash_size: 16MB
   variant: ESP32
+  flash_size: 16MB
 
-# Enable logging
 logger:
+  level: ERROR
 
-# Enable Home Assistant API
 api:
   encryption:
-    key: "lshswpl55vRn4OiphAZrnZ+F4c7D7vizIOX38xIVqqE="
+    key: !secret api_key
 
 ota:
-  password: "0804827a6d325692ce2ec8227a244937"
 
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "Power-Monitor Fallback Hotspot"
-    password: "5Jtcg7YLt8Iv"
 
 globals:
   - id: touch_x
@@ -70,10 +65,6 @@ sensor:
       name: "Battery Level"
       id: batterylevel
 
-  - platform: template
-    name: Sim grid
-    id: sim_grid
-    
   - platform: homeassistant
     internal: true
     id: ha_grid_power
@@ -117,14 +108,13 @@ touchscreen:
     interrupt_pin: 39
     id: touch_screen
     on_touch:
+      # M5Stack Core2 is 320 x 240 + 40 pixels below display active area for 3x red circular touch buttons
       - lambda: |-
-          // ESP_LOGD("debug", "touch (x,y) = %d, %d", touch.x, touch.y);
-          id(touch_x) = touch.x;
-          id(touch_y) = touch.y;
-          // Turn LCD bright for 30s on screen touch
-          //     axp192_axp192component->set_brightness(0.9);
-      # - delay: 30s
-      # - lambda: "axp192_axp192component->set_brightness(0.5);"
+          // ESP_LOGE("touch", "Current (x,y) = %d, %d", touch.x, touch.y);        // y-coord is half of expected
+          // ESP_LOGE("touch", "Raw (x,y) = %d, %d\n", touch.x_raw, touch.y_raw);  // y-coord is correct
+          id(touch_x) = touch.x_raw; 
+          id(touch_y) = touch.y_raw;
+      - lambda: "axp192_axp192component->set_brightness(1.0);"
 
 binary_sensor:
   - platform: touchscreen
@@ -133,8 +123,8 @@ binary_sensor:
     internal: True
     x_min: 0
     x_max: 106
-    y_min: 0
-    y_max: 280
+    y_min: 120 # should be 240, but is half due to bug in ESPHome touch y-coordinate
+    y_max: 140 # should be 280
     filters:
       - delayed_on: ${touch_delay}
     on_press:
@@ -147,8 +137,8 @@ binary_sensor:
     internal: True
     x_min: 107
     x_max: 213
-    y_min: 0
-    y_max: 280
+    y_min: 120
+    y_max: 140
     filters:
       - delayed_on: ${touch_delay}
     on_press:
@@ -161,8 +151,8 @@ binary_sensor:
     internal: True
     x_min: 214
     x_max: 319
-    y_min: 0
-    y_max: 280
+    y_min: 120
+    y_max: 140
     filters:
       - delayed_on: ${touch_delay}
     on_press:
@@ -172,24 +162,17 @@ binary_sensor:
   - platform: homeassistant
     internal: true
     id: presence
-    entity_id: light.led_strip_butlers_overhead_cupboards
+    entity_id: ${room_light}
     on_press: 
-      - lambda: "axp192_axp192component->set_brightness(0.9);"
+      - lambda: "axp192_axp192component->set_brightness(1.0);"
     on_release:
       - lambda: "axp192_axp192component->set_brightness(0.5);"
 
-  
-  # - platform: gpio
-  #   id: touching
-  #   name: Touching
-  #   pin:
-  #     number: 39
-  #     inverted: true
-
 display:
   - platform: ili9xxx
-    model: M5STACK # x=320 x y=240 + 40 pixels for red touch circles below display
+    model: M5STACK
     id: lcd_display
+    # dimensions: "320X240"
     update_interval: 500ms
     cs_pin: 5
     dc_pin: 15
@@ -256,12 +239,12 @@ display:
           // *** Display SOLAR power
           xx = width/2 - ${icon_size}/2 - txt_xoffset;
           yy = 15;
-          it.printf(xx, yy, id(font_med), yellow, TextAlign::RIGHT, "%.1f", solar_kw);
+          it.printf(xx, yy, id(font_lge), yellow, TextAlign::RIGHT, "%.1f", solar_kw);
 
           // *** Display HOUSE power
-          xx = 15;
-          yy = height - ${icon_size} - 7;
-          it.printf(xx, yy, id(font_med), cyan, TextAlign::LEFT, "%.1f", house_kw);
+          xx = 5;
+          yy = height - ${icon_size} - 13;
+          it.printf(xx, yy, id(font_lge), cyan, TextAlign::LEFT, "%.1f", house_kw);
 
           // ***
           // *** DETERMINE FLOWS
@@ -294,7 +277,7 @@ display:
           if (flow_solar_grid > 0.05) {
             xx = (width * 3)/4 - 10;
             yy = height/2 - 30;
-            it.printf(xx, yy, id(font_med), green, TextAlign::LEFT, "%.1f", flow_solar_grid);
+            it.printf(xx, yy, id(font_lge), green, TextAlign::LEFT, "%.1f", flow_solar_grid);
 
             // Display moving direction indicator
             if (solar_grid_ind_y >= (height - 60)) {
@@ -312,7 +295,7 @@ display:
           if (flow_solar_house > 0.05) {
             xx = width/4 + 10;
             yy = height/2 - 30;
-            it.printf(xx, yy, id(font_med), green, TextAlign::RIGHT, "%.1f", flow_solar_house);
+            it.printf(xx, yy, id(font_lge), green, TextAlign::RIGHT, "%.1f", flow_solar_house);
 
             // Display moving direction indicator
             if (solar_house_ind_y >= (height - 60)) {
@@ -330,7 +313,7 @@ display:
             xx = width/2;
             yy = height - ${icon_size}/2;
             // Only display Import flow
-            it.printf(xx, yy - 25, id(font_med), red, TextAlign::CENTER, "%.1f", grid_kw);
+            it.printf(xx, yy - 25, id(font_lge), red, TextAlign::CENTER, "%.1f", grid_kw);
 
             if (grid_house_ind_x <= ${icon_size} + 5) {
               grid_house_ind_x = width - ${icon_size} - 5;
@@ -473,41 +456,3 @@ image:
     resize: ${icon_size}X${icon_size}
     type: RGB24
     dither: FLOYDSTEINBERG
-
-# To simulate SOLAR and HOUSE power
-number:
-  - platform: template
-    name: Sim solar
-    id: sim_solar
-    # initial_value: 3
-    restore_value: True
-    optimistic: True
-    min_value: 0
-    max_value: 10
-    step: 0.25
-    mode: slider
-    on_value:
-      then:
-        # - lambda: |-
-        #     axp192_axp192component->set_brightness(x/10.0);
-        - sensor.template.publish:
-            id: sim_grid
-            state: !lambda |-
-              return -(x + id(sim_house).state);
-
-  - platform: template
-    name: Sim house
-    id: sim_house
-    # initial_value: -0.60
-    restore_value: True
-    optimistic: True
-    min_value: -10
-    max_value: 0
-    step: 0.25
-    mode: slider
-    on_value:
-      then:
-        - sensor.template.publish:
-            id: sim_grid
-            state: !lambda |-
-              return -(id(sim_solar).state + x);
