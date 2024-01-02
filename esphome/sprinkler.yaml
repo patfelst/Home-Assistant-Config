@@ -1,17 +1,16 @@
 substitutions:
-  shed_lawn_name: Shed Lawn (z1)        # zone 1
-  ramp_lawn_name: Ramp Lawn (z2)        # zone 2
-  back_lawn_name: Back Lawn (z3)        # zone 3
-  back_garden_name: Back Garden (z4)    # zone 4
-  pool_garden_name: Pool Garden (z5)    # zone 5
-  front_garden_name: Front Garden (z6)  # zone 6
-  front_lawn_name: Front Lawn (z7)      # zone 7
-  verge_lawn_name: Verge Lawn (z8)      # zone 8
+  shed_lawn_name: Shed Lawn        # zone 1 / Valve 0
+  ramp_lawn_name: Ramp Lawn        # zone 2 / Valve 1
+  back_lawn_name: Back Lawn        # zone 3 / Valve 2
+  back_garden_name: Back Garden    # zone 4 / Valve 3
+  pool_garden_name: Pool Garden    # zone 5 / Valve 4
+  front_garden_name: Front Garden  # zone 6 / Valve 5
+  front_lawn_name: Front Lawn      # zone 7 / Valve 6
+  verge_lawn_name: Verge Lawn      # zone 8 / Valve 7
   # initial sprinkler run time in minutes. Set for spring/autumn and use multiplier/divide to adjust for summer/winter
   initial_runtime_mins: "10"
   # max runtime for number exposed to HA front end
   max_runtime_mins: "60"
-
 
 globals:
   - id: current_program_str
@@ -26,26 +25,49 @@ esphome:
   includes:
     - esp_home_functions.h
   on_boot:
-    - priority: 250
+    - priority: 600
       then:
-        light.turn_on: status_led
-    - priority: -100
-      then:
-        - delay: 2s
-        - light.turn_off: status_led
+        - repeat:
+            count: 5
+            then:
+              - light.turn_on: status_led
+              - light.addressable_set:
+                  id: rgb
+                  range_from: 0
+                  range_to: 0
+                  color_brightness: 100%
+                  red: 0.0
+                  green: 1.0
+                  blue: 0.0
+              - delay: 200ms
+              - light.turn_off: status_led
+              - light.turn_off: rgb
+              - delay: 200ms
+        # - light.turn_on:
+        #     id: rgb
+        #     effect: 'Rainbow'
+        #     brightness: 20%
+        # -  delay: 3s
+        # - light.turn_on:
+        #     id: rgb
+        #     brightness: 20%
+        # - light.turn_off: rgb
+        - lambda: |-
+            id(lcd_display).backlight();
+            id(lcd_display).print(0, 0, "Sprinkler Controller");
+            id(lcd_display).update();
+        - delay: 1s
 
 esp32:
   board: esp32dev
   framework:
     type: arduino
 
-# Enable logging
 logger:
 
-# Enable Home Assistant API
 api:
   encryption:
-    key: "OD1Idla+MylQloUBjkfBft/Dyp5VuxOFiRbUJF7DQmc="
+    key: !secret api_key
   services:
     - service: start_prg_a
       then:
@@ -57,12 +79,10 @@ api:
         - script.execute: watering_program_b
 
 ota:
-  password: "069426673d630c6ebe4e027926f371cf"
 
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Sprinkler Fallback Hotspot"
@@ -99,14 +119,70 @@ light:
     id: status_led
     name: "Status LED"
     output: status_led_gpio
-  
+  - platform: esp32_rmt_led_strip
+    rgb_order: GRB
+    pin: GPIO15
+    default_transition_length: 50ms
+    num_leds: 3
+    rmt_channel: 0
+    chipset: ws2812
+    id: rgb
+    name: "RGB LED"
+  #   effects:
+  #     - addressable_rainbow:
+  #         name: Rainbow
+  #         speed: 10
+  #         width: 3
+
 output:
   # Built in status LED on LilyGo 8x channel relay board
   - id: status_led_gpio
     platform: gpio
     pin: GPIO25
     inverted: True
-    
+
+i2c:
+  sda: GPIO02
+  scl: GPIO14
+  frequency: 100kHz
+
+display:
+  - platform: lcd_pcf8574
+    dimensions: 20x4
+    address: 0x27
+    id: lcd_display
+    lambda: |-
+      if (id(sprinkler_controller).active_valve().has_value()) {
+        auto running_valve_no = id(sprinkler_controller).active_valve().value();
+        auto running_valve_name = id(sprinkler_controller)->valve_name(running_valve_no);
+
+        //                Prog A              
+        //                01234567890123456789
+        it.printf(0, 0, "%s              ", id(current_program_str).c_str());
+
+        it.printf(0, 1, "%s", running_valve_name);
+
+        //               Valve Time: xx:xx:xx
+        //               01234567890123456789
+        auto temp = id(sprinkler_controller).time_remaining_active_valve().value();
+        it.printf(0, 2, "Valve Time: %s", seconds_to_readable_2(temp));
+
+        //               Total Rem:  xx:xx:xx
+        //               01234567890123456789
+        temp = id(sprinkler_controller).time_remaining_current_operation().value();
+        it.printf(0, 3, "Total Rem:  %s", seconds_to_readable_2(temp));
+      }
+      else {
+        //              01234567890123456789
+        it.print(0, 0, "Idle                ");
+
+        it.print(0, 1, "                    ");
+
+        it.print(0, 2, "Valve Time:        0");
+
+        it.print(0, 3, "Total Rem:         0");
+      }
+
 
 ###########
 #### TODO
@@ -121,10 +197,24 @@ sprinkler:
       id: main_switch
       name: "Main Switch"
       on_turn_on:
-        - light.turn_on: status_led
+        - light.addressable_set:
+            id: rgb
+            range_from: 0
+            range_to: 2
+            color_brightness: 80%
+            red: 0.0
+            green: 1.0
+            blue: 0.0
         - script.execute: publish_sprinkler_time
       on_turn_off:
-        - light.turn_off: status_led
+        - light.addressable_set:
+            id: rgb
+            range_from: 0
+            range_to: 2
+            color_brightness: 30%
+            red: 1.0
+            green: 0.0
+            blue: 0.0
         - sprinkler.clear_queued_valves: sprinkler_controller
         - text_sensor.template.publish:
             id: text_time_remaining
@@ -135,6 +225,7 @@ sprinkler:
         - text_sensor.template.publish:
             id: text_valve_rem_time
             state: "0s"
+        - lambda: 'id(current_program_str) = "No program";'
     auto_advance_switch: "Sprinklers Auto Advance"
     valve_overlap: 5s
     multiplier_number:
@@ -149,7 +240,6 @@ sprinkler:
       #       id: text_time_remaining
       #       state: !lambda |-
       #         return seconds_to_readable(id(sprinkler_controller).time_remaining_current_operation().value());
-
     valves:
       #
       # Valve 0 - Zone 1 : SHED LAWN
@@ -356,7 +446,7 @@ script:
           state: !lambda |-
             std::string prog_txt = "";
             prog_txt = id(current_program_str) + " " +
-                        seconds_to_readable(id(sprinkler_controller).total_queue_time());
+                        seconds_to_readable_1(id(sprinkler_controller).total_queue_time());
             return prog_txt;
 
   - id: publish_sprinkler_time
@@ -368,11 +458,11 @@ script:
             - text_sensor.template.publish:
                 id: text_time_remaining
                 state: !lambda |-
-                  return seconds_to_readable(id(sprinkler_controller).time_remaining_current_operation().value());
+                  return seconds_to_readable_1(id(sprinkler_controller).time_remaining_current_operation().value());
             - text_sensor.template.publish:
                 id: text_valve_rem_time
                 state: !lambda |-
-                  return seconds_to_readable(id(sprinkler_controller).time_remaining_active_valve().value());
+                  return seconds_to_readable_1(id(sprinkler_controller).time_remaining_active_valve().value());
             - delay: 5s
       - text_sensor.template.publish:
           id: text_time_remaining
