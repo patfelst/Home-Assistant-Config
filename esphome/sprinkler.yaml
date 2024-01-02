@@ -206,6 +206,7 @@ sprinkler:
             green: 1.0
             blue: 0.0
         - script.execute: publish_sprinkler_time
+        - script.execute: publish_queue_time # Need this to display "No Program" on HA front end if a single valve turned on (no program)
       on_turn_off:
         - light.addressable_set:
             id: rgb
@@ -444,9 +445,12 @@ script:
       - text_sensor.template.publish:
           id: text_total_queue_time
           state: !lambda |-
+            int tot_q_time = id(sprinkler_controller).total_queue_time();
             std::string prog_txt = "";
-            prog_txt = id(current_program_str) + " " +
-                        seconds_to_readable_1(id(sprinkler_controller).total_queue_time());
+            if (tot_q_time)
+              prog_txt = id(current_program_str) + " - " + seconds_to_readable_2(tot_q_time);
+            else
+              prog_txt = id(current_program_str); // Should be set to "No program"
             return prog_txt;
 
   - id: publish_sprinkler_time
@@ -458,11 +462,11 @@ script:
             - text_sensor.template.publish:
                 id: text_time_remaining
                 state: !lambda |-
-                  return seconds_to_readable_1(id(sprinkler_controller).time_remaining_current_operation().value());
+                  return seconds_to_readable_2(id(sprinkler_controller).time_remaining_current_operation().value());
             - text_sensor.template.publish:
                 id: text_valve_rem_time
                 state: !lambda |-
-                  return seconds_to_readable_1(id(sprinkler_controller).time_remaining_active_valve().value());
+                  return seconds_to_readable_2(id(sprinkler_controller).time_remaining_active_valve().value());
             - delay: 5s
       - text_sensor.template.publish:
           id: text_time_remaining
