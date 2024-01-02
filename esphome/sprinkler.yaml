@@ -1,3 +1,6 @@
+# Decided to abandon this project. It works ok, but the extra features I wanted to add like LCD status of programs
+# was getting too time consuming to implement.
+
 substitutions:
   shed_lawn_name: Shed Lawn        # zone 1 / Valve 0
   ramp_lawn_name: Ramp Lawn        # zone 2 / Valve 1
@@ -11,12 +14,6 @@ substitutions:
   initial_runtime_mins: "10"
   # max runtime for number exposed to HA front end
   max_runtime_mins: "60"
-
-globals:
-  - id: current_program_str
-    type: std::string
-    restore_value: no  # Strings cannot be saved/restored
-    initial_value: '"No program"'
 
 esphome:
   name: sprinkler
@@ -64,6 +61,7 @@ esp32:
     type: arduino
 
 logger:
+  level: ERROR
 
 api:
   encryption:
@@ -84,35 +82,33 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "Sprinkler Fallback Hotspot"
-    password: "HfYeKDfyb5Pc"
 
-captive_portal:
+globals:
+  - id: current_program_str
+    type: std::string
+    restore_value: no  # Strings cannot be saved/restored
+    initial_value: '"No program"'
 
 button:
   - platform: restart
     name: "Reboot"
+
   - platform: template
     name: "Run Watering Program A"
     on_press:
-      # - wait_until:
-      #     condition: 
-      #       switch.is_off: main_switch # Not sure if this is actually needed
       - script.execute: watering_program_a
+
   - platform: template
     name: "Run Watering Program B"
     on_press:
-      # - wait_until:
-      #     condition: 
-      #       switch.is_off: main_switch # Not sure if this is actually needed
       - script.execute: watering_program_b
+
   - platform: template
     name: "Stop All Sprinklers"
     on_press:
       - sprinkler.shutdown: sprinkler_controller
       - sprinkler.clear_queued_valves: sprinkler_controller
-
+  
 light:
   # Built in status LED on LilyGo 8x channel relay board
   - platform: binary
