@@ -35,55 +35,6 @@
             interruption-level: time-sensitive
       enabled: true
   mode: single
-- id: "1667210675939"
-  alias: Motion - Hallway turn lights on for 2 mins 11pm-6am
-  description: Triggered by hallway sensor between 11pm-6am
-  trigger:
-    - platform: state
-      entity_id:
-        - binary_sensor.hallway_sensor_occupancy
-      to: "on"
-      from: "off"
-  condition:
-    - condition: time
-      before: 06:00:00
-      after: "23:00:00"
-      weekday:
-        - mon
-        - tue
-        - wed
-        - thu
-        - fri
-        - sat
-        - sun
-      enabled: false
-    - condition: state
-      entity_id: input_boolean.sleep_mode
-      state: "on"
-  action:
-    - service: light.turn_on
-      data:
-        brightness_pct: 5
-      target:
-        entity_id:
-          - light.led_strip_kitchen_kicker
-    - service: light.turn_on
-      data:
-        brightness_pct: 10
-      target:
-        entity_id: light.led_strip_front_hall_dimmer
-    - delay:
-        hours: 0
-        minutes: 2
-        seconds: 45
-        milliseconds: 0
-    - service: light.turn_off
-      data: {}
-      target:
-        entity_id:
-          - light.led_strip_kitchen_kicker
-          - light.led_strip_front_hall_dimmer
-  mode: single
 - id: "1667473720137"
   alias: Blinds close at sunset
   description: ""
@@ -303,20 +254,7 @@
       target:
         entity_id:
           - light.lamp_rhs_fireplace
-      enabled: false
-    - service: light.turn_on
-      data:
-        effect: "{{ range(0,6) | random | int }}"
-        brightness_pct: 30
-      target:
-        entity_id: light.twinkly_back_lounge
-    - service: light.turn_on
-      target:
-        entity_id:
-          - light.inflatable_santa
-        device_id: []
-        area_id: []
-      data: {}
+      enabled: true
     - if:
         - condition: state
           entity_id: input_boolean.sleep_mode
@@ -1817,11 +1755,6 @@
   alias: Lights - pool & fire-pit lights off (second time of day)
   description: ""
   trigger:
-    - platform: numeric_state
-      entity_id: sun.sun
-      attribute: elevation
-      below: input_number.lights_off_sun_elevation_2
-      enabled: false
     - platform: time
       at: input_datetime.lights_off_time_2
   condition: []
@@ -1832,13 +1765,6 @@
         entity_id:
           - light.pool_light_controller_pool_lights
           - light.led_strip_fire_pit_dimmer
-    - service: light.turn_off
-      target:
-        entity_id:
-          - light.inflatable_santa
-        device_id: []
-        area_id: []
-      data: {}
   mode: single
 - id: "1679693076266"
   alias: Automatic - open garage and gate when PATRICK arrives home in when driving
@@ -3182,7 +3108,7 @@
             entity_id: light.wir_downlight
   mode: single
 - id: "1698537751935"
-  alias: Motion - Hallway turn lights v2
+  alias: Motion - Hallway turn lights
   description: ""
   trigger:
     - platform: state
@@ -3237,12 +3163,6 @@
         brightness_pct: 5
       target:
         entity_id: light.led_strip_kitchen_kicker
-    - service: light.turn_on
-      data:
-        effect: 1 Tropical
-        brightness_pct: 30
-      target:
-        entity_id: light.twinkly_back_lounge
     - delay:
         hours: 0
         minutes: 2
@@ -3254,7 +3174,6 @@
         entity_id:
           - light.led_strip_kitchen_kicker
           - light.led_strip_front_hall_dimmer
-          - light.twinkly_back_lounge
   mode: single
 - id: "1698538309359"
   alias: Motion - garage lights
@@ -3772,3 +3691,8 @@
             entity_id: light.led_strip_workshop_shelf_dimmer
           data:
             brightness_pct: 100
+      press_hold:
+        - service: light.turn_off
+          target:
+            area_id: electronics_lab
+          data: {}
