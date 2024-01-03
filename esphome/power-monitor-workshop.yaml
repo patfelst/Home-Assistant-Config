@@ -1,7 +1,7 @@
 substitutions:
   dev_name: "power-monitor-workshop"
   friend_name: "Power Monitor Workshop"
-  room_light: light.workshop_downlight
+  room_light: light.led_strip_workshop_shelf_dimmer
 
 packages:
   device_base: !include packages/core2-power-monitor.yaml
