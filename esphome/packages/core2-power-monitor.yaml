@@ -79,6 +79,23 @@ sensor:
     internal: true
     id: ha_house_power
     entity_id: sensor.solarnet_power_load
+    filters:
+      - multiply: -1.0
+
+  - platform: homeassistant
+    internal: true
+    id: ha_pool_pump_power
+    entity_id: sensor.filtered_pool_pump_power_lowpass_filter
+
+  - platform: homeassistant
+    internal: true
+    id: ha_pool_heater_power
+    entity_id: sensor.pool_heater_power
+
+  - platform: homeassistant
+    internal: true
+    id: ha_rack_power
+    entity_id: sensor.19_rack_power_current_consumption
 
 spi:
   clk_pin: GPIO18
@@ -112,6 +129,9 @@ touchscreen:
       - lambda: |-
           // ESP_LOGE("touch", "Current (x,y) = %d, %d", touch.x, touch.y);        // y-coord is half of expected
           // ESP_LOGE("touch", "Raw (x,y) = %d, %d\n", touch.x_raw, touch.y_raw);  // y-coord is correct
+          // float core2_val = axp192_axp192component->GetBatVoltage();
+          // float core2_val = axp192_axp192component->GetVinVoltage();
+          // float core2_val = axp192_axp192component->GetVBusVoltage();
           id(touch_x) = touch.x_raw; 
           id(touch_y) = touch.y_raw;
       - lambda: "axp192_axp192component->set_brightness(1.0);"
@@ -168,6 +188,45 @@ binary_sensor:
     on_release:
       - lambda: "axp192_axp192component->set_brightness(0.5);"
 
+color:
+  - id: my_red
+    red: 100%
+    green: 0%
+    blue: 0%
+  - id: my_orange
+    # 255, 128, 0
+    red: 100%
+    green: 50%
+    blue: 0%
+  - id: my_yellow
+    red: 100%
+    green: 100%
+    blue: 0%
+  - id: my_green
+    red: 0%
+    green: 100%
+    blue: 0%
+  - id: my_blue
+    red: 0%
+    green: 0%
+    blue: 100%
+  - id: mid_gray
+    red: 50%
+    green: 50%
+    blue: 50%
+  - id: dark_gray
+    red: 20%
+    green: 20%
+    blue: 20%
+  - id: my_white
+    red: 100%
+    green: 100%
+    blue: 100%
+  - id: my_cyan
+    red: 0%
+    green: 100%
+    blue: 100%
+
 display:
   - platform: ili9xxx
     model: M5STACK
@@ -209,8 +268,8 @@ display:
           //  Note: Negative means house consuming (should almost always be the case)
           float house_kw = 0.0;
           if (!isnan(id(ha_house_power).state))
-            house_kw = -id(ha_house_power).state;
-          // house_kw = -id(sim_house).state;   // Use number component to simulate house power
+            house_kw = id(ha_house_power).state;
+          // house_kw = id(sim_house).state;   // Use number component to simulate house power
 
           // DETERMINE GRID POWER
           // Note: Negative = Export, Positive = Import
@@ -331,64 +390,96 @@ display:
           auto green = Color(0, 255, 0);
           auto cyan = Color(0, 255, 255);
           auto red = Color(255, 0, 0);
+          auto color_var = Color(0, 0, 0);
+
           int width = it.get_width();
           int height = it.get_height();
           int x_lab = 10;
-          const int y_lab_start = 50;
-          int y_lab = y_lab_start;
-          int y_inc = 35;
-          int x_val = 165;
+          const int y_lab_start = 32;
+          int y_lab = 0;
+          int y_inc = 32;
+          int x_val = 0;
+
+          it.rectangle(0, 0, width, height, grey);
+
+          // ***      Display Title
+          y_lab = y_lab_start;
+          it.print(width / 2, y_lab_start - 15, id(font_lge), white, TextAlign::CENTER, "Home Power");
 
           // ***      Display labels
-          it.rectangle(0, 0, width, height, grey);
-          it.print(width / 2, 20, id(font_lge), white, TextAlign::CENTER, "Home Power");
           it.print(x_lab, y_lab, id(font_med), orange, "Solar:");
-          y_lab += y_inc;
-          it.print(x_lab, y_lab, id(font_med), orange, "House:");
-          y_lab += y_inc;
-          it.print(x_lab, y_lab, id(font_med), orange, "Grid:");
-          y_lab += y_inc;
 
-          // ***      Display values
+          y_lab += (y_inc + 5);
+          it.print(x_lab, y_lab, id(font_med), orange, "Other (a/c, stove):");
+
+          y_lab += y_inc;
+          it.print(x_lab, y_lab, id(font_med), orange, "Pool Heater:");
+
+          y_lab += y_inc;
+          it.print(x_lab, y_lab, id(font_med), orange, "Pool Pump:");
+
+          y_lab += y_inc;
+          it.print(x_lab, y_lab, id(font_med), orange, "19\" Rack:");
+
+          y_lab += (y_inc + 5);
+          it.print(x_lab, y_lab, id(font_med), orange, "Total House:");
+
+          x_val = width - 5;
           y_lab = y_lab_start;
 
           // *** Display SOLAR power
-          // At night the solar sensor is "NaN" so check for it before using
-          float solar_kw = 0.0;
           if (!isnan(id(ha_solar_power).state))
-            solar_kw = id(ha_solar_power).state;
-          it.printf(x_val, y_lab, id(font_med), yellow, "%.1f kW", solar_kw);
-          y_lab += y_inc;
+            it.printf(x_val, y_lab, id(font_med), yellow, TextAlign::RIGHT, "%.1f kW", id(ha_solar_power).state);
+          else
+            it.printf(x_val, y_lab, id(font_med), grey, TextAlign::RIGHT, "%s kW", "N/A");
 
-          // *** Display HOUSE power
-          float house_kw = 0.0;
+          // Divider line
+          y_lab += y_inc;
+          it.line(5, y_lab, x_val, y_lab, grey);
+          it.line(5, y_lab + 1, x_val, y_lab + 1, grey);
+          y_lab += 5;
+
+          // *** Display OTHER power (most likely the air conditioner)
+          float other_power = 0.0;
+          if (!isnan(id(ha_house_power).state)) {
+            other_power = id(ha_house_power).state - id(ha_pool_pump_power).state / 1000.0 - id(ha_pool_heater_power).state - id(ha_rack_power).state / 1000.0;
+            it.printf(x_val, y_lab, id(font_med), cyan, TextAlign::RIGHT, "%.1f kW", other_power);
+          }
+          else
+            it.printf(x_val, y_lab, id(font_med), grey, TextAlign::RIGHT, "%s kW", "N/A");
+
+          y_lab += y_inc;
+          // *** Display POOL HEATER power
+          if (!isnan(id(ha_pool_heater_power).state))
+            it.printf(x_val, y_lab, id(font_med), cyan, TextAlign::RIGHT, "%.1f kW", id(ha_pool_heater_power).state);
+          else
+            it.printf(x_val, y_lab, id(font_med), grey, TextAlign::RIGHT, "%s kW", "N/A");
+
+          y_lab += y_inc;
+          // *** Display POOL PUMP power
+          if (!isnan(id(ha_pool_pump_power).state))
+            it.printf(x_val, y_lab, id(font_med), cyan, TextAlign::RIGHT, "%.1f kW", id(ha_pool_pump_power).state / 1000.0);
+          else
+            it.printf(x_val, y_lab, id(font_med), grey, TextAlign::RIGHT, "%s kW", "N/A");
+
+          y_lab += y_inc;
+          // *** Display 19" RACK power
+          if (!isnan(id(ha_rack_power).state))
+            it.printf(x_val, y_lab, id(font_med), cyan, TextAlign::RIGHT, "%.1f kW", id(ha_rack_power).state / 1000.0);
+          else
+            it.printf(x_val, y_lab, id(font_med), grey, TextAlign::RIGHT, "%s kW", "N/A");
+
+          // Divider line
+          y_lab += y_inc;
+          it.line(5, y_lab, x_val, y_lab, grey);
+          it.line(5, y_lab + 1, x_val, y_lab + 1, grey);
+          y_lab += 5;
+
+          // *** Display Total power (House power)
           if (!isnan(id(ha_house_power).state))
-            house_kw = -id(ha_house_power).state;
-          it.printf(x_val, y_lab, id(font_med), cyan, "%.1f kW", house_kw);
-          y_lab += y_inc;
-
-          // *** Display GRID power. Note: Negative means exporting
-          float grid_kw = 0.0;
-          int suffix_x = x_val + 80;
-          if (!isnan(id(ha_grid_power).state)) {
-            grid_kw = id(ha_grid_power).state;
-            if (grid_kw < 0.0) {
-              it.printf(x_val, y_lab, id(font_med), green, "%.1f kW", -grid_kw);
-              y_lab += y_inc;
-              it.print(x_val, y_lab, id(font_med), green, "Exporting");
-            }
-            else {
-              it.printf(x_val, y_lab, id(font_med), red, "%.1f kW", grid_kw);
-              y_lab += y_inc;
-              it.print(x_val, y_lab, id(font_med), red, "Importing");
-            }
-          }
-          else {
-            it.printf(x_val, y_lab, id(font_med), grey, "%.1f kW", grid_kw);
-            y_lab += y_inc;
-            it.print(x_val, y_lab, id(font_med), grey, "N/A");
-          }
-          y_lab += y_inc;
+            it.printf(x_val, y_lab, id(font_med), red, TextAlign::RIGHT, "%.1f kW", id(ha_house_power).state);
+          else
+            it.printf(x_val, y_lab, id(font_med), grey, TextAlign::RIGHT, "%s kW", "N/A");
 
       - id: page2
         lambda: |-
@@ -399,46 +490,70 @@ display:
           auto green = Color(0, 255, 0);
           auto cyan = Color(0, 255, 255);
           auto red = Color(255, 0, 0);
+
           int width = it.get_width();
           int height = it.get_height();
-          int x_lab = 10;
-          const int y_lab_start = 50;
-          int y_lab = y_lab_start;
-          int y_inc = 27;
-          int x_val = 165;
+          int x = 100;
+          int y = 10;
 
-          it.rectangle(0, 0, width, height, grey);
-          it.print(width / 2, 20, id(font_lge), white, TextAlign::CENTER, "Info");
-          it.print(x_lab, y_lab, id(font_sml), orange, "Battery V:");
-          y_lab += y_inc;
-          it.print(x_lab, y_lab, id(font_sml), orange, "Battery:");
-          y_lab += y_inc;
-          it.print(x_lab, y_lab, id(font_sml), orange, "Vin:");
-          y_lab += y_inc;
-          it.print(x_lab, y_lab, id(font_sml), orange, "VBus:");
-          y_lab += y_inc;
-          it.print(x_lab, y_lab, id(font_sml), orange, "Touch (x, y):");
+          it.printf(width / 2, y, id(font_med), id(my_white), TextAlign::CENTER, "Home Solar / Power");
+          it.graph(x, y + 20, id(power_graph)); // Optionally specifying color here sets the grid color
 
+          // Display x-axis line
+          y += (20 + (200 / 2));
+          it.line(x, y, width - 5, y, grey);
+          it.line(x, y + 1, width - 5, y + 1, grey);
 
-          y_lab = y_lab_start;
-          float core2_val = axp192_axp192component->GetBatVoltage();
-          it.printf(x_val, y_lab, id(font_sml), white, "%.1fV", core2_val);
-          y_lab += y_inc;
+          // Add y-axis labels
+          x -= 23;
+          y = 30;
+          it.print(x, y, id(font_sml), white, "10");
+          y += 175;
+          it.print(x - 8, y, id(font_sml), white, "-10");
 
-          it.printf(x_val, y_lab, id(font_sml), white, "%.0f%%", id(batterylevel).state);
-          y_lab += y_inc;
+          // Display numeric values
+          float solar = id(ha_solar_power).state;
+          float house = id(ha_house_power).state;
+          float grid = id(ha_grid_power).state;
+          x = 1;
+          y = 90;
+          int y_inc = 25;
 
-          core2_val = axp192_axp192component->GetVinVoltage();
-          it.printf(x_val, y_lab, id(font_sml), white, "%.1fV", core2_val);
-          y_lab += y_inc;
+          it.printf(x, y, id(font_sml), yellow, "Solar %.1f", solar);
 
-          core2_val = axp192_axp192component->GetVBusVoltage();
-          it.printf(x_val, y_lab, id(font_sml), white, "%.1fV", core2_val);
-          y_lab += y_inc;
+          y += y_inc;
+          it.printf(x, y, id(font_sml), cyan, "House %.1f", house);
 
-          it.printf(x_val, y_lab, id(font_sml), white, "%d, %d", id(touch_x), id(touch_y));
-          y_lab += y_inc;
+          y += y_inc;
+          if (house > (solar + 0.05))
+            it.printf(x, y, id(font_sml), red, "Import %.1f", grid);
+          else if (solar > (house + 0.05))
+            it.printf(x, y, id(font_sml), green, "Export %.1f", grid);
 
+graph:
+  - id: power_graph
+    # duration: 60min
+    duration: 30min
+    width: 215 # leave a 5-pixel gap on either side of graph. Display width = 320 - 40 - (2 * 5)
+    height: 200
+    # x_grid: 5min      # time / div
+    # x_grid: 1min      # time / div
+    # y_grid: 2.0       # 2 kW / div
+    min_value: -10.0
+    max_value: 10.0 # Maximum y-axis value
+    traces:
+      - sensor: ha_solar_power
+        line_type: SOLID
+        line_thickness: 3
+        color: my_yellow
+      # - sensor: ha_grid_power
+      #   line_type: SOLID
+      #   line_thickness: 3
+      #   color: my_blue
+      - sensor: ha_house_power
+        line_type: SOLID
+        line_thickness: 3
+        color: my_cyan
 
 image:
   - file: "images/sun.png"
