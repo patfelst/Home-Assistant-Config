@@ -160,8 +160,11 @@ button:
 
 font:
   - file: "arial.ttf"
-    id: arial_20
+    id: font_sml
     size: 20
+  - file: "arial.ttf"
+    id: font_med
+    size: 25
   - file: "arial.ttf"
     id: arial_40
     size: 40
@@ -280,7 +283,7 @@ display:
               id(general_timer) = 0;
               id(co2_calibrate) = false;
             }
-            it.printf(it.get_width() / 2, it.get_height() / 2 - 15, id(arial_20), id(my_white), TextAlign::CENTER, "Calibrating to %d ppm", id(co2_cal_val));
+            it.printf(it.get_width() / 2, it.get_height() / 2 - 15, id(font_sml), id(my_white), TextAlign::CENTER, "Calibrating to %d ppm", id(co2_cal_val));
           }
           else {
             it.rectangle(0, 0, it.get_width()-1, it.get_height()-1, id(mid_gray));
@@ -295,10 +298,51 @@ display:
           }
       - id: page2
         lambda: |-
-          int x = 10; int y = 5;
-          it.printf(x, y, id(arial_40), id(my_white), TextAlign::LEFT, "Co2 (ppm)");
-          it.printf(it.get_width() - 10, y, id(arial_40), id(co2_txt_color), TextAlign::RIGHT, "%.0f", id(co2).state);
-          it.graph(5, y + 52, id(co2_graph), id(co2_txt_color)); // Optionally specifying color here sets the grid color
+          auto grey = Color(128, 128, 128);
+          auto white = Color(255, 255, 255);
+          auto orange = Color(255, 128, 0);
+          auto yellow = Color(255, 255, 0);
+          auto green = Color(0, 255, 0);
+          auto cyan = Color(0, 255, 255);
+          auto red = Color(255, 0, 0);
+
+          int width = it.get_width();
+          int height = it.get_height();
+          int x = 115;
+          int y = 10;
+
+          // Display title
+          it.printf(width / 2, y, id(font_med), white, TextAlign::CENTER, "Workshop Environment");
+
+          // Display the graph
+          it.graph(x, y + 20, id(co2_graph)); // Optionally specifying color here sets the grid color
+
+          // Add y-axis labels
+          x -= 6;
+          y = 25;
+          it.print(x, y, id(font_sml), orange, TextAlign::RIGHT, "2000");
+          y += 187;
+          it.print(x, y, id(font_sml), orange, TextAlign::RIGHT, "400");
+
+          // Add x-axis label, i.e. graph duration
+          x = 0;
+          // y -= 25;
+          it.print(x + 6, y, id(font_sml), orange, "60 min");
+          it.rectangle(x, y - 2, 71, 27, orange);
+
+          x = 7;
+          y = 90;
+          int x_val = 112;
+          int y_inc = 25;
+          // Display current Co2 value
+          it.print(x, y, id(font_sml), orange, TextAlign::LEFT, "Co2");
+          it.printf(x_val, y, id(font_sml), id(co2_txt_color), TextAlign::RIGHT, "%.0f", id(co2).state);
+
+          // Display workshop temperature
+          y += y_inc;
+          it.print(x, y, id(font_sml), orange, TextAlign::LEFT, "Temp");
+          it.printf(x_val, y, id(font_sml), id(temp_txt_colour), TextAlign::RIGHT, "%.1f°", id(workshop_temperature).state);
+
       - id: page3
         lambda: |-
           it.printf(it.get_width() / 2, 40, id(arial_40), id(mid_gray), TextAlign::CENTER, "Workshop Temp");
@@ -309,10 +353,10 @@ graph:
   - id: co2_graph
     # duration: 1h
     duration: 60min
-    width: 310 # leave a 5-pixel gap on either side of graph. Display width = 320 - (2 * 5)
-    height: 170
-    x_grid: 5min      # time / div
-    y_grid: 200.0     # Co2 PPM/div
+    width: 200 # leave a 5-pixel gap on either side of graph. Display width = 320 - (2 * 5)
+    height: 200
+    x_grid: 10min     # time / div
+    y_grid: 400.0     # Co2 PPM/div
     min_value: 400
     max_value: 2000 # Maximum y-axis value
     # max_range: 2000
@@ -322,11 +366,11 @@ graph:
         line_thickness: 4
         color: my_white
 
-interval:
-  - interval: 5s
-    then:
-      - display.page.show_next: lcd_display
-      - component.update: lcd_display
+# interval:
+#   - interval: 5s
+#     then:
+#       - display.page.show_next: lcd_display
+#       - component.update: lcd_display
 
 sensor:
   - platform: homeassistant

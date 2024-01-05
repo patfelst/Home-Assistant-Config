@@ -496,7 +496,7 @@ display:
           int x = 115;
           int y = 10;
 
-          it.printf(width / 2, y, id(font_med), id(my_white), TextAlign::CENTER, "Home Solar / Power");
+          it.printf(width / 2, y, id(font_med), id(my_white), TextAlign::CENTER, "Solar / Home Power");
           it.graph(x, y + 20, id(power_graph)); // Optionally specifying color here sets the grid color
 
           // Display x-axis "(along y = zero), for graph with negative and positive values
