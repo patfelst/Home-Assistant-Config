@@ -26,7 +26,7 @@ esphome:
           brightness: !lambda 'return id(rgb_brightness).state / 100.0;'
       - light.turn_off:
           id: rgb
-      - display.page.show: page2 # show CO2 graph to begin with
+      - display.page.show: page4 # show instructions page to begin with
 
 external_components:
   - source: github://Pionizer/pionizer-axp192
@@ -85,6 +85,9 @@ globals:
   - id: co2_cal_val
     type: int
     initial_value: '425' # outside average April 2022 is 419
+  - id: cycle_pages
+    type: bool
+    initial_value: 'false'
 
 
 color:
@@ -172,6 +175,18 @@ font:
     id: co2_font
     size: 100
     # glyphs: 0123456789  # Include only the numerical glyphs
+  - file:
+      type: gfonts
+      family: Roboto
+      weight: 400
+    id: gfont_roboto_reg
+    size: 25
+  - file:
+      type: gfonts
+      family: Roboto
+      weight: 900
+    id: gfont_roboto_bold
+    size: 25
 
 spi:
   clk_pin: GPIO18
@@ -214,7 +229,7 @@ binary_sensor:
     filters:
       - delayed_on: ${touch_delay}
     on_press:
-      - display.page.show: page1
+      - display.page.show_next: lcd_display
       - component.update: lcd_display
 
   - platform: touchscreen
@@ -227,9 +242,9 @@ binary_sensor:
     y_max: 140
     filters:
       - delayed_on: ${touch_delay}
-    on_press:
-      - display.page.show: page2
-      - component.update: lcd_display
+    # on_press:
+    #   - display.page.show: page2
+    #   - component.update: lcd_display
   
   - platform: touchscreen
     name: Button C
@@ -242,9 +257,9 @@ binary_sensor:
     filters:
       - delayed_on: ${touch_delay}
     on_press:
-      - display.page.show: page3
-      - component.update: lcd_display
-  
+      - lambda: |-
+          id(cycle_pages) = !id(cycle_pages);
+      - display.page.show: page4
 
   # Dim the display when the room lights are OFF, bright when room lights are ON
   - platform: homeassistant
@@ -299,6 +314,7 @@ display:
       - id: page2
         lambda: |-
           auto grey = Color(128, 128, 128);
+          auto darkgrey = Color(90, 90, 90);
           auto white = Color(255, 255, 255);
           auto orange = Color(255, 128, 0);
           auto yellow = Color(255, 255, 0);
@@ -335,12 +351,12 @@ display:
           int x_val = 112;
           int y_inc = 25;
           // Display current Co2 value
-          it.print(x, y, id(font_sml), orange, TextAlign::LEFT, "Co2");
+          it.print(x, y, id(font_sml), darkgrey, TextAlign::LEFT, "Co2");
           it.printf(x_val, y, id(font_sml), id(co2_txt_color), TextAlign::RIGHT, "%.0f", id(co2).state);
 
           // Display workshop temperature
           y += y_inc;
-          it.print(x, y, id(font_sml), orange, TextAlign::LEFT, "Temp");
+          it.print(x, y, id(font_sml), darkgrey, TextAlign::LEFT, "Temp");
           it.printf(x_val, y, id(font_sml), id(temp_txt_colour), TextAlign::RIGHT, "%.1f°", id(workshop_temperature).state);
 
       - id: page3
@@ -348,6 +364,33 @@ display:
           it.printf(it.get_width() / 2, 40, id(arial_40), id(mid_gray), TextAlign::CENTER, "Workshop Temp");
           it.printf(it.get_width() / 2, it.get_height() / 2, id(co2_font), id(temp_txt_colour), TextAlign::CENTER, "%.1f", id(workshop_temperature).state);
           it.printf(it.get_width() - 35, it.get_height() / 2 + 20, id(arial_40), id(my_white), TextAlign::CENTER, "°C");
+
+      - id: page4
+        lambda: |-
+          auto grey = Color(128, 128, 128);
+          auto darkgrey = Color(90, 90, 90);
+          auto white = Color(255, 255, 255);
+          auto orange = Color(255, 128, 0);
+          auto yellow = Color(255, 255, 0);
+          auto green = Color(0, 255, 0);
+          auto cyan = Color(0, 255, 255);
+          auto red = Color(255, 0, 0);
+
+          int y = 40;
+          int y_inc = 30;
+          it.printf(it.get_width() / 2, 20, id(arial_40), grey, TextAlign::CENTER, "Instructions");
+          it.print(5, y, id(gfont_roboto_reg), white, TextAlign::LEFT, "Press BtnA to cycle through");
+          y += y_inc;
+          it.print(5, y, id(gfont_roboto_reg), white, TextAlign::LEFT, "dispaly pages manually.");
+          y += y_inc;
+          it.print(5, y, id(gfont_roboto_reg), white, TextAlign::LEFT, "Press BtnC to toggle auto");
+          y += y_inc;
+          it.print(5, y, id(gfont_roboto_reg), white, TextAlign::LEFT, "cycle of dispaly pages every");
+          y += y_inc;
+          it.print(5, y, id(gfont_roboto_reg), white, TextAlign::LEFT, "5 seconds.");
+          y += y_inc + 15;
+          it.print(5, y, id(gfont_roboto_reg), orange, TextAlign::LEFT, "Auto cycle:");
+          it.printf(140, y, id(gfont_roboto_bold), cyan, TextAlign::LEFT, "%s", id(cycle_pages) ? "ON" : "OFF");
 
 graph:
   - id: co2_graph
@@ -362,15 +405,24 @@ graph:
     # max_range: 2000
     traces:
       - sensor: co2
-        line_type: DOTTED
+        line_type: SOLID
         line_thickness: 4
         color: my_white
 
-# interval:
-#   - interval: 5s
-#     then:
-#       - display.page.show_next: lcd_display
-#       - component.update: lcd_display
+interval:
+  - interval: 5s
+    then:
+      - if:
+          condition:
+            lambda: 'return id(cycle_pages);'
+          then:
+            - display.page.show_next: lcd_display
+            - if:
+                condition:
+                  display.is_displaying_page: page4
+                then:
+                  - display.page.show: page1
+            - component.update: lcd_display
 
 sensor:
   - platform: homeassistant
