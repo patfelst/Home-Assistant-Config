@@ -42,7 +42,6 @@ google_actions:
       - light.back_lounge_pendant
       - light.back_lounge_sideboard_lamp
       - light.lamp_rhs_fireplace
-      - light.twinkly_back_lounge
 
       - light.laundry_downlight
       - light.laundry_path_bunker_light
@@ -56,7 +55,6 @@ google_actions:
       - light.workshop_downlight
       - light.workshop_rgb_light
       - light.led_strip_workshop_shelf_dimmer
-      - light.jess_wled_mk2
       - light.pool_light_controller_pool_lights
   # entity_config:
   #   script.sunset_lights:
