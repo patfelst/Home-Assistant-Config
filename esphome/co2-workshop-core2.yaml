@@ -352,7 +352,7 @@ display:
           int y_inc = 25;
           // Display current Co2 value
           it.print(x, y, id(font_sml), darkgrey, TextAlign::LEFT, "Co2");
-          it.printf(x_val, y, id(font_sml), id(co2_txt_color), TextAlign::RIGHT, "%.0f", id(co2).state);
+          it.printf(x_val - 8, y, id(font_sml), id(co2_txt_color), TextAlign::RIGHT, "%.0f", id(co2).state);
 
           // Display workshop temperature
           y += y_inc;
