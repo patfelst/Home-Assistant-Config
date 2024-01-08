@@ -2,6 +2,7 @@ substitutions:
   touch_delay: 10ms
   icon_size: "72"
   dot_size: "4"
+  ema_alpha: "0.7"
 
 esphome:
   name: ${dev_name}
@@ -15,6 +16,7 @@ esphome:
     then:
       # This is needed otherwise setting to 100% later doesn't work, no idea why
       - lambda: "axp192_axp192component->set_brightness(0.5);"
+      - lambda: "std::fill_n(id(house_history), 200, 0.0);"
 
 external_components:
   # also try this custom component, has more features. e.g. 
@@ -32,7 +34,11 @@ esp32:
   flash_size: 16MB
 
 logger:
-  level: ERROR
+  level: DEBUG
+  logs:
+    component: ERROR # Filter out "time taken too long errors"
+    homeassistant.sensor: INFO
+    axp192.sensor: INFO
 
 api:
   encryption:
@@ -53,6 +59,18 @@ globals:
     type: int
     restore_value: no
     initial_value: "0"
+  - id: house_history
+    type: float[200] # Num points based on pixel width of graph x-axis
+  - id: house_hist_ptr
+    type: int
+    initial_value: '0'
+    restore_value: no
+  - id: solar_history
+    type: float[200]
+  - id: solar_hist_ptr
+    type: int
+    initial_value: '0'
+    restore_value: no
 
 sensor:
   - platform: axp192
@@ -74,6 +92,51 @@ sensor:
     internal: true
     id: ha_solar_power
     entity_id: sensor.solarnet_power_photovoltaics
+    filters:
+      - exponential_moving_average:
+          alpha: ${ema_alpha}
+
+  - platform: homeassistant
+    internal: true
+    id: ha_solar_power_smoothed
+    entity_id: sensor.solarnet_power_photovoltaics
+    filters:
+      - throttle_average: 18s
+    on_value: 
+      then:
+        lambda: |-
+          if (!isnan(x)) {
+            int array_size = sizeof(id(solar_history)) / sizeof(float);
+            float alpha = ${ema_alpha};
+
+            if (id(solar_hist_ptr) < array_size) {
+              // Store the new value in the array
+              if (id(solar_hist_ptr) < 1)
+                id(solar_history)[id(solar_hist_ptr)++] = x; // Don't filter the first value
+              else {
+                id(solar_history)[id(solar_hist_ptr)] = (x * alpha) + id(solar_history)[id(solar_hist_ptr) - 1] * (1.0 - alpha);
+                id(solar_hist_ptr)++;
+              }
+              // ESP_LOGI("solar power", "Current value ptr=%d, solar power smoothed=%.1f", id(solar_hist_ptr) - 1, id(solar_history)[id(solar_hist_ptr) - 1]);
+            }
+            else if (id(solar_hist_ptr) == array_size) {
+              // Array is now full, so begin shfting array left, i.e. discarding old samples, and insert new samples at [199]
+              // In this condition, solar_hist_ptr equals array size, i.e. 200 so be careful not to overflow array index 
+              for (int i = 1; i < array_size; i++) {
+                id(solar_history)[i - 1] = id(solar_history)[i];
+              }
+              // Store the new value at the end of the array
+              id(solar_history)[array_size - 1] = (x * alpha) + id(solar_history)[array_size - 2] * (1.0 - alpha);
+            }
+            // ESP_LOGI("on value", "ptr=%d, solar_history{0, 1, 2, 3..last-1, last}={%.1f, %.1f, %.1f, %.1f, %.1f, %.1f}",
+            //   id(solar_hist_ptr),
+            //   id(solar_history)[0],
+            //   id(solar_history)[1],
+            //   id(solar_history)[2],
+            //   id(solar_history)[3],
+            //   id(solar_history)[array_size - 2],
+            //   id(solar_history)[array_size - 1]);
+          }
 
   - platform: homeassistant
     internal: true
@@ -81,21 +144,61 @@ sensor:
     entity_id: sensor.solarnet_power_load
     filters:
       - multiply: -1.0
+      - exponential_moving_average:
+          alpha: ${ema_alpha}
 
   - platform: homeassistant
     internal: true
-    id: ha_pool_pump_power
-    entity_id: sensor.filtered_pool_pump_power_lowpass_filter
+    id: ha_house_power_smoothed
+    entity_id: sensor.solarnet_power_load
+    filters:
+      - multiply: -1.0
+      # Calculate the sample rate to fill the array for 200 pixels over the graph duration
+      # 4 hr duration: 4 hr * 60 mins * 60 secs / 200 pixels = 14,400 seconds / 200 pixels = 72 seconds / sample
+      # 1 hr duration: 1 hr * 60 mins * 60 secs / 200 pixels = 3600 seconds / 200 pixels = 18 seconds / sample
+      # 30 min duration: 0.5 hr * 60 mins * 60 secs / 200 pixels = 1800 seconds / 200 pixels = 9 seconds / sample
+      - throttle_average: 18s
+    on_value: 
+      then:
+        lambda: |-
+          if (!isnan(x)) {
+            int array_size = sizeof(id(house_history)) / sizeof(float);
+            float alpha = ${ema_alpha};
+            // ESP_LOGI("on value", "array size=%d", array_size);
 
-  - platform: homeassistant
-    internal: true
-    id: ha_pool_heater_power
-    entity_id: sensor.pool_heater_power
+            // ESP_LOGI("on value", "new value=%.1f", x);
 
-  - platform: homeassistant
-    internal: true
-    id: ha_rack_power
-    entity_id: sensor.19_rack_power_current_consumption
+            // ****** FOR TESTING !!!! ********
+            // array_size = 5;
+
+            if (id(house_hist_ptr) < array_size) {
+              // Store the new value in the array
+              if (id(house_hist_ptr) < 1)
+                id(house_history)[id(house_hist_ptr)++] = x; // Don't filter the first value
+              else {
+                id(house_history)[id(house_hist_ptr)] = (x * alpha) + id(house_history)[id(house_hist_ptr) - 1] * (1.0 - alpha);
+                id(house_hist_ptr)++;
+              }
+              // ESP_LOGI("house power", "Current value ptr=%d, house power smoothed=%.1f", id(house_hist_ptr) - 1, id(house_history)[id(house_hist_ptr) - 1]);
+            }
+            else if (id(house_hist_ptr) == array_size) {
+              // Array is now full, so begin shfting array left, i.e. discarding old samples, and insert new samples at [199]
+              // In this condition, house_hist_ptr equals array size, i.e. 200 so be careful not to overflow array index 
+              for (int i = 1; i < array_size; i++) {
+                id(house_history)[i - 1] = id(house_history)[i];
+              }
+              // Store the new value at the end of the array
+              id(house_history)[array_size - 1] = (x * alpha) + id(house_history)[array_size - 2] * (1.0 - alpha);
+            }
+            // ESP_LOGI("on value", "ptr=%d, house_history{0, 1, 2, 3..last-1, last}={%.1f, %.1f, %.1f, %.1f, %.1f, %.1f}",
+            //   id(house_hist_ptr),
+            //   id(house_history)[0],
+            //   id(house_history)[1],
+            //   id(house_history)[2],
+            //   id(house_history)[3],
+            //   id(house_history)[array_size - 2],
+            //   id(house_history)[array_size - 1]);
+          }
 
 spi:
   clk_pin: GPIO18
@@ -127,8 +230,8 @@ touchscreen:
     on_touch:
       # M5Stack Core2 is 320 x 240 + 40 pixels below display active area for 3x red circular touch buttons
       - lambda: |-
-          // ESP_LOGE("touch", "Current (x,y) = %d, %d", touch.x, touch.y);        // y-coord is half of expected
-          // ESP_LOGE("touch", "Raw (x,y) = %d, %d\n", touch.x_raw, touch.y_raw);  // y-coord is correct
+          // ESP_LOGI("touch", "Current (x,y) = %d, %d", touch.x, touch.y);        // y-coord is half of expected
+          // ESP_LOGI("touch", "Raw (x,y) = %d, %d\n", touch.x_raw, touch.y_raw);  // y-coord is correct
           // float core2_val = axp192_axp192component->GetBatVoltage();
           // float core2_val = axp192_axp192component->GetVinVoltage();
           // float core2_val = axp192_axp192component->GetVBusVoltage();
@@ -175,9 +278,9 @@ binary_sensor:
     y_max: 140
     filters:
       - delayed_on: ${touch_delay}
-    # on_press:
-    #   - display.page.show: page3
-    #   - component.update: lcd_display
+    on_press:
+      - display.page.show: page3
+      - component.update: lcd_display
 
   - platform: homeassistant
     internal: true
@@ -381,106 +484,6 @@ display:
             grid_house_ind_x -= 10;
           }
 
-      # - id: page3
-        #  lambda: |-
-      # //     auto grey = Color(128, 128, 128);
-      # //     auto white = Color(255, 255, 255);
-      # //     auto orange = Color(255, 128, 0);
-      # //     auto yellow = Color(255, 255, 0);
-      # //     auto green = Color(0, 255, 0);
-      # //     auto cyan = Color(0, 255, 255);
-      # //     auto red = Color(255, 0, 0);
-      # //     auto color_var = Color(0, 0, 0);
-
-      # //     int width = it.get_width();
-      # //     int height = it.get_height();
-      # //     int x_lab = 10;
-      # //     const int y_lab_start = 32;
-      # //     int y_lab = 0;
-      # //     int y_inc = 32;
-      # //     int x_val = 0;
-
-      # //     it.rectangle(0, 0, width, height, grey);
-
-      # //     // ***      Display Title
-      # //     y_lab = y_lab_start;
-      # //     it.print(width / 2, y_lab_start - 15, id(font_lge), white, TextAlign::CENTER, "Home Power");
-
-      # //     // ***      Display labels
-      # //     it.print(x_lab, y_lab, id(font_med), orange, "Solar:");
-
-      # //     y_lab += (y_inc + 5);
-      # //     it.print(x_lab, y_lab, id(font_med), orange, "Other (a/c, stove):");
-
-      # //     y_lab += y_inc;
-      # //     it.print(x_lab, y_lab, id(font_med), orange, "Pool Heater:");
-
-      # //     y_lab += y_inc;
-      # //     it.print(x_lab, y_lab, id(font_med), orange, "Pool Pump:");
-
-      # //     y_lab += y_inc;
-      # //     it.print(x_lab, y_lab, id(font_med), orange, "19\" Rack:");
-
-      # //     y_lab += (y_inc + 5);
-      # //     it.print(x_lab, y_lab, id(font_med), orange, "Total House:");
-
-      # //     x_val = width - 5;
-      # //     y_lab = y_lab_start;
-
-      # //     // *** Display SOLAR power
-      # //     if (!isnan(id(ha_solar_power).state))
-      # //       it.printf(x_val, y_lab, id(font_med), yellow, TextAlign::RIGHT, "%.1f kW", id(ha_solar_power).state);
-      # //     else
-      # //       it.printf(x_val, y_lab, id(font_med), grey, TextAlign::RIGHT, "%s kW", "N/A");
-
-      # //     // Divider line
-      # //     y_lab += y_inc;
-      # //     it.line(5, y_lab, x_val, y_lab, grey);
-      # //     it.line(5, y_lab + 1, x_val, y_lab + 1, grey);
-      # //     y_lab += 5;
-
-      # //     // *** Display OTHER power (most likely the air conditioner)
-      # //     float other_power = 0.0;
-      # //     if (!isnan(id(ha_house_power).state)) {
-      # //       other_power = id(ha_house_power).state - id(ha_pool_pump_power).state / 1000.0 - id(ha_pool_heater_power).state - id(ha_rack_power).state / 1000.0;
-      # //       it.printf(x_val, y_lab, id(font_med), cyan, TextAlign::RIGHT, "%.1f kW", other_power);
-      # //     }
-      # //     else
-      # //       it.printf(x_val, y_lab, id(font_med), grey, TextAlign::RIGHT, "%s kW", "N/A");
-
-      # //     y_lab += y_inc;
-      # //     // *** Display POOL HEATER power
-      # //     if (!isnan(id(ha_pool_heater_power).state))
-      # //       it.printf(x_val, y_lab, id(font_med), cyan, TextAlign::RIGHT, "%.1f kW", id(ha_pool_heater_power).state);
-      # //     else
-      # //       it.printf(x_val, y_lab, id(font_med), grey, TextAlign::RIGHT, "%s kW", "N/A");
-
-      # //     y_lab += y_inc;
-      # //     // *** Display POOL PUMP power
-      # //     if (!isnan(id(ha_pool_pump_power).state))
-      # //       it.printf(x_val, y_lab, id(font_med), cyan, TextAlign::RIGHT, "%.1f kW", id(ha_pool_pump_power).state / 1000.0);
-      # //     else
-      # //       it.printf(x_val, y_lab, id(font_med), grey, TextAlign::RIGHT, "%s kW", "N/A");
-
-      # //     y_lab += y_inc;
-      # //     // *** Display 19" RACK power
-      # //     if (!isnan(id(ha_rack_power).state))
-      # //       it.printf(x_val, y_lab, id(font_med), cyan, TextAlign::RIGHT, "%.1f kW", id(ha_rack_power).state / 1000.0);
-      # //     else
-      # //       it.printf(x_val, y_lab, id(font_med), grey, TextAlign::RIGHT, "%s kW", "N/A");
-
-      # //     // Divider line
-      # //     y_lab += y_inc;
-      # //     it.line(5, y_lab, x_val, y_lab, grey);
-      # //     it.line(5, y_lab + 1, x_val, y_lab + 1, grey);
-      # //     y_lab += 5;
-
-      # //     // *** Display Total power (House power)
-      # //     if (!isnan(id(ha_house_power).state))
-      # //       it.printf(x_val, y_lab, id(font_med), red, TextAlign::RIGHT, "%.1f kW", id(ha_house_power).state);
-      # //     else
-      # //       it.printf(x_val, y_lab, id(font_med), grey, TextAlign::RIGHT, "%s kW", "N/A");
-
       - id: page2
         lambda: |-
           auto grey = Color(128, 128, 128);
@@ -491,64 +494,175 @@ display:
           auto cyan = Color(0, 255, 255);
           auto red = Color(255, 0, 0);
 
-          int width = it.get_width();
-          int height = it.get_height();
-          int x = 115;
-          int y = 10;
+          int scr_width = it.get_width();
+          int scr_height = it.get_height();
 
-          it.printf(width / 2, y, id(font_med), id(my_white), TextAlign::CENTER, "Solar / Home Power");
-          it.graph(x, y + 20, id(power_graph)); // Optionally specifying color here sets the grid color
+          // Graph top left [x, y]
+          int x_left = 115;
+          int y_top = 30;
+
+          // Graph width and height
+          int gr_width = sizeof(id(house_history)) / sizeof(float);
+          int gr_height = 200;
+
+          // Pixel coords bottom-right of graph
+          int y_bot = y_top + gr_height;
+          int x_right = x_left + gr_width;
+
+          // Range of y-axis is 12kW
+          float y_range = 12.0;
+
+          // Y-coord scale factor
+          float y_scale = (float)gr_height / y_range;
+
+          // Line segment y-coords
+          int y1 = 0;
+          int y2 = 0;
+
+          // Display title
+          it.printf(scr_width / 2, 10, id(font_med), id(my_white), TextAlign::CENTER, "Solar / Home Power");
+
+          // Draw graph border
+          it.rectangle(x_left, y_top, gr_width, gr_height, grey);
+
+          // ********************
+          // Graph house power
+          // ********************
+          int x_plot = 0;
+          if (id(house_hist_ptr) > 1) {
+            for (int i=0; i < id(house_hist_ptr) - 1; i++) {
+              y1 = (int)round((float)y_bot - (id(house_history)[i + 0] * y_scale)); // round(0.40)=0.0, round(0.5)=1.0, round(0.6)=1.0
+              y2 = (int)round((float)y_bot - (id(house_history)[i + 1] * y_scale));
+
+              // When history array is filling, move the start point left. Once array is full, plot starts at x_left
+              x_plot = x_right - id(house_hist_ptr) + i;
+              it.line(x_plot, y1, x_plot + 1, y2, cyan);
+              // ESP_LOGI("House", "For y1-raw=%.1f, y2-raw=%.1f: line(x1=%d, y1=%d, x2=%d, y2=%d)", id(house_history)[i + 0], id(house_history)[i + 1], x_plot, y1, x_plot + 1, y2);
+            }
+          }
+
+          // ********************
+          // Graph solar power
+          // ********************
+          x_plot = 0;
+          if (id(solar_hist_ptr) > 1) {
+            for (int i=0; i < id(solar_hist_ptr) - 1; i++) {
+              y1 = (int)round((float)y_bot - (id(solar_history)[i + 0] * y_scale)); // round(0.40)=0.0, round(0.5)=1.0, round(0.6)=1.0
+              y2 = (int)round((float)y_bot - (id(solar_history)[i + 1] * y_scale));
+
+              // When history array is filling, move the start point left. Once array is full, plot starts at x_left
+              x_plot = x_right - id(solar_hist_ptr) + i;
+              it.line(x_plot, y1, x_plot + 1, y2, yellow);
+              // ESP_LOGI("Solar", "For y1-raw=%.1f, y2-raw=%.1f: line(x1=%d, y1=%d, x2=%d, y2=%d)", id(solar_history)[i + 0], id(solar_history)[i + 1], x_plot, y1, x_plot + 1, y2);
+            }
+          }
 
           // Display x-axis "(along y = zero), for graph with negative and positive values
           // y += (20 + (200 / 2));
-          // it.line(x, y, width - 5, y, grey);
-          // it.line(x, y + 1, width - 5, y + 1, grey);
+          // it.line(x, y, scr_width - 5, y, grey);
+          // it.line(x, y + 1, scr_width - 5, y + 1, grey);
 
           // Add y-axis labels
-          x -= 6;
-          y = 25;
-          it.print(x, y, id(font_sml), orange, TextAlign::RIGHT, "12kW");
-          y += 187;
-          it.print(x, y, id(font_sml), orange, TextAlign::RIGHT, "0kW");
+          x_left -= 6;
+          y_top = 25;
+          it.print(x_left, y_top, id(font_sml), orange, TextAlign::RIGHT, "12kW");
+          y_top += 187;
+          it.print(x_left, y_top, id(font_sml), orange, TextAlign::RIGHT, "0kW");
 
           // Add x-axis label, i.e. graph duration
-          // y -= 80;
-          x = 5;
-          it.print(x + 6, y, id(font_sml), orange, "4 hrs");
-          it.rectangle(x, y - 2, 56, 27, orange);
+          // y_top -= 80;
+          x_left = 5;
+          it.print(x_left + 6, y_top, id(font_sml), orange, "1 hrs");
+          it.rectangle(x_left, y_top - 2, 56, 27, orange);
 
           // Display numeric values
           float solar = id(ha_solar_power).state;
           float house = id(ha_house_power).state;
           float grid = id(ha_grid_power).state;
-          x = 7;
-          y = 90;
+          x_left = 7;
+          y_top = 90;
           int y_inc = 25;
 
-          it.printf(x, y, id(font_sml), yellow, TextAlign::LEFT, "Solar %.1f", solar);
+          it.printf(x_left, y_top, id(font_sml), yellow, TextAlign::LEFT, "Solar %.1f", solar);
 
-          y += y_inc;
-          it.printf(x, y, id(font_sml), cyan, TextAlign::LEFT, "House %.1f", house);
+          y_top += y_inc;
+          it.printf(x_left, y_top, id(font_sml), cyan, TextAlign::LEFT, "House %.1f", house);
 
-          y += y_inc;
+          y_top += y_inc;
           if (house > (solar + 0.05))
-            it.printf(x, y, id(font_sml), red, TextAlign::LEFT, "Import %.1f", grid);
+            it.printf(x_left, y_top, id(font_sml), red, TextAlign::LEFT, "Import %.1f", grid);
           else if (solar > (house + 0.05))
-            it.printf(x, y, id(font_sml), green, TextAlign::LEFT, "Export %.1f", -grid);
+            it.printf(x_left, y_top, id(font_sml), green, TextAlign::LEFT, "Export %.1f", -grid);
+
+      - id: page3
+        lambda: |-
+          auto grey = Color(128, 128, 128);
+          auto white = Color(255, 255, 255);
+          auto orange = Color(255, 128, 0);
+          auto yellow = Color(255, 255, 0);
+          auto green = Color(0, 255, 0);
+          auto cyan = Color(0, 255, 255);
+          auto red = Color(255, 0, 0);
+
+          int scr_width = it.get_width();
+          int scr_height = it.get_height();
+
+          // Graph top left [x, y]
+          int x_left = 115;
+          int y_top = 30;
+
+          // Display title
+          it.printf(scr_width / 2, 10, id(font_med), id(my_white), TextAlign::CENTER, "Solar / Home Power");
+
+          // ESPHome graph, also creates border and gridlines
+          it.graph(x_left, y_top, id(power_graph)); // Optionally specifying color here sets the grid color
+
+          // Add y-axis labels
+          x_left -= 6;
+          y_top = 25;
+          it.print(x_left, y_top, id(font_sml), orange, TextAlign::RIGHT, "12kW");
+          y_top += 187;
+          it.print(x_left, y_top, id(font_sml), orange, TextAlign::RIGHT, "0kW");
+
+          // Add x-axis label, i.e. graph duration
+          // y_top -= 80;
+          x_left = 5;
+          it.print(x_left + 6, y_top, id(font_sml), orange, "1 hrs");
+          it.rectangle(x_left, y_top - 2, 56, 27, orange);
+
+          // Display numeric values
+          float solar = id(ha_solar_power).state;
+          float house = id(ha_house_power).state;
+          float grid = id(ha_grid_power).state;
+          x_left = 7;
+          y_top = 90;
+          int y_inc = 25;
+
+          it.printf(x_left, y_top, id(font_sml), yellow, TextAlign::LEFT, "Solar %.1f", solar);
+
+          y_top += y_inc;
+          it.printf(x_left, y_top, id(font_sml), cyan, TextAlign::LEFT, "House %.1f", house);
+
+          y_top += y_inc;
+          if (house > (solar + 0.05))
+            it.printf(x_left, y_top, id(font_sml), red, TextAlign::LEFT, "Import %.1f", grid);
+          else if (solar > (house + 0.05))
+            it.printf(x_left, y_top, id(font_sml), green, TextAlign::LEFT, "Export %.1f", -grid);
+
 
 graph:
   - id: power_graph
-    duration: 4h
+    duration: 1h
     width: 200 # leave a 5-pixel gap on either side of graph. Display width = 320 - 40 - (2 * 5)
     height: 200
-    x_grid: 30min      # time / div
+    x_grid: 10min      # time / div
     y_grid: 2.0       # 2 kW / div
     min_value: 0.0
     max_value: 12.0 # Maximum y-axis value
     traces:
       - sensor: ha_solar_power
         line_type: SOLID
-        line_thickness: 3
+        line_thickness: 2
         color: my_yellow
       # - sensor: ha_grid_power
       #   line_type: SOLID
@@ -556,14 +670,16 @@ graph:
       #   color: my_blue
       - sensor: ha_house_power
         line_type: SOLID
-        line_thickness: 3
+        line_thickness: 2
         color: my_cyan
 
 # interval:
 #   - interval: 5s
 #     then:
-#       - display.page.show_next: lcd_display
-#       - component.update: lcd_display
+      # - display.page.show_next: lcd_display
+      # - component.update: lcd_display
+      # - lambda: |-
+      #      ESP_LOGI("round()", "round 0.49=%.1f, 0.5=%.1f, 0.6=%.1f", round(0.49), round(0.5), round(0.6));
 
 image:
   - file: "images/sun.png"
