@@ -25,6 +25,12 @@ external_components:
   - source: github://Pionizer/pionizer-axp192
     components: [axp192]
     refresh: 1days
+  - source:
+      type: git
+      url: https://github.com/ssieb/esphome
+      ref: graph
+    components: [ graph ]
+    refresh: 1min
 
 esp32:
   board: m5stack-core-esp32
@@ -34,11 +40,11 @@ esp32:
   flash_size: 16MB
 
 logger:
-  level: DEBUG
+  level: ERROR
   logs:
     component: ERROR # Filter out "time taken too long errors"
-    homeassistant.sensor: INFO
-    axp192.sensor: INFO
+    # homeassistant.sensor: INFO
+    # axp192.sensor: INFO
 
 api:
   encryption:
@@ -73,6 +79,29 @@ globals:
     restore_value: no
 
 sensor:
+
+  - platform: template
+    id: square_wave
+    internal: True
+    lambda: |-
+      double period = 6000.0; // Set the period in milliseconds (e.g., 2000ms = 2 seconds)
+      double half_period = period / 2.0;
+      double time = fmod((double)millis(), period);
+      if (time < half_period) {
+        return 7.0; // Positive amplitude for the first half of the period
+      } else {
+        return -7.0; // Negative amplitude for the second half of the period
+      }
+    update_interval: 100ms
+
+  - platform: template
+    id: sinusoid_sensor
+    internal: True
+    lambda: |-
+      float sin_value = 6.0 * sin((float)millis() / 1000.0); // Generate a sinusoid
+      return sin_value;
+    update_interval: 100ms
+
   - platform: axp192
     model: M5CORE2
     address: 0x34
@@ -335,7 +364,7 @@ display:
     model: M5STACK
     id: lcd_display
     # dimensions: "320X240"
-    update_interval: 500ms
+    update_interval: 1000ms
     cs_pin: 5
     dc_pin: 15
     pages:
@@ -652,26 +681,36 @@ display:
 
 graph:
   - id: power_graph
-    duration: 1h
+    duration: 15s
     width: 200 # leave a 5-pixel gap on either side of graph. Display width = 320 - 40 - (2 * 5)
     height: 200
-    x_grid: 10min      # time / div
-    y_grid: 2.0       # 2 kW / div
-    min_value: 0.0
-    max_value: 12.0 # Maximum y-axis value
+    # x_grid: 2s     # time / div
+    # y_grid: 2.0       # 2 kW / div
+    min_value: -10.0
+    max_value: 10.0 # Maximum y-axis value
     traces:
-      - sensor: ha_solar_power
-        line_type: SOLID
-        line_thickness: 2
-        color: my_yellow
+      # - sensor: ha_solar_power
+      #   line_type: SOLID
+      #   line_thickness: 2
+      #   color: my_yellow
+      #   connect_the_dots: true
+
       # - sensor: ha_grid_power
       #   line_type: SOLID
       #   line_thickness: 3
       #   color: my_blue
-      - sensor: ha_house_power
+
+      # - sensor: ha_house_power
+      - sensor: sinusoid_sensor
         line_type: SOLID
-        line_thickness: 2
+        line_thickness: 1
+        color: my_yellow
+        connect_the_dots: true
+      - sensor: square_wave
+        line_type: SOLID
+        line_thickness: 1
         color: my_cyan
+        connect_the_dots: true
 
 # interval:
 #   - interval: 5s
