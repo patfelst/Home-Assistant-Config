@@ -228,7 +228,7 @@
           - light.front_hall_lamp
     - service: light.turn_on
       data:
-        brightness_pct: 25
+        brightness_pct: 20
       target:
         entity_id: light.led_strip_front_hall_dimmer
     - service: light.turn_on
@@ -1080,21 +1080,26 @@
       enabled: true
   mode: single
 - id: "1670132740049"
-  alias: Notify - Shelly getting hot (> 75°C)
+  alias: Notify - Shelly getting hot (> 60°C)
   description: ""
   trigger:
     - platform: numeric_state
       entity_id:
-        - sensor.alfresco_and_pool_perimeter_device_temperature
+        - sensor.alfresco_downlights_device_temperature
+        - sensor.pool_perimeter_downlights_device_temperature
         - sensor.back_lounge_downlights_device_temperature
         - sensor.stairs_and_dining_device_temperature
         - sensor.dining_pendant_and_spare_device_temperature
-        - sensor.front_hall_lower_device_temperature
-        - sensor.front_hall_upper_device_temperature
-        - sensor.front_lounge_device_temperature
+        - sensor.front_stone_up_down_device_temperature
+        - sensor.meterbox_bunker_device_temperature
+        - sensor.front_porch_downlights_device_temperature
+        - sensor.north_side_flood_light_device_temperature
+        - sensor.front_lounge_downlight_device_temperature
+        - sensor.front_lounge_pendant_device_temperature
         - sensor.kitchen_downlights_device_temperature
         - sensor.kitchen_pendant_and_spare_device_temperature
-        - sensor.laundry_and_laundry_path_device_temperature
+        - sensor.laundry_bunker_light_device_temperature
+        - sensor.laundry_downlight_device_temperature
         - sensor.rear_flood_and_garden_lights_device_temperature
         - sensor.wir_downlight_device_temperature
         - sensor.butlers_downlight_temperature
@@ -1105,7 +1110,7 @@
         hours: 0
         minutes: 7
         seconds: 0
-      above: 75
+      above: 60
   condition: []
   action:
     - service: notify.mobile_app_patricks_iphone_13
@@ -1262,22 +1267,8 @@
     path: CrazyCoder/zigbee2mqtt_aqara_wireless_switch.yaml
     input:
       action_sensor: sensor.button_jess_bedroom_action
-      press_single:
-        - service: select.select_option
-          data:
-            option:
-              "{% set options = state_attr('select.jess_wled_mk2_preset', 'options')
-              %} {% set current_option = states('select.jess_wled_mk2_preset') %} {%
-              if current_option in options %}\n  {% set index = options.index(current_option)
-              %}\n  {{ options[(index + 1) % (options | length)] }}\n{% else %}\n  {{
-              options[0] }}\n{% endif %}\n"
-          target:
-            entity_id: select.jess_wled_mk2_preset
-      press_double:
-        - service: light.toggle
-          data: {}
-          target:
-            entity_id: light.jess_wled_mk2
+      press_single: []
+      press_double: []
       press_hold:
         - service: light.turn_off
           data: {}
@@ -1513,6 +1504,9 @@
     - condition: state
       entity_id: input_boolean.sleep_mode
       state: "off"
+    - condition: state
+      entity_id: climate.ac
+      state: "off"
   action:
     - service: climate.turn_on
       data: {}
@@ -1715,8 +1709,8 @@
             data:
               title: Drawing excessive power from the grid for 15 mins!
               message:
-                "Grid import power is now: {{ (states('sensor.solarnet_power_grid')
-                | float)|round(1) }} kW"
+                "Grid import power is now: {{ states('sensor.solarnet_power_grid')
+                | round(1) }} kW"
               data:
                 push:
                   sound: 3rdParty_Failure_Haptic.caf
@@ -1738,7 +1732,9 @@
               seconds: 0
               milliseconds: 0
           - choose:
-              - conditions: "{{ wait.trigger.event.data.action == action_disable }}"
+              - conditions:
+                  - condition: template
+                    value_template: "{{ wait.trigger.event.data.action == action_disable }}"
                 sequence:
                   - service: input_boolean.turn_off
                     target:
@@ -1852,6 +1848,12 @@
             entity_id:
               - cover.garage_door
               - cover.driveway_gate
+        - service: input_datetime.set_datetime
+          metadata: {}
+          data:
+            datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+          target:
+            entity_id: input_datetime.garage_door_button_last_pressed
       press_hold:
         - service: cover.close_cover
           data: {}
@@ -2262,20 +2264,22 @@
           data: {}
           target:
             entity_id: cover.pedestrian_gate
-        - wait_for_trigger:
-            - platform: state
-              entity_id:
-                - cover.pedestrian_gate
-              to: closed
-        - service: cover.open_cover
-          data: {}
-          target:
-            entity_id: cover.pedestrian_gate
       press_single:
         - service: cover.open_cover
           data: {}
           target:
             entity_id: cover.pedestrian_gate
+      press_hold:
+        - service: cover.close_cover
+          metadata: {}
+          data: {}
+          target:
+            entity_id: cover.pedestrian_gate
+        - service: lock.lock
+          metadata: {}
+          data: {}
+          target:
+            entity_id: lock.yale_smartlock_front_door
 - id: "1689412431203"
   alias: Air con turn off timer
   description: ""
@@ -2330,6 +2334,11 @@
         message:
           Turned off pool cleaner because power dropped below {{ trigger.below
           }} Watts for 30 seconds.
+    - service: tts.cloud_say
+      data:
+        cache: true
+        entity_id: media_player.homepod_mini_back_lounge
+        message: Pool robot just turned off
   mode: single
 - id: "1693826918399"
   alias: Pool heater - turn ON when grid export power > 2.1kW
@@ -2579,6 +2588,7 @@
         message:
           Pool pump turned OFF because it's {{ trigger.now | as_timestamp | timestamp_custom('%I:%M
           %p') }}
+      enabled: false
   mode: single
 - id: "1695041517610"
   alias: Air con ON when HOT back lounge (nobody at home)
@@ -2591,7 +2601,7 @@
   condition:
     - condition: numeric_state
       entity_id: sensor.solarnet_power_grid
-      below: -5
+      below: -0.1
     - condition: numeric_state
       entity_id: zone.home
       below: 1
@@ -2671,9 +2681,8 @@
   condition:
     - condition: template
       value_template:
-        "  {{ as_timestamp(now()) - as_timestamp(states.sensor.button_garage_action.last_changed)
-        < 360 }}"
-      enabled: true
+        "{{ as_timestamp(now()) - as_timestamp(states('input_datetime.garage_door_button_last_pressed'))
+        < 5*60 }}"
   action:
     - wait_for_trigger:
         - platform: state
@@ -3160,7 +3169,7 @@
         entity_id: light.led_strip_front_hall_dimmer
     - service: light.turn_on
       data:
-        brightness_pct: 5
+        brightness_pct: 2
       target:
         entity_id: light.led_strip_kitchen_kicker
     - delay:
@@ -3696,3 +3705,187 @@
           target:
             area_id: electronics_lab
           data: {}
+- id: "1704520853691"
+  alias: Button - Tradfri
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - sensor.button_tradfri_action
+      to: "on"
+      id: "on"
+    - platform: state
+      entity_id:
+        - sensor.button_tradfri_action
+      to: "off"
+      id: "off"
+    - platform: state
+      entity_id:
+        - sensor.button_tradfri_action
+      to: brightness_move_up
+      id: hold
+  condition: []
+  action:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id:
+                - "on"
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Tradfri button
+                message: "on"
+        - conditions:
+            - condition: trigger
+              id:
+                - "off"
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Tradfri button
+                message: "off"
+        - conditions:
+            - condition: trigger
+              id:
+                - hold
+          sequence:
+            - service: notify.mobile_app_patricks_iphone_13
+              data:
+                title: Tradfri button
+                message: hold
+  mode: queued
+  max: 10
+- id: "1704841406186"
+  alias: Backup to NAS
+  description: Daily 6am backup to Synology NAS
+  trigger:
+    - platform: time
+      at: 06:00:00
+  condition: []
+  action:
+    - service: hassio.backup_full
+      metadata: {}
+      data:
+        compressed: true
+        homeassistant_exclude_database: false
+        location: SynologyNAS
+        name: Automated Daily Backup {{ now().strftime('%Y-%m-%d') }}
+  mode: single
+- id: "1704847078415"
+  alias: Notify - Backps are stale
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.backups_stale
+      from: "off"
+      to: "on"
+  condition: []
+  action:
+    - service: notify.mobile_app_patricks_iphone_13
+      metadata: {}
+      data:
+        title: Backups are Stale
+        message:
+          Please visit the 'Home Assistant Google Drive Backup ' add-on status
+          page for details.
+  mode: single
+- id: "1705399189917"
+  alias: Air con ON when HOT back lounge (nobody at home) v2
+  description: ""
+  trigger:
+    - platform: numeric_state
+      entity_id: climate.ac_back_lounge
+      attribute: current_temperature
+      above: 26
+  condition:
+    - condition: numeric_state
+      entity_id: zone.home
+      below: 1
+  action:
+    - if:
+        - condition: numeric_state
+          entity_id: sensor.solarnet_power_grid
+          below: -5
+      then:
+        - service: climate.turn_on
+          data: {}
+          target:
+            entity_id: climate.ac
+        - service: climate.set_temperature
+          data:
+            temperature: 24
+            hvac_mode: cool
+          target:
+            entity_id: climate.ac
+        - service: climate.set_hvac_mode
+          data:
+            hvac_mode: cool
+          target:
+            entity_id: climate.ac
+          enabled: true
+        - service: climate.set_fan_mode
+          data:
+            fan_mode: medium
+          target:
+            entity_id: climate.ac
+        - service: climate.set_temperature
+          data:
+            temperature: 24
+          target:
+            entity_id:
+              - climate.ac_back_lounge
+              - climate.ac_entry
+              - climate.ac_front_lounge
+              - climate.ac_jess_br
+              - climate.ac_kitchen
+              - climate.ac_master_br
+              - climate.ac_spare_br
+              - climate.ac_workshop
+        - service: notify.mobile_app_patricks_iphone_13
+          data:
+            title: Air con ON (Nobody at home)
+            message:
+              Turned on air conditioner as {{ trigger.to_state.name }} temperature
+              is above {{ trigger.above }} and exporting more than 5kW ({{ states('sensor.solarnet_power_grid')
+              | round(1) }} kW).
+      else:
+        - service: notify.mobile_app_patricks_iphone_13
+          data:
+            title: Air con NOT on (Nobody at home)
+            message:
+              "{{ trigger.to_state.name }} temperature is above {{ trigger.above
+              }} but air con NOT turned on because exporting less than 5kW ({{ states('sensor.solarnet_power_grid')
+              | round(1) }} kW)."
+  mode: single
+- id: "1705405175945"
+  alias: Unlock front door when ped gate opens
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - cover.pedestrian_gate
+      to: open
+  condition:
+    - condition: or
+      conditions:
+        - condition: state
+          entity_id: person.kathleen
+          state: home
+        - condition: state
+          entity_id: person.patrick
+          state: home
+        - condition: state
+          entity_id: person.jess
+          state: home
+    - condition: state
+      entity_id: lock.yale_smartlock_front_door
+      state: locked
+  action:
+    - service: lock.unlock
+      metadata: {}
+      data: {}
+      target:
+        entity_id: lock.yale_smartlock_front_door
+  mode: single
