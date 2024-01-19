@@ -1171,7 +1171,7 @@
   description: ""
   trigger:
     - platform: numeric_state
-      entity_id: sensor.co2_workshop_sensor
+      entity_id: sensor.co2_workshop_core2_sensor
       above: 700
   condition:
     - condition: time
@@ -1196,14 +1196,14 @@
     - repeat:
         until:
           - condition: numeric_state
-            entity_id: sensor.co2_workshop_sensor
+            entity_id: sensor.co2_workshop_core2_sensor
             below: 600
         sequence:
           - service: tts.cloud_say
             data:
               entity_id: media_player.workshop_speaker
               message:
-                Workshop carbon dioxide is still high at {{ states('sensor.co2_workshop_sensor')
+                Workshop carbon dioxide is still high at {{ states('sensor.co2_workshop_core2_sensor')
                 | float | round(0) }}
           - delay:
               hours: 0
@@ -3769,7 +3769,7 @@
       data:
         compressed: true
         homeassistant_exclude_database: false
-        location: SynologyNAS
+        location: Synology_NAS
         name: Automated Daily Backup {{ now().strftime('%Y-%m-%d') }}
   mode: single
 - id: "1704847078415"
