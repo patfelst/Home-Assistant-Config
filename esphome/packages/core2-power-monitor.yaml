@@ -2,7 +2,7 @@ substitutions:
   touch_delay: 10ms
   icon_size: "72"
   dot_size: "4"
-  ema_alpha: "0.7"
+  ema_alpha: "1.0"
 
 esphome:
   name: ${dev_name}
@@ -25,12 +25,23 @@ external_components:
   - source: github://Pionizer/pionizer-axp192
     components: [axp192]
     refresh: 1days
-  - source:
-      type: git
-      url: https://github.com/ssieb/esphome
-      ref: graph
-    components: [ graph ]
-    refresh: 1min
+  # - source:
+  #     type: git
+  #     url: https://github.com/ssieb/esphome
+  #     ref: graph
+  #   components: [ graph ]
+  #   refresh: 1min
+  # - source:
+  #     type: git
+  #     url: https://github.com/esphome/esphome
+  #     ref: dev
+  #   components: [ graph ]
+  # - source: github://pr#6055
+  #   components: [ ft63x6 ]
+  #   refresh: 0s
+  - source: github://pr#5997
+    components: [ display, touchscreen, ft63x6 ]
+    refresh: 0s
 
 esp32:
   board: m5stack-core-esp32
@@ -40,11 +51,11 @@ esp32:
   flash_size: 16MB
 
 logger:
-  level: ERROR
+  level: DEBUG
   logs:
     component: ERROR # Filter out "time taken too long errors"
-    # homeassistant.sensor: INFO
-    # axp192.sensor: INFO
+    homeassistant.sensor: INFO
+    axp192.sensor: INFO
 
 api:
   encryption:
@@ -79,29 +90,6 @@ globals:
     restore_value: no
 
 sensor:
-
-  - platform: template
-    id: square_wave
-    internal: True
-    lambda: |-
-      double period = 6000.0; // Set the period in milliseconds (e.g., 2000ms = 2 seconds)
-      double half_period = period / 2.0;
-      double time = fmod((double)millis(), period);
-      if (time < half_period) {
-        return 7.0; // Positive amplitude for the first half of the period
-      } else {
-        return -7.0; // Negative amplitude for the second half of the period
-      }
-    update_interval: 100ms
-
-  - platform: template
-    id: sinusoid_sensor
-    internal: True
-    lambda: |-
-      float sin_value = 6.0 * sin((float)millis() / 1000.0); // Generate a sinusoid
-      return sin_value;
-    update_interval: 100ms
-
   - platform: axp192
     model: M5CORE2
     address: 0x34
@@ -121,9 +109,9 @@ sensor:
     internal: true
     id: ha_solar_power
     entity_id: sensor.solarnet_power_photovoltaics
-    filters:
-      - exponential_moving_average:
-          alpha: ${ema_alpha}
+    # filters:
+    #   - exponential_moving_average:
+    #       alpha: ${ema_alpha}
 
   - platform: homeassistant
     internal: true
@@ -173,8 +161,8 @@ sensor:
     entity_id: sensor.solarnet_power_load
     filters:
       - multiply: -1.0
-      - exponential_moving_average:
-          alpha: ${ema_alpha}
+      # - exponential_moving_average:
+      #     alpha: ${ema_alpha}
 
   - platform: homeassistant
     internal: true
@@ -256,11 +244,14 @@ touchscreen:
     i2c_id: bus_a
     interrupt_pin: 39
     id: touch_screen
+    calibration:
+      y_min: 0
+      y_max: 240
     on_touch:
       # M5Stack Core2 is 320 x 240 + 40 pixels below display active area for 3x red circular touch buttons
       - lambda: |-
-          // ESP_LOGI("touch", "Current (x,y) = %d, %d", touch.x, touch.y);        // y-coord is half of expected
-          // ESP_LOGI("touch", "Raw (x,y) = %d, %d\n", touch.x_raw, touch.y_raw);  // y-coord is correct
+          ESP_LOGI("touch", "Current (x,y) = %d, %d", touch.x, touch.y);        // y-coord is half of expected
+          ESP_LOGI("touch", "Raw (x,y) = %d, %d\n", touch.x_raw, touch.y_raw);  // y-coord is correct
           // float core2_val = axp192_axp192component->GetBatVoltage();
           // float core2_val = axp192_axp192component->GetVinVoltage();
           // float core2_val = axp192_axp192component->GetVBusVoltage();
@@ -275,8 +266,8 @@ binary_sensor:
     internal: True
     x_min: 0
     x_max: 106
-    y_min: 120 # should be 240, but is half due to bug in ESPHome touch y-coordinate
-    y_max: 140 # should be 280
+    y_min: 220 # should be 240, but is half due to bug in ESPHome touch y-coordinate
+    y_max: 280 # should be 280
     filters:
       - delayed_on: ${touch_delay}
     on_press:
@@ -289,8 +280,8 @@ binary_sensor:
     internal: True
     x_min: 107
     x_max: 213
-    y_min: 120
-    y_max: 140
+    y_min: 220
+    y_max: 280
     filters:
       - delayed_on: ${touch_delay}
     on_press:
@@ -303,8 +294,8 @@ binary_sensor:
     internal: True
     x_min: 214
     x_max: 319
-    y_min: 120
-    y_max: 140
+    y_min: 220
+    y_max: 280
     filters:
       - delayed_on: ${touch_delay}
     on_press:
@@ -363,8 +354,8 @@ display:
   - platform: ili9xxx
     model: M5STACK
     id: lcd_display
-    # dimensions: "320X240"
-    update_interval: 1000ms
+    # dimensions: "320X280"
+    update_interval: 500ms
     cs_pin: 5
     dc_pin: 15
     pages:
@@ -601,17 +592,22 @@ display:
           // Add x-axis label, i.e. graph duration
           // y_top -= 80;
           x_left = 5;
-          it.print(x_left + 6, y_top, id(font_sml), orange, "1 hrs");
+          it.print(x_left + 6, y_top, id(font_sml), orange, "1 hr");
           it.rectangle(x_left, y_top - 2, 56, 27, orange);
 
           // Display numeric values
           float solar = id(ha_solar_power).state;
           float house = id(ha_house_power).state;
           float grid = id(ha_grid_power).state;
+
           x_left = 7;
-          y_top = 90;
+          y_top = 65;
           int y_inc = 25;
 
+          // Display EMA filter factor and page number
+          it.printf(x_left, y_top, id(font_sml), grey, TextAlign::LEFT, "Filt %.1f (p2)", ${ema_alpha});
+
+          y_top += y_inc;
           it.printf(x_left, y_top, id(font_sml), yellow, TextAlign::LEFT, "Solar %.1f", solar);
 
           y_top += y_inc;
@@ -656,17 +652,22 @@ display:
           // Add x-axis label, i.e. graph duration
           // y_top -= 80;
           x_left = 5;
-          it.print(x_left + 6, y_top, id(font_sml), orange, "1 hrs");
+          it.print(x_left + 6, y_top, id(font_sml), orange, "1 hr");
           it.rectangle(x_left, y_top - 2, 56, 27, orange);
 
           // Display numeric values
           float solar = id(ha_solar_power).state;
           float house = id(ha_house_power).state;
           float grid = id(ha_grid_power).state;
+
           x_left = 7;
-          y_top = 90;
+          y_top = 65;
           int y_inc = 25;
 
+          // Display EMA filter factor and page number
+          it.printf(x_left, y_top, id(font_sml), grey, TextAlign::LEFT, "Filt %.1f (p3)", ${ema_alpha});
+
+          y_top += y_inc;
           it.printf(x_left, y_top, id(font_sml), yellow, TextAlign::LEFT, "Solar %.1f", solar);
 
           y_top += y_inc;
@@ -678,39 +679,26 @@ display:
           else if (solar > (house + 0.05))
             it.printf(x_left, y_top, id(font_sml), green, TextAlign::LEFT, "Export %.1f", -grid);
 
-
 graph:
   - id: power_graph
-    duration: 15s
+    duration: 1h
     width: 200 # leave a 5-pixel gap on either side of graph. Display width = 320 - 40 - (2 * 5)
     height: 200
-    # x_grid: 2s     # time / div
+    # x_grid: 10min     # time / div
     # y_grid: 2.0       # 2 kW / div
-    min_value: -10.0
-    max_value: 10.0 # Maximum y-axis value
+    min_value: 0.0
+    max_value: 12.0 # Maximum y-axis value
     traces:
-      # - sensor: ha_solar_power
-      #   line_type: SOLID
-      #   line_thickness: 2
-      #   color: my_yellow
-      #   connect_the_dots: true
-
-      # - sensor: ha_grid_power
-      #   line_type: SOLID
-      #   line_thickness: 3
-      #   color: my_blue
-
-      # - sensor: ha_house_power
-      - sensor: sinusoid_sensor
-        line_type: SOLID
+      - sensor: ha_solar_power
+        line_type: DOTTED
         line_thickness: 1
         color: my_yellow
-        connect_the_dots: true
-      - sensor: square_wave
-        line_type: SOLID
+        continuous: true
+      - sensor: ha_house_power
+        line_type: DOTTED
         line_thickness: 1
         color: my_cyan
-        connect_the_dots: true
+        continuous: true
 
 # interval:
 #   - interval: 5s
