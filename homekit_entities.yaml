@@ -62,6 +62,7 @@
       - light.workshop_downlight
       - light.workshop_rgb_light
       - light.led_strip_workshop_shelf_dimmer
+      - light.wled_16x16_matrix
       - light.led_strip_fire_pit_dimmer
       - light.pool_light_controller_pool_lights
   entity_config:

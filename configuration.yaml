@@ -21,6 +21,9 @@ logbook:
     entities:
       - sensor.symo_10_0_3_m_1_error_code
       - sensor.symo_10_0_3_m_1_status_code
+      - sensor.awtrix_6dbd0c_current_app
+    entity_globs:
+      - automation.awtrix*
 
 recorder:
   purge_keep_days: 14 # default is 10 days
@@ -221,11 +224,11 @@ template:
             {% set pool_power = pool_power|float %}
             {% if pool_power < 50 %}
               Off
-            {% elif 50 <= pool_power < 300 %}
+            {% elif 50 <= pool_power < 400 %}
               Low speed
-            {% elif 300 <= pool_power < 500 %}
+            {% elif 400 <= pool_power < 600 %}
               Medium speed
-            {% elif pool_power >= 500 %}
+            {% elif pool_power >= 600 %}
               High speed
             {% endif %}
           {% else %}
@@ -282,10 +285,12 @@ light:
       - light.workshop_downlight
       - light.workshop_rgb_light
       - light.led_strip_workshop_shelf_dimmer
+      - light.wled_16x16_matrix
 
       - light.courtyard_flood_light
 
       - light.wir_downlight
+      - light.led_strip_wir
       - light.bedside_lamp_kathleen
       - light.jess_wled_mk2
 
