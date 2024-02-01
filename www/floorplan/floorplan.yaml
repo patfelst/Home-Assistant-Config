@@ -40,7 +40,7 @@ config:
                   return "Show\nTemps";
                 else
                   return "Hide\nTemps";
-    - entity: sensor.rostrevor_pool_inlet_water_temp_t02
+    - entity: input_number.pool_temperature_while_pump_on
       state_action:
         service: floorplan.text_set
         service_data:
