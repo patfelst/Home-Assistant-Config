@@ -53,10 +53,10 @@ sensor:
   - platform: filter
     name: Filtered pool pump power Lowpass Filter
     unique_id: id_pool_pump_power_lowpass_filter
-    entity_id: sensor.pool_pump_current_power
+    entity_id: sensor.pool_pump_current_consumption
     filters:
       - filter: lowpass
-        time_constant: 6
+        time_constant: 60
         precision: 4
 
   - platform: statistics
