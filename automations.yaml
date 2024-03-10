@@ -874,70 +874,6 @@
               - light.pool_light_controller_pool_lights
               - light.led_strip_fire_pit_dimmer
   mode: restart
-- id: "1669632348299"
-  alias: Motion - Butler's pantry lights ON
-  description: Bright during day, dim at night
-  trigger:
-    - platform: state
-      entity_id:
-        - binary_sensor.butlers_sensor_occupancy
-      to: "on"
-      from: "off"
-  condition: []
-  action:
-    - choose:
-        - conditions:
-            - condition: or
-              conditions:
-                - condition: time
-                  before: "23:00:00"
-                  after: 06:00:00
-                  enabled: false
-                - condition: state
-                  entity_id: input_boolean.sleep_mode
-                  state: "off"
-          sequence:
-            - service: light.turn_on
-              data:
-                brightness_pct: 40
-              target:
-                entity_id:
-                  - light.butlers_downlight
-                  - light.led_strip_butlers_overhead_cupboards
-        - conditions:
-            - condition: or
-              conditions:
-                - condition: state
-                  entity_id: input_boolean.sleep_mode
-                  state: "on"
-                - condition: time
-                  after: "23:00:00"
-                  before: 06:00:00
-                  enabled: false
-          sequence:
-            - service: light.turn_on
-              data:
-                brightness_pct: 2
-              target:
-                entity_id: light.led_strip_butlers_overhead_cupboards
-    - wait_for_trigger:
-        - platform: state
-          entity_id:
-            - binary_sensor.butlers_sensor_occupancy
-          from: "on"
-          to: "off"
-    - delay:
-        hours: 0
-        minutes: 4
-        seconds: 0
-        milliseconds: 0
-    - service: light.turn_off
-      data: {}
-      target:
-        entity_id:
-          - light.butlers_downlight
-          - light.led_strip_butlers_overhead_cupboards
-  mode: restart
 - id: "1669710613722"
   alias: Google say - person arrived home
   description: ""
@@ -1495,10 +1431,13 @@
   alias: Air con ON when HOT back lounge (people at home)
   description: ""
   trigger:
-    - platform: numeric_state
-      entity_id: climate.ac_back_lounge
+    - platform: state
+      entity_id:
+        - climate.ac_back_lounge
       attribute: current_temperature
-      above: 25
+    - platform: state
+      entity_id:
+        - sensor.solarnet_power_grid
   condition:
     - condition: numeric_state
       entity_id: zone.home
@@ -1509,6 +1448,14 @@
     - condition: state
       entity_id: climate.ac
       state: "off"
+    - condition: numeric_state
+      entity_id: climate.ac_back_lounge
+      attribute: current_temperature
+      above: 25
+    - condition: sun
+      after: sunrise
+    - condition: sun
+      before: sunset
   action:
     - service: climate.turn_on
       data: {}
@@ -1531,26 +1478,37 @@
         fan_mode: medium
       target:
         entity_id: climate.ac
-    - service: notify.mobile_app_patricks_iphone_13
-      data:
-        title: Air con turned on (People at home)
-        message:
-          Turned on air conditioner as {{ trigger.to_state.name }} temperature
-          is above {{ trigger.above }} and people are at home (i.e don't care if alrady
-          importing power)
     - service: climate.set_temperature
       data:
         temperature: 24
+        hvac_mode: cool
       target:
         entity_id:
           - climate.ac_back_lounge
           - climate.ac_entry
-          - climate.ac_front_lounge
           - climate.ac_jess_br
           - climate.ac_kitchen
           - climate.ac_master_br
-          - climate.ac_spare_br
           - climate.ac_workshop
+    - service: climate.set_hvac_mode
+      data:
+        hvac_mode: "off"
+      enabled: true
+      target:
+        entity_id:
+          - climate.ac_front_lounge
+          - climate.ac_spare_br
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: Air con turned on (People at home)
+        message:
+          Turned on air conditioner as Back Lounge temperature is above 25° and
+          people are at home (i.e don't care if already importing power)
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 15
+        milliseconds: 0
   mode: single
 - id: "1677320260752"
   alias: Lights - garden lights off (first time of day)
@@ -2597,63 +2555,6 @@
           %p') }}
       enabled: false
   mode: single
-- id: "1695041517610"
-  alias: Air con ON when HOT back lounge (nobody at home)
-  description: ""
-  trigger:
-    - platform: numeric_state
-      entity_id: climate.ac_back_lounge
-      attribute: current_temperature
-      above: 26
-  condition:
-    - condition: numeric_state
-      entity_id: sensor.solarnet_power_grid
-      below: -0.1
-    - condition: numeric_state
-      entity_id: zone.home
-      below: 1
-  action:
-    - service: climate.turn_on
-      data: {}
-      target:
-        entity_id: climate.ac
-    - service: climate.set_temperature
-      data:
-        temperature: 24
-        hvac_mode: cool
-      target:
-        entity_id: climate.ac
-    - service: climate.set_hvac_mode
-      data:
-        hvac_mode: cool
-      target:
-        entity_id: climate.ac
-      enabled: true
-    - service: climate.set_fan_mode
-      data:
-        fan_mode: medium
-      target:
-        entity_id: climate.ac
-    - service: notify.mobile_app_patricks_iphone_13
-      data:
-        title: Air con turned on (Nobody at home)
-        message:
-          Turned on air conditioner as {{ trigger.to_state.name }} temperature
-          is above {{ trigger.above }} and exporting more than 5kW (nobody is home)
-    - service: climate.set_temperature
-      data:
-        temperature: 24
-      target:
-        entity_id:
-          - climate.ac_back_lounge
-          - climate.ac_entry
-          - climate.ac_front_lounge
-          - climate.ac_jess_br
-          - climate.ac_kitchen
-          - climate.ac_master_br
-          - climate.ac_spare_br
-          - climate.ac_workshop
-  mode: single
 - id: "1695267626675"
   alias: "Blinds - open all (except #1) in the afternoon when sun < 25°"
   description: ""
@@ -2806,15 +2707,6 @@
       id: driveway gate
   condition: []
   action:
-    - service: light.turn_on
-      data:
-        rgb_color:
-          - 255
-          - 0
-          - 0
-        brightness_pct: 100
-      target:
-        entity_id: light.front_hall_lamp
     - choose:
         - conditions:
             - condition: trigger
@@ -2847,6 +2739,15 @@
               data: {}
               target:
                 entity_id: lock.yale_smartlock_front_door
+            - service: light.turn_on
+              data:
+                rgb_color:
+                  - 255
+                  - 0
+                  - 0
+                brightness_pct: 100
+              target:
+                entity_id: light.front_hall_lamp
         - conditions:
             - condition: trigger
               id:
@@ -2872,6 +2773,15 @@
                 message:
                   Front door has been open for {{ (((trigger.for.seconds) | int)
                   / 60) | round(0) }} minutes. Please go and close it.
+            - service: light.turn_on
+              data:
+                rgb_color:
+                  - 255
+                  - 0
+                  - 0
+                brightness_pct: 100
+              target:
+                entity_id: light.front_hall_lamp
         - conditions:
             - condition: trigger
               id:
@@ -2900,6 +2810,15 @@
                 message:
                   Garage door has been open for {{ (((trigger.for.seconds) | int)
                   / 60) | round(0) }} minutes. Please go and close it.
+            - service: light.turn_on
+              data:
+                rgb_color:
+                  - 255
+                  - 0
+                  - 0
+                brightness_pct: 100
+              target:
+                entity_id: light.front_hall_lamp
         - conditions:
             - condition: trigger
               id:
@@ -2925,6 +2844,15 @@
                 message:
                   Driveway gate has been open for {{ (((trigger.for.seconds) | int)
                   / 60) | round(0) }} minutes. Please go and close it.
+            - service: light.turn_on
+              data:
+                rgb_color:
+                  - 255
+                  - 0
+                  - 0
+                brightness_pct: 100
+              target:
+                entity_id: light.front_hall_lamp
   mode: single
 - id: "1697960300615"
   alias: Light - front hall lamp REMOVE RED when front door / gate closed
@@ -3026,7 +2954,7 @@
                   target:
                     entity_id: light.back_lounge_sideboard_lamp
 - id: "1698533404217"
-  alias: Motion - butlers pantry lights v2
+  alias: Motion - butlers pantry lights
   description: ""
   trigger:
     - platform: state
@@ -3034,11 +2962,42 @@
         - binary_sensor.butlers_sensor_occupancy
       to: "on"
       id: motion detected
+      enabled: false
     - platform: state
       entity_id:
         - binary_sensor.butlers_sensor_occupancy
       to: "off"
       id: no motion
+      for:
+        hours: 0
+        minutes: 4
+        seconds: 0
+      enabled: false
+    - platform: state
+      entity_id:
+        - binary_sensor.everything_presence_lite_22ca80_occupancy
+      id: motion detected
+      to: "on"
+      enabled: false
+    - platform: state
+      entity_id:
+        - binary_sensor.everything_presence_lite_22ca80_occupancy
+      to: "off"
+      for:
+        hours: 0
+        minutes: 4
+        seconds: 0
+      id: no motion
+      enabled: false
+    - platform: state
+      entity_id:
+        - binary_sensor.everything_presence_lite_223508_occupancy
+      to: "on"
+      id: motion detected
+    - platform: state
+      entity_id:
+        - binary_sensor.everything_presence_lite_223508_occupancy
+      to: "off"
       for:
         hours: 0
         minutes: 4
@@ -3469,6 +3428,11 @@
                 entity_id: input_datetime.emtb_charge_start
               data:
                 datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+            - service: input_datetime.set_datetime
+              target:
+                entity_id: input_datetime.emtb_charge_finish
+              data:
+                datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
         - conditions:
             - condition: trigger
               id:
@@ -3831,74 +3795,6 @@
           Please visit the 'Home Assistant Google Drive Backup ' add-on status
           page for details.
   mode: single
-- id: "1705399189917"
-  alias: Air con ON when HOT back lounge (nobody at home) v2
-  description: ""
-  trigger:
-    - platform: numeric_state
-      entity_id: climate.ac_back_lounge
-      attribute: current_temperature
-      above: 26
-  condition:
-    - condition: numeric_state
-      entity_id: zone.home
-      below: 1
-  action:
-    - if:
-        - condition: numeric_state
-          entity_id: sensor.solarnet_power_grid
-          below: -5
-      then:
-        - service: climate.turn_on
-          data: {}
-          target:
-            entity_id: climate.ac
-        - service: climate.set_temperature
-          data:
-            temperature: 24
-            hvac_mode: cool
-          target:
-            entity_id: climate.ac
-        - service: climate.set_hvac_mode
-          data:
-            hvac_mode: cool
-          target:
-            entity_id: climate.ac
-          enabled: true
-        - service: climate.set_fan_mode
-          data:
-            fan_mode: medium
-          target:
-            entity_id: climate.ac
-        - service: climate.set_temperature
-          data:
-            temperature: 24
-          target:
-            entity_id:
-              - climate.ac_back_lounge
-              - climate.ac_entry
-              - climate.ac_front_lounge
-              - climate.ac_jess_br
-              - climate.ac_kitchen
-              - climate.ac_master_br
-              - climate.ac_spare_br
-              - climate.ac_workshop
-        - service: notify.mobile_app_patricks_iphone_13
-          data:
-            title: Air con ON (Nobody at home)
-            message:
-              Turned on air conditioner as {{ trigger.to_state.name }} temperature
-              is above {{ trigger.above }} and exporting more than 5kW ({{ states('sensor.solarnet_power_grid')
-              | round(1) }} kW).
-      else:
-        - service: notify.mobile_app_patricks_iphone_13
-          data:
-            title: Air con NOT on (Nobody at home)
-            message:
-              "{{ trigger.to_state.name }} temperature is above {{ trigger.above
-              }} but air con NOT turned on because exporting less than 5kW ({{ states('sensor.solarnet_power_grid')
-              | round(1) }} kW)."
-  mode: single
 - id: "1705405175945"
   alias: Unlock front door when ped gate opens
   description: ""
@@ -3933,29 +3829,94 @@
   alias: Apple TV - dim lights on PLAY
   description: ""
   trigger:
-    - platform: device
-      device_id: 55d2260c76dd4fc84ffd8487d19c5958
-      domain: media_player
-      entity_id: 8157aea6a408a2ca98a663cd0f4180a1
-      type: playing
-      enabled: false
     - platform: state
       entity_id:
         - media_player.apple_tv_back_lounge
       to: playing
-  condition: []
+      id: playing
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 0
+    - platform: state
+      entity_id:
+        - media_player.apple_tv_back_lounge
+      to: paused
+      id: paused
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 0
+    - platform: state
+      entity_id:
+        - media_player.apple_tv_back_lounge
+      to: "off"
+      id: turned off
+      enabled: true
+    - platform: state
+      entity_id:
+        - media_player.apple_tv_back_lounge
+      to: standby
+      id: standby
+      enabled: true
+    - platform: state
+      entity_id:
+        - media_player.apple_tv_back_lounge
+      to: idle
+      id: idle
+  condition:
+    - condition: sun
+      after: sunset
+      before: sunrise
+      enabled: true
+    - condition: state
+      entity_id: media_player.apple_tv_back_lounge
+      attribute: media_content_type
+      state: video
+      enabled: false
   action:
-    - service: light.turn_off
-      metadata: {}
-      data: {}
-      target:
-        entity_id: light.back_lounge_pendant
-    - service: light.turn_on
-      metadata: {}
-      data:
-        brightness_pct: 12
-      target:
-        entity_id: light.lamp_rhs_fireplace
+    - choose:
+        - conditions:
+            - condition: and
+              conditions:
+                - condition: numeric_state
+                  entity_id: media_player.apple_tv_back_lounge
+                  attribute: media_duration
+                  above: 300
+                - condition: trigger
+                  id:
+                    - playing
+          sequence:
+            - service: light.turn_off
+              metadata: {}
+              data: {}
+              target:
+                entity_id: light.back_lounge_pendant
+            - service: light.turn_on
+              metadata: {}
+              data:
+                brightness_pct: 12
+                transition: 6
+              target:
+                entity_id: light.lamp_rhs_fireplace
+        - conditions:
+            - condition: trigger
+              id:
+                - paused
+                - idle
+          sequence:
+            - service: light.turn_on
+              target:
+                entity_id:
+                  - light.back_lounge_pendant
+              data: {}
+            - service: light.turn_on
+              metadata: {}
+              data:
+                transition: 6
+                brightness_pct: 50
+              target:
+                entity_id: light.lamp_rhs_fireplace
   mode: single
 - id: "1707039891559"
   alias: Motion - WIR MMWave
@@ -4018,4 +3979,171 @@
             entity_id:
               - light.wir_downlight
               - light.led_strip_wir
+  mode: single
+- id: "1708818178334"
+  alias: Notify - zigbee devices offline
+  description: ""
+  use_blueprint:
+    path: Tahutipai/report_zigbee_zwave_devices_gone_offline.yaml
+    input:
+      actions:
+        - service: notify.mobile_app_patricks_iphone_13
+          metadata: {}
+          data:
+            message: "{{ offline_devices }} is offline"
+- id: "1709106061138"
+  alias: Air con ON when HOT back lounge (nobody at home)
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - climate.ac_back_lounge
+      attribute: current_temperature
+    - platform: state
+      entity_id:
+        - sensor.solarnet_power_photovoltaics
+  condition:
+    - condition: numeric_state
+      entity_id: zone.home
+      below: 1
+      enabled: true
+    - condition: state
+      entity_id: climate.ac
+      state: "off"
+    - condition: numeric_state
+      entity_id: climate.ac_back_lounge
+      attribute: current_temperature
+      above: 26
+    - condition: numeric_state
+      entity_id: sensor.solarnet_power_photovoltaics
+      above: 5
+  action:
+    - service: climate.turn_on
+      data: {}
+      target:
+        entity_id: climate.ac
+    - service: climate.set_temperature
+      data:
+        temperature: 25
+        hvac_mode: cool
+      target:
+        entity_id: climate.ac
+    - service: climate.set_hvac_mode
+      data:
+        hvac_mode: cool
+      target:
+        entity_id: climate.ac
+      enabled: true
+    - service: climate.set_fan_mode
+      data:
+        fan_mode: medium
+      target:
+        entity_id: climate.ac
+    - service: climate.set_temperature
+      data:
+        temperature: 25
+        hvac_mode: cool
+      target:
+        entity_id:
+          - climate.ac_back_lounge
+          - climate.ac_entry
+          - climate.ac_jess_br
+          - climate.ac_kitchen
+          - climate.ac_master_br
+          - climate.ac_spare_br
+          - climate.ac_workshop
+    - service: climate.set_hvac_mode
+      data:
+        hvac_mode: "off"
+      enabled: true
+      target:
+        entity_id:
+          - climate.ac_front_lounge
+          - climate.ac_spare_br
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: Air con ON (Nobody at home)
+        message:
+          Turned on air conditioner as Back Lounge temperature is above 26° and
+          solar power more than 5kW ({{ states('sensor.solarnet_power_photovoltaics')
+          | round(1) }} kW).
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 15
+        milliseconds: 0
+  mode: single
+- id: "1709935543205"
+  alias: Air con ON when HOT back lounge (people at home) v2
+  description: ""
+  trigger:
+    - platform: time_pattern
+      minutes: /10
+  condition:
+    - condition: numeric_state
+      entity_id: zone.home
+      above: 0
+    - condition: time
+      after: 08:00:00
+      before: "18:00:00"
+    - condition: state
+      entity_id: climate.ac
+      state: "off"
+    - condition: numeric_state
+      entity_id: climate.ac_back_lounge
+      attribute: current_temperature
+      above: 25
+  action:
+    - service: climate.turn_on
+      data: {}
+      target:
+        entity_id: climate.ac
+    - service: climate.set_temperature
+      data:
+        temperature: 24
+        hvac_mode: cool
+      target:
+        entity_id: climate.ac
+    - service: climate.set_hvac_mode
+      data:
+        hvac_mode: cool
+      target:
+        entity_id: climate.ac
+      enabled: true
+    - service: climate.set_fan_mode
+      data:
+        fan_mode: medium
+      target:
+        entity_id: climate.ac
+    - service: climate.set_temperature
+      data:
+        temperature: 24
+        hvac_mode: cool
+      target:
+        entity_id:
+          - climate.ac_back_lounge
+          - climate.ac_entry
+          - climate.ac_jess_br
+          - climate.ac_kitchen
+          - climate.ac_master_br
+          - climate.ac_workshop
+    - service: climate.set_hvac_mode
+      data:
+        hvac_mode: "off"
+      enabled: true
+      target:
+        entity_id:
+          - climate.ac_front_lounge
+          - climate.ac_spare_br
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: Air con turned on (People at home)
+        message:
+          Turned on air conditioner as Back Lounge temperature is above 25° and
+          people are at home (i.e don't care if already importing power)
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 15
+        milliseconds: 0
   mode: single
