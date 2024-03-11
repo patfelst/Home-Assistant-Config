@@ -1,0 +1,17 @@
+substitutions:
+  name: everything-presence-lite-22ca80
+  friendly_name: MMWave Spare
+packages:
+  EverythingSmartTechnology.Everything_Presence_Lite: github://everythingsmarthome/everything-presence-lite/everything-presence-lite-ha-no-ble.yaml@main
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false
+  friendly_name: ${friendly_name}
+api:
+  encryption:
+    key: VVPoTB79/bpU8rKoUmEa3sRmnblkW9xZMaEZpm3vCos=
+
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password

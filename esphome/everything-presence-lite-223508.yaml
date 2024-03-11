@@ -1,0 +1,17 @@
+substitutions:
+  name: everything-presence-lite-223508
+  friendly_name: MMWave Butlers
+packages:
+  EverythingSmartTechnology.Everything_Presence_Lite: github://everythingsmarthome/everything-presence-lite/everything-presence-lite-ha-no-ble.yaml@main
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false
+  friendly_name: ${friendly_name}
+api:
+  encryption:
+    key: ZKxnkRSyJf3sDxRDwyCERUUhuULKwLPRq5NWhThqyhE=
+
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
