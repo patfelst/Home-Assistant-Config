@@ -69,11 +69,6 @@ sensor:
     id: outside_temp
     address: ${ds18b20_external_addr}
     # accuracy_decimals: 2
-    filters:
-      - offset: 0.0
-      # - exponential_moving_average:
-      #     alpha: 0.4
-      #     send_every: 6
     on_value_range:
       - below: 16.9
         then:
