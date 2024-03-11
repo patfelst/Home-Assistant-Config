@@ -215,7 +215,9 @@ touchscreen:
           // ESP_LOGE("touch", "Raw (x,y) = %d, %d\n", touch.x_raw, touch.y_raw);  // y-coord is correct
           id(touch_x) = touch.x_raw; 
           id(touch_y) = touch.y_raw;
-      - lambda: "axp192_axp192component->set_brightness(1.0);"
+      - lambda: |-
+          if (touch.y_raw >= 120) // Try and prevent phantom touches causing screen to turn on when not actually touched
+            axp192_axp192component->set_brightness(1.0);
 
 binary_sensor:
   - platform: touchscreen

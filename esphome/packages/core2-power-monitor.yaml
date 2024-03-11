@@ -39,9 +39,9 @@ external_components:
   # - source: github://pr#6055
   #   components: [ ft63x6 ]
   #   refresh: 0s
-  - source: github://pr#5997
-    components: [ display, touchscreen, ft63x6 ]
-    refresh: 0s
+  # - source: github://pr#5997
+  #   components: [ display, touchscreen, ft63x6 ]
+  #   refresh: 0s
 
 esp32:
   board: m5stack-core-esp32
@@ -244,9 +244,9 @@ touchscreen:
     i2c_id: bus_a
     interrupt_pin: 39
     id: touch_screen
-    calibration:
-      y_min: 0
-      y_max: 240
+    # calibration:
+    #   y_min: 0
+    #   y_max: 240
     on_touch:
       # M5Stack Core2 is 320 x 240 + 40 pixels below display active area for 3x red circular touch buttons
       - lambda: |-
@@ -257,7 +257,9 @@ touchscreen:
           // float core2_val = axp192_axp192component->GetVBusVoltage();
           id(touch_x) = touch.x_raw; 
           id(touch_y) = touch.y_raw;
-      - lambda: "axp192_axp192component->set_brightness(1.0);"
+      - lambda: |-
+          if (touch.y_raw >= 120) // Try and prevent phantom touches causing screen to turn on when not actually touched
+            axp192_axp192component->set_brightness(1.0);
 
 binary_sensor:
   - platform: touchscreen
@@ -266,8 +268,8 @@ binary_sensor:
     internal: True
     x_min: 0
     x_max: 106
-    y_min: 220 # should be 240, but is half due to bug in ESPHome touch y-coordinate
-    y_max: 280 # should be 280
+    y_min: 120 # should be 240, but is half due to bug in ESPHome touch y-coordinate
+    y_max: 140 # should be 280
     filters:
       - delayed_on: ${touch_delay}
     on_press:
@@ -280,8 +282,8 @@ binary_sensor:
     internal: True
     x_min: 107
     x_max: 213
-    y_min: 220
-    y_max: 280
+    y_min: 120
+    y_max: 140
     filters:
       - delayed_on: ${touch_delay}
     on_press:
@@ -294,8 +296,8 @@ binary_sensor:
     internal: True
     x_min: 214
     x_max: 319
-    y_min: 220
-    y_max: 280
+    y_min: 120
+    y_max: 140
     filters:
       - delayed_on: ${touch_delay}
     on_press:
@@ -685,17 +687,15 @@ graph:
     width: 200 # leave a 5-pixel gap on either side of graph. Display width = 320 - 40 - (2 * 5)
     height: 200
     # x_grid: 10min     # time / div
-    # y_grid: 2.0       # 2 kW / div
+    y_grid: 2.0       # 2 kW / div
     min_value: 0.0
     max_value: 12.0 # Maximum y-axis value
     traces:
       - sensor: ha_solar_power
-        line_type: DOTTED
         line_thickness: 1
         color: my_yellow
         continuous: true
       - sensor: ha_house_power
-        line_type: DOTTED
         line_thickness: 1
         color: my_cyan
         continuous: true
