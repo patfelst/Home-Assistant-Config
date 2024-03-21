@@ -2398,16 +2398,22 @@
   description: ""
   trigger:
     - platform: numeric_state
-      entity_id: sensor.solarnet_power_grid
+      entity_id:
+        - sensor.solarnet_power_grid
       for:
         hours: 0
         minutes: 20
         seconds: 0
-      above: 0
+      above: 1
   condition:
-    - condition: state
-      entity_id: climate.ac
-      state: cool
+    - condition: or
+      conditions:
+        - condition: state
+          entity_id: climate.ac
+          state: cool
+        - condition: state
+          entity_id: climate.ac
+          state: heat
   action:
     - service: notify.mobile_app_patricks_iphone_13
       data:
