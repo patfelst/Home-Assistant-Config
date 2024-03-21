@@ -33,9 +33,9 @@ google_actions:
       - light.front_garden_lights
 
       # - light.kitchen_lights # Group
-      - light.kitchen_downlights
-      - light.kitchen_hall_downlights
-      - light.kitchen_pendant
+      # - light.kitchen_hall_downlights
+      # - light.kitchen_pendant
+      - light.kitchen_lights # Group
       - light.dining_downlight
 
       - light.back_lounge_downlights

@@ -43,14 +43,17 @@
       - light.front_garden_lights
       - light.front_stone_up_down
       - light.garage_downlights
-      - light.kitchen_downlights
-      - light.kitchen_hall_downlights
-      - light.kitchen_pendant
+      # - light.kitchen_downlights
+      # - light.kitchen_hall_downlights
+      # - light.kitchen_pendant
+      # - light.led_strip_kitchen_kicker
+      - light.front_yard_lights # group defined in helpers
+      - light.kitchen_lights # group defined in helpers
+      - light.back_yard_lights # Group
       - light.lamp_rhs_fireplace
       - light.laundry_downlight
       - light.laundry_path_bunker_light
       - light.led_strip_butlers_overhead_cupboards
-      - light.led_strip_kitchen_kicker
       - light.led_strip_front_hall_dimmer
       - light.meterbox_bunker
       - light.pool_perimeter_downlights

@@ -325,45 +325,45 @@ light:
       - light.pool_light_controller_pool_lights
       - light.inflatable_santa
 
-  - platform: group
-    name: "Front yard lights"
-    entities:
-      - light.front_stone_up_down
-      - light.front_porch
-      - light.front_garden_lights
-      - light.meterbox_bunker
-      - light.front_north_side_flood
-  - platform: group
-    name: "Front lounge lights"
-    entities:
-      - light.front_lounge_downlight
-      - light.front_lounge_pendant
-      - light.front_hall_lamp
-      - light.led_strip_front_hall_dimmer
-      - light.front_lounge_sideboard_lamp
-  - platform: group
-    name: "Kitchen lights"
-    entities:
-      - light.kitchen_downlights
-      - light.kitchen_hall_downlights
-      - light.kitchen_pendant
-      - light.led_strip_kitchen_kicker
-      - light.stairs_light
-  - platform: group
-    name: "Back lounge lights"
-    entities:
-      - light.back_lounge_downlights
-      - light.back_lounge_pendant
-      - light.back_lounge_sideboard_lamp
-      - light.lamp_rhs_fireplace
-      - light.twinkly_back_lounge
-  - platform: group
-    name: "Back yard lights"
-    entities:
-      - light.alfresco_downlights
-      - light.pool_perimeter_downlights
-      - light.rear_flood_light
-      - light.rear_garden_lights
-      - light.led_strip_fire_pit_dimmer
-      - light.pool_light_controller_pool_lights
-      - light.inflatable_santa
+  # - platform: group
+  #   name: "Front yard lights"
+  #   entities:
+  #     - light.front_stone_up_down
+  #     - light.front_porch
+  #     - light.front_garden_lights
+  #     - light.meterbox_bunker
+  #     - light.front_north_side_flood
+  # - platform: group
+  #   name: "Front lounge lights"
+  #   entities:
+  #     - light.front_lounge_downlight
+  #     - light.front_lounge_pendant
+  #     - light.front_hall_lamp
+  #     - light.led_strip_front_hall_dimmer
+  #     - light.front_lounge_sideboard_lamp
+  # - platform: group
+  #   name: "Kitchen lights"
+  #   entities:
+  #     - light.kitchen_downlights
+  #     - light.kitchen_hall_downlights
+  #     - light.kitchen_pendant
+  #     - light.led_strip_kitchen_kicker
+  #     - light.stairs_light
+  # - platform: group
+  #   name: "Back lounge lights"
+  #   entities:
+  #     - light.back_lounge_downlights
+  #     - light.back_lounge_pendant
+  #     - light.back_lounge_sideboard_lamp
+  #     - light.lamp_rhs_fireplace
+  #     - light.twinkly_back_lounge
+  # - platform: group
+  #   name: "Back yard lights"
+  #   entities:
+  #     - light.alfresco_downlights
+  #     - light.pool_perimeter_downlights
+  #     - light.rear_flood_light
+  #     - light.rear_garden_lights
+  #     - light.led_strip_fire_pit_dimmer
+  #     - light.pool_light_controller_pool_lights
+  #     - light.inflatable_santa
