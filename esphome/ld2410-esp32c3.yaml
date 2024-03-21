@@ -4,20 +4,19 @@ esphome:
   on_boot:
     priority: 600
     then:
-      - light.turn_on:
-          id: rgb_led 
-          brightness: 100%
-          red: 0%
-          green: 100%
-          blue: 0%
-      - delay: 2s
-      - light.turn_on:
-          id: rgb_led 
-          brightness: 100%
-          red: 100%
-          green: 0%
-          blue: 0%
-      - delay: 2s
+      - repeat:
+          count: 4
+          then:
+            - light.turn_on:
+                id: rgb_led
+                red: 100%
+                green: 0%
+                blue: 100%
+                brightness: 50%
+            - delay: 200ms
+            - light.turn_off: rgb_led
+            - delay: 200ms
+      # - delay: 2s
 
 esp32:
   board: esp32-c3-devkitm-1
@@ -39,6 +38,12 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
 
+globals:
+  - id: display_mode
+    type: bool
+    restore_value: yes
+    initial_value: 'false'
+
 uart:
   tx_pin: 21
   rx_pin: 20
@@ -54,15 +59,39 @@ button:
       name: query params
 
 light:
-  - platform: neopixelbus
+  # - platform: neopixelbus
+  - platform: esp32_rmt_led_strip
     id: rgb_led
     name: RGB LED
     internal: False
-    variant: WS2812
+    # variant: WS2812
+    rmt_channel: 0
+    chipset: WS2812
     pin: 10
     num_leds: 2
-    type: GRB
+    # type: GRB
+    rgb_order: GRB
     default_transition_length: 100ms
+    effects:
+      - addressable_rainbow:
+          name: Rainbow
+          speed: 15
+          width: 20
+      - addressable_scan:
+          name: Scan 5
+          move_interval: 100ms
+      - addressable_scan:
+          name: Scan 4
+          move_interval: 150ms
+      - addressable_scan:
+          name: Scan 3
+          move_interval: 200ms
+      - addressable_scan:
+          name: Scan 2
+          move_interval: 250ms
+      - addressable_scan:
+          name: Scan 1
+          move_interval: 300ms
 
 ld2410:
 
@@ -78,20 +107,93 @@ select:
     #   name: out pin level
 
 binary_sensor:
+  - platform: gpio
+    id: boot_btn
+    pin:
+      number: GPIO9
+      inverted: true
+      mode:
+        input: true
+        pullup: True
+    filters:
+      - delayed_on: 10ms # debounce
+    on_press: 
+      then:
+        - lambda: |-
+            id(display_mode) = !id(display_mode);
+            ESP_LOGI("Button", "LED Display Mode is %s", id(display_mode) ? "True" : "False");
+        - if:
+            condition:
+              lambda: 'return !id(display_mode);'
+            then:
+              - light.turn_on:
+                  id: rgb_led
+                  effect: 'None'
+              - light.turn_off: rgb_led
+
   - platform: ld2410
     has_target:
       name: Presence
+      # on_release:
+      #   then:
+      #     - light.turn_off: rgb_led
     has_moving_target:
       name: Moving Target
+      on_press:
+        - if:
+            condition:
+              lambda: 'return !id(display_mode);'
+            then:
+              - light.addressable_set:
+                  id: rgb_led
+                  range_from: 0
+                  range_to: 0
+                  color_brightness: 100%
+                  red: 0%
+                  green: 100%
+                  blue: 0%
+      on_release:
+        - if:
+            condition:
+              lambda: 'return !id(display_mode);'
+            then:
+              - light.addressable_set:
+                  id: rgb_led
+                  range_from: 0
+                  range_to: 0
+                  color_brightness: 0%
+                  red: 0%
+                  green: 0%
+                  blue: 0%
+
     has_still_target:
       name: Still Target
-    # out_pin_presence_status:
-    #   name: out pin presence status
-
-  # - platform: gpio
-  #   pin: 26
-  #   name: gpio out pin presence
-  #   device_class: presence
+      on_press:
+        - if:
+            condition:
+              lambda: 'return !id(display_mode);'
+            then:
+              - light.addressable_set:
+                  id: rgb_led
+                  range_from: 1
+                  range_to: 1
+                  color_brightness: 100%
+                  red: 100%
+                  green: 0%
+                  blue: 0%
+      on_release:
+        - if:
+            condition:
+              lambda: 'return !id(display_mode);'
+            then:
+              - light.addressable_set:
+                  id: rgb_led
+                  range_from: 1
+                  range_to: 1
+                  color_brightness: 0%
+                  red: 0%
+                  green: 0%
+                  blue: 0%
 
 sensor:
   - platform: ld2410
@@ -108,32 +210,59 @@ sensor:
     detection_distance:
       name: Detection Distance
       on_value_range:
-        - below: 40
+        - below: 20.0
           then:
-            # *** BLUE ***
-            - light.turn_on:
-                id: rgb_led
-                red: 0%
-                green: 0%
-                blue: 100%
+            if:
+              condition:
+                # api.connected:
+                lambda: |-
+                  return (id(display_mode) && (millis() > 2000)); // Give boot status LED time to blink
+              then:
+                # *** RED ***
+                - light.turn_on:
+                    id: rgb_led
+                    red: 100%
+                    green: 0%
+                    blue: 0%
+                - light.turn_on:
+                    id: rgb_led
+                    effect: 'Scan 5'
+        - above: 20.0
+          below: 40.0
+          then:
+            if:
+              condition:
+                # api.connected:
+                lambda: |-
+                  return (id(display_mode) && (millis() > 2000)); // Give boot status LED time to blink
+              then:
+                # *** AMBER ***
+                - light.turn_on:
+                    id: rgb_led
+                    red: 100%
+                    green: 50%
+                    blue: 0%
+                - light.turn_on:
+                    id: rgb_led
+                    effect: 'Scan 3'
         - above: 40.0
-          below: 100.0
+          below: 60.0
           then:
-            # *** GREEN ***
-            - light.turn_on:
-                id: rgb_led
-                red: 0%
-                green: 100%
-                blue: 0%
-        - above: 100.0
-          below: 200.
-          then:
-            # *** PURPLE ***
-            - light.turn_on:
-                id: rgb_led
-                red: 100%
-                green: 0%
-                blue: 100%
+            if:
+              condition:
+                # api.connected:
+                lambda: |-
+                  return (id(display_mode) && (millis() > 2000)); // Give boot status LED time to blink
+              then:
+                # *** GREEN ***
+                - light.turn_on:
+                    id: rgb_led
+                    red: 0%
+                    green: 100%
+                    blue: 0%
+                - light.turn_on:
+                    id: rgb_led
+                    effect: 'Scan 1'
 
     g0:
       move_energy:
