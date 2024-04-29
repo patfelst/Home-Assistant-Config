@@ -9,6 +9,10 @@ scene: !include scenes.yaml
 homekit: !include homekit_entities.yaml
 cloud: !include google_home_entities.yaml
 
+frontend:
+  extra_module_url:
+    - local/card-mod.js
+
 zone:
   - name: Home
     latitude: !secret home_lat
@@ -295,7 +299,7 @@ light:
       - light.jess_wled_mk2
 
       - light.laundry_downlight
-      - light.laundry_path_bunker_light
+      - light.laundry_bunker_light
 
       # Group: Kitchen lights
       - light.kitchen_downlights

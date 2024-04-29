@@ -250,7 +250,7 @@ config:
           element: light.stone-feature
         - entity: light.front_hall_lamp
           element: light.front-hall-lamp
-        - entity: light.laundry_path_bunker_light
+        - entity: light.laundry_bunker_light
           element: light.laundry-bunker-light.glow
         - entity: light.meterbox_bunker
           element: light.meterbox-bunker-light.glow

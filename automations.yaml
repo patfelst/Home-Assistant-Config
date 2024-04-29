@@ -194,7 +194,7 @@
   mode: restart
 - id: "1668249041786"
   alias: Lights - on at sunset
-  description: "just before sunset when sun elevation < 5° "
+  description: "just before sunset when sun elevation < +5° "
   trigger:
     - platform: numeric_state
       entity_id: sun.sun
@@ -331,8 +331,11 @@
             - condition: sun
               after: sunset
               after_offset: 00:45:00
+              enabled: false
             - condition: sun
               before: sunrise
+            - condition: time
+              after: input_datetime.lights_off_time_1
       then:
         - service: light.turn_off
           data: {}
@@ -850,8 +853,11 @@
             - condition: sun
               after: sunset
               after_offset: 00:45:00
+              enabled: false
             - condition: sun
               before: sunrise
+            - condition: time
+              after: input_datetime.lights_off_time_1
       then:
         - service: light.turn_off
           data: {}
@@ -1233,13 +1239,14 @@
       entity_id: sun.sun
       attribute: elevation
       below: 0
+      enabled: true
   action:
     - service: light.turn_on
       data: {}
       target:
         entity_id:
           - light.courtyard_flood_light
-          - light.laundry_path_bunker_light
+          - light.laundry_bunker_light
     - delay:
         hours: 0
         minutes: 7
@@ -1250,7 +1257,7 @@
       target:
         entity_id:
           - light.courtyard_flood_light
-          - light.laundry_path_bunker_light
+          - light.laundry_bunker_light
   mode: restart
 - id: "1674383678869"
   alias: Octoprint 50% complete
@@ -1514,17 +1521,13 @@
   alias: Lights - garden lights off (first time of day)
   description: ""
   trigger:
-    - platform: numeric_state
-      entity_id: sun.sun
-      attribute: elevation
-      below: input_number.lights_off_sun_elevation_1
-      enabled: false
     - platform: time
       at: input_datetime.lights_off_time_1
-      enabled: false
+      enabled: true
     - platform: sun
       event: sunset
-      offset: 00:45:00
+      offset: 02:30:00
+      enabled: false
   condition: []
   action:
     - service: light.turn_off
@@ -1615,30 +1618,31 @@
   trigger:
     - platform: state
       entity_id:
-        - light.laundry_path_bunker_light
+        - light.laundry_bunker_light
       to: "on"
+      id: light on
+    - platform: state
+      entity_id:
+        - light.laundry_bunker_light
+      to: "off"
+      id: light off
   condition: []
   action:
-    - service: light.turn_on
-      data: {}
-      target:
-        entity_id: light.courtyard_flood_light
-    - wait_for_trigger:
-        - platform: state
-          entity_id:
-            - light.laundry_path_bunker_light
-          to: "off"
-      timeout:
-        hours: 0
-        minutes: 20
-        seconds: 0
-        milliseconds: 0
-    - service: light.turn_off
-      data: {}
-      target:
-        entity_id:
-          - light.courtyard_flood_light
-          - light.laundry_path_bunker_light
+    - if:
+        - condition: trigger
+          id:
+            - light on
+      then:
+        - service: light.turn_on
+          data: {}
+          target:
+            entity_id: light.courtyard_flood_light
+      else:
+        - service: light.turn_off
+          data: {}
+          target:
+            entity_id:
+              - light.courtyard_flood_light
   mode: single
 - id: "1678589815500"
   alias: Notify - Grid power > 1.5kW, turn off with Actionable Notification
@@ -1717,10 +1721,11 @@
   trigger:
     - platform: time
       at: input_datetime.lights_off_time_2
-      enabled: false
+      enabled: true
     - platform: sun
       event: sunset
-      offset: 01:10:00
+      offset: 03:00:00
+      enabled: false
   condition: []
   action:
     - service: light.turn_off
@@ -1748,6 +1753,11 @@
       entity_id:
         - device_tracker.holy_iot_f685_patrick
       to: home
+      enabled: false
+    - platform: state
+      entity_id:
+        - device_tracker.fsc_bp104d_pat
+      to: home
   condition:
     - condition: state
       entity_id: sensor.patricks_iphone_13_activity
@@ -1756,6 +1766,9 @@
       value_template:
         "{{ now() - state_attr('automation.automatic_open_garage_and_gate_when_kathleen_arrives_home_in_when_driving',
         'last_triggered') > timedelta(seconds=30) }}"
+    - condition: state
+      entity_id: cover.driveway_gate
+      state: closed
   action:
     - delay:
         hours: 0
@@ -1784,6 +1797,11 @@
       entity_id:
         - device_tracker.holy_iot_17ee_kathleen
       to: home
+      enabled: false
+    - platform: state
+      entity_id:
+        - device_tracker.fsc_bp104d_kat
+      to: home
   condition:
     - condition: state
       entity_id: sensor.kathleens_iphone_activity
@@ -1792,6 +1810,9 @@
       value_template:
         "{{ now() - state_attr('automation.automatic_open_garage_when_person_arrives_home_in_when_driving',
         'last_triggered') > timedelta(seconds=30) }}"
+    - condition: state
+      entity_id: cover.driveway_gate
+      state: closed
   action:
     - delay:
         hours: 0
@@ -2309,7 +2330,7 @@
         message: Pool robot just turned off
   mode: single
 - id: "1693826918399"
-  alias: Pool heater - turn ON when grid export power > 2.1kW
+  alias: Pool heater and pump - turn ON when grid export power > 2.1kW
   description: ""
   trigger:
     - platform: template
@@ -2327,6 +2348,16 @@
       entity_id: switch.pool_pump
       state: "on"
   action:
+    - service: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.pool_pump
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 5
+        milliseconds: 0
     - service: climate.set_hvac_mode
       data:
         hvac_mode: heat
@@ -2340,8 +2371,8 @@
       data:
         title: Pool heater
         message:
-          Turned on pool heater because exporting more than 2.1kW ({{ -(trigger.to_state.state
-          | float | round(1)) }}kW) and pump is ON.
+          Turned on pool pump and heater because exporting more than 2.1kW ({{
+          -(trigger.to_state.state | float | round(1)) }}kW) and pump is ON.
   mode: single
 - id: "1693827066966"
   alias:
@@ -2496,52 +2527,31 @@
               | float | round(1) }}kWh).
   mode: single
 - id: "1694846476742"
-  alias: Pool pump - ON at 8am or when enough solar (2.1kW) to run heater
+  alias: Pool pump - ON at 8am
   description: ""
   trigger:
     - platform: time
       at: 08:00:00
       id: trigger_time
-    - platform: template
-      value_template: "{{ states('sensor.solarnet_power_grid')|float < -2.1 }}"
-      id: trigger_power
   condition:
     - condition: state
       entity_id: switch.pool_pump
       state: "off"
-    - condition: time
-      before: "17:00:00"
   action:
     - service: switch.turn_on
       data: {}
       target:
         entity_id: switch.pool_pump
-    - choose:
-        - conditions:
-            - condition: trigger
-              id:
-                - trigger_time
-          sequence:
-            - service: notify.mobile_app_patricks_iphone_13
-              data:
-                title: Pool pump turned ON
-                message:
-                  Pool pump turned ON because it's {{ trigger.now | as_timestamp
-                  | timestamp_custom('%I:%M %p') }}
-        - conditions:
-            - condition: trigger
-              id:
-                - trigger_power
-          sequence:
-            - service: notify.mobile_app_patricks_iphone_13
-              data:
-                title: Pool pump turned ON
-                message:
-                  Pool pump turned ON because because exporting enough power to run
-                  heater too ({{ -(trigger.to_state.state | float | round(2)) }}kW)
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: Pool pump turned ON
+        message:
+          Pool pump turned ON at {{ trigger.now | as_timestamp | timestamp_custom('%I:%M
+          %p') }}
+      enabled: true
   mode: single
 - id: "1694847669808"
-  alias: Pool pump - OFF at 5pm
+  alias: Pool pump - OFF at 5pm (Spring / Summer)
   description: ""
   trigger:
     - platform: time
@@ -2557,9 +2567,9 @@
       data:
         title: Pool pump turned OFF
         message:
-          Pool pump turned OFF because it's {{ trigger.now | as_timestamp | timestamp_custom('%I:%M
-          %p') }}
-      enabled: false
+          Pool pump turned OFF Spring/Summer at {{ trigger.now | as_timestamp
+          | timestamp_custom('%I:%M %p') }}
+      enabled: true
   mode: single
 - id: "1695267626675"
   alias: "Blinds - open all (except #1) in the afternoon when sun < 25°"
@@ -2965,38 +2975,6 @@
   trigger:
     - platform: state
       entity_id:
-        - binary_sensor.butlers_sensor_occupancy
-      to: "on"
-      id: motion detected
-      enabled: false
-    - platform: state
-      entity_id:
-        - binary_sensor.butlers_sensor_occupancy
-      to: "off"
-      id: no motion
-      for:
-        hours: 0
-        minutes: 4
-        seconds: 0
-      enabled: false
-    - platform: state
-      entity_id:
-        - binary_sensor.everything_presence_lite_22ca80_occupancy
-      id: motion detected
-      to: "on"
-      enabled: false
-    - platform: state
-      entity_id:
-        - binary_sensor.everything_presence_lite_22ca80_occupancy
-      to: "off"
-      for:
-        hours: 0
-        minutes: 4
-        seconds: 0
-      id: no motion
-      enabled: false
-    - platform: state
-      entity_id:
         - binary_sensor.everything_presence_lite_223508_occupancy
       to: "on"
       id: motion detected
@@ -3006,8 +2984,18 @@
       to: "off"
       for:
         hours: 0
-        minutes: 4
+        minutes: 1
         seconds: 0
+      enabled: true
+    - platform: state
+      entity_id:
+        - binary_sensor.everything_presence_lite_223508_occupancy
+      to: "off"
+      for:
+        hours: 0
+        minutes: 0
+        seconds: 0
+      enabled: false
   condition: []
   action:
     - if:
@@ -3715,57 +3703,6 @@
           target:
             area_id: electronics_lab
           data: {}
-- id: "1704520853691"
-  alias: Button - Tradfri
-  description: ""
-  trigger:
-    - platform: state
-      entity_id:
-        - sensor.button_tradfri_action
-      to: "on"
-      id: "on"
-    - platform: state
-      entity_id:
-        - sensor.button_tradfri_action
-      to: "off"
-      id: "off"
-    - platform: state
-      entity_id:
-        - sensor.button_tradfri_action
-      to: brightness_move_up
-      id: hold
-  condition: []
-  action:
-    - choose:
-        - conditions:
-            - condition: trigger
-              id:
-                - "on"
-          sequence:
-            - service: notify.mobile_app_patricks_iphone_13
-              data:
-                title: Tradfri button
-                message: "on"
-        - conditions:
-            - condition: trigger
-              id:
-                - "off"
-          sequence:
-            - service: notify.mobile_app_patricks_iphone_13
-              data:
-                title: Tradfri button
-                message: "off"
-        - conditions:
-            - condition: trigger
-              id:
-                - hold
-          sequence:
-            - service: notify.mobile_app_patricks_iphone_13
-              data:
-                title: Tradfri button
-                message: hold
-  mode: queued
-  max: 10
 - id: "1704841406186"
   alias: Backup to NAS
   description: Daily 6am backup to Synology NAS
@@ -3930,12 +3867,12 @@
   trigger:
     - platform: state
       entity_id:
-        - binary_sensor.ld2410_mmwave_wir_presence
+        - binary_sensor.ld2410_esp32c3_presence
       to: "on"
       id: motion detected
     - platform: state
       entity_id:
-        - binary_sensor.ld2410_mmwave_wir_presence
+        - binary_sensor.ld2410_esp32c3_presence
       to: "off"
       for:
         hours: 0
@@ -3996,6 +3933,7 @@
         - service: notify.mobile_app_patricks_iphone_13
           metadata: {}
           data:
+            title: Offline devices
             message: "{{ offline_devices }} is offline"
 - id: "1709106061138"
   alias: Air con ON when HOT back lounge (nobody at home)
@@ -4152,4 +4090,44 @@
         minutes: 0
         seconds: 15
         milliseconds: 0
+  mode: single
+- id: "1712976105136"
+  alias: Pool pump - OFF at 12pm (Autumn / Winter)
+  description: ""
+  trigger:
+    - platform: time
+      at: "12:00:00"
+      id: trigger_time
+  condition: []
+  action:
+    - service: switch.turn_off
+      data: {}
+      target:
+        entity_id: switch.pool_pump
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: Pool pump turned OFF
+        message:
+          Pool pump turned OFF Autumn/Winter at {{ trigger.now | as_timestamp
+          | timestamp_custom('%I:%M %p') }}
+      enabled: true
+  mode: single
+- id: "1713615252706"
+  alias: Shelly Overheating Alert
+  description: Trigger an alert if any sensor ending with '_overheating' is triggered
+  trigger:
+    - platform: template
+      value_template:
+        "{% set ns = namespace(found=false) %}\n{% for state in states.binary_sensor
+        %}\n  {% if state.entity_id.endswith('_overheating') and state.state == 'on'
+        %}\n    {% set ns.found = true %}\n  {% endif %}\n{% endfor %}\n{{ ns.found
+        }}"
+  condition: []
+  action:
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: "⚠️ Shelly Overheating \U0001F525"
+        message:
+          "{% if trigger %}\n  {{ trigger.to_state.attributes.friendly_name }}\n{%
+          else %}\n  Check the system for more details.\n{% endif %}\n"
   mode: single
