@@ -1741,23 +1741,9 @@
   trigger:
     - platform: state
       entity_id:
-        - person.patrick
-      from: not_home
-      to: home
-      for:
-        hours: 0
-        minutes: 0
-        seconds: 0
-      enabled: false
-    - platform: state
-      entity_id:
-        - device_tracker.holy_iot_f685_patrick
-      to: home
-      enabled: false
-    - platform: state
-      entity_id:
         - device_tracker.fsc_bp104d_pat
       to: home
+      enabled: true
   condition:
     - condition: state
       entity_id: sensor.patricks_iphone_13_activity
@@ -1770,14 +1756,15 @@
       entity_id: cover.driveway_gate
       state: closed
   action:
-    - delay:
-        hours: 0
-        minutes: 0
-        seconds: 5
-        milliseconds: 0
-      enabled: false
     - service: script.open_gate_and_garage
       data: {}
+    - service: notify.mobile_app_patricks_iphone_13
+      data:
+        title: Arrived Home - BLE Beacon
+        message:
+          You just arrived home - triggered by BLE beacon ({{ (now()) | as_timestamp
+          | timestamp_custom('%I:%M:%S %p') }})
+      enabled: false
   mode: single
 - id: "1679726945385"
   alias: Automatic - open garage and gate when KATHLEEN arrives home in when driving
@@ -1785,23 +1772,9 @@
   trigger:
     - platform: state
       entity_id:
-        - person.kathleen
-      for:
-        hours: 0
-        minutes: 0
-        seconds: 0
-      from: not_home
-      to: home
-      enabled: false
-    - platform: state
-      entity_id:
-        - device_tracker.holy_iot_17ee_kathleen
-      to: home
-      enabled: false
-    - platform: state
-      entity_id:
         - device_tracker.fsc_bp104d_kat
       to: home
+      enabled: true
   condition:
     - condition: state
       entity_id: sensor.kathleens_iphone_activity
@@ -1814,12 +1787,6 @@
       entity_id: cover.driveway_gate
       state: closed
   action:
-    - delay:
-        hours: 0
-        minutes: 0
-        seconds: 5
-        milliseconds: 0
-      enabled: false
     - service: script.open_gate_and_garage
       data: {}
   mode: single
@@ -2839,6 +2806,9 @@
             - condition: trigger
               id:
                 - driveway gate
+            - condition: state
+              entity_id: input_boolean.garage_door_alerts
+              state: ""
           sequence:
             - service: notify.mobile_app_patricks_iphone_13
               data:
@@ -3231,17 +3201,18 @@
         - device_tracker.patricks_iphone_13
       to: home
       id: iphone zone
-    - platform: state
-      entity_id:
-        - device_tracker.patricks_iphone_bluetooth
-      to: home
-      id: BLE tracker
+      enabled: false
     - platform: state
       entity_id:
         - sensor.patricks_iphone_13_connection_type
       to: Wi-Fi
       id: wifi connected
       enabled: false
+    - platform: state
+      entity_id:
+        - device_tracker.fsc_bp104d_pat
+      id: ble_beacon
+      to: home
   condition: []
   action:
     - choose:
@@ -3259,14 +3230,14 @@
         - conditions:
             - condition: trigger
               id:
-                - BLE tracker
+                - ble_beacon
           sequence:
             - service: notify.mobile_app_patricks_iphone_13
               data:
-                title: Arrived Home - BLE Proxy
+                title: Arrived Home - BLE Beacon
                 message:
-                  You just arrived home - triggered by BLE proxy tracker (Olimex
-                  PoE) ({{ (now()) | as_timestamp | timestamp_custom('%I:%M:%S %p') }})
+                  You just arrived home - triggered by BLE beacon ({{ (now()) | as_timestamp
+                  | timestamp_custom('%I:%M:%S %p') }})
         - conditions:
             - condition: trigger
               id:
@@ -3867,12 +3838,12 @@
   trigger:
     - platform: state
       entity_id:
-        - binary_sensor.ld2410_esp32c3_presence
+        - binary_sensor.ld2410_esp32c3_b_presence
       to: "on"
       id: motion detected
     - platform: state
       entity_id:
-        - binary_sensor.ld2410_esp32c3_presence
+        - binary_sensor.ld2410_esp32c3_b_presence
       to: "off"
       for:
         hours: 0
