@@ -15,7 +15,7 @@ esphome:
     priority: 600
     then:
       # This is needed otherwise setting to 100% later doesn't work, no idea why
-      - lambda: "axp192_axp192component->set_brightness(0.5);"
+      - lambda: "id(axp192_id).set_brightness(0.5);"
       - lambda: "std::fill_n(id(house_history), 200, 0.0);"
 
 external_components:
@@ -91,6 +91,7 @@ globals:
 
 sensor:
   - platform: axp192
+    id: axp192_id
     model: M5CORE2
     address: 0x34
     i2c_id: bus_a
@@ -252,14 +253,14 @@ touchscreen:
       - lambda: |-
           ESP_LOGI("touch", "Current (x,y) = %d, %d", touch.x, touch.y);        // y-coord is half of expected
           ESP_LOGI("touch", "Raw (x,y) = %d, %d\n", touch.x_raw, touch.y_raw);  // y-coord is correct
-          // float core2_val = axp192_axp192component->GetBatVoltage();
-          // float core2_val = axp192_axp192component->GetVinVoltage();
-          // float core2_val = axp192_axp192component->GetVBusVoltage();
+          // float core2_val = id(axp192_id).GetBatVoltage();
+          // float core2_val = id(axp192_id).GetVinVoltage();
+          // float core2_val = id(axp192_id).GetVBusVoltage();
           id(touch_x) = touch.x_raw; 
           id(touch_y) = touch.y_raw;
       - lambda: |-
           if (touch.y_raw >= 120) // Try and prevent phantom touches causing screen to turn on when not actually touched
-            axp192_axp192component->set_brightness(1.0);
+            id(axp192_id).set_brightness(1.0);
 
 binary_sensor:
   - platform: touchscreen
@@ -309,9 +310,9 @@ binary_sensor:
     id: presence
     entity_id: ${room_light}
     on_press: 
-      - lambda: "axp192_axp192component->set_brightness(1.0);"
+      - lambda: "id(axp192_id).set_brightness(1.0);"
     on_release:
-      - lambda: "axp192_axp192component->set_brightness(0.5);"
+      - lambda: "id(axp192_id).set_brightness(0.5);"
 
 color:
   - id: my_red

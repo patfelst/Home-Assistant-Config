@@ -14,7 +14,7 @@ esphome:
     priority: 600
     then:
       # This is needed otherwise setting to 100% later doesn't work, no idea why
-      - lambda: "axp192_axp192component->set_brightness(0.5);"
+      - lambda: "id(axp192_id).set_brightness(0.5);"
       - light.turn_on:
           id: rgb
           effect: 'Rainbow'
@@ -217,7 +217,7 @@ touchscreen:
           id(touch_y) = touch.y_raw;
       - lambda: |-
           if (touch.y_raw >= 120) // Try and prevent phantom touches causing screen to turn on when not actually touched
-            axp192_axp192component->set_brightness(1.0);
+            id(axp192_id).set_brightness(1.0);
 
 binary_sensor:
   - platform: touchscreen
@@ -269,9 +269,9 @@ binary_sensor:
     id: presence
     entity_id: light.led_strip_workshop_shelf_dimmer
     on_press: 
-      - lambda: "axp192_axp192component->set_brightness(1.0);"
+      - lambda: "id(axp192_id).set_brightness(1.0);"
     on_release:
-      - lambda: "axp192_axp192component->set_brightness(0.5);"
+      - lambda: "id(axp192_id).set_brightness(0.5);"
 
 display:
   - platform: ili9xxx
@@ -457,6 +457,7 @@ sensor:
               value: id(my_red)
 
   - platform: axp192
+    id: axp192_id
     model: M5CORE2
     address: 0x34
     i2c_id: bus_a
