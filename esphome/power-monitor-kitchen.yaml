@@ -1,7 +1,0 @@
-substitutions:
-  dev_name: "power-monitor-kitchen"
-  friend_name: "Power Monitor Kitchen"
-  room_light: light.led_strip_butlers_overhead_cupboards
-
-packages:
-  device_base: !include packages/core2-power-monitor.yaml

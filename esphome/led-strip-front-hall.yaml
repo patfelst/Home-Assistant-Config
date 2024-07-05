@@ -44,6 +44,7 @@ api:
     key: "STDsUq8q/eeYzz+snQqD4v6+fsggZIHVMzP2zB5uYb0="
 
 ota:
+  platform: esphome
   password: "aebcffaaa65906076f1c86cfdbc97216"
 
 wifi:
@@ -63,21 +64,22 @@ globals:
   type: bool
   initial_value: 'true'
 
-# dallas:
-#   - pin: 25
-#     update_interval: 5s
+one_wire:
+  - platform: gpio
+    pin: 25
 
-# sensor:
-#   - platform: dallas
-#     name: DS18B20
-#     id: pcb_temperature
-#     address: 0x993c01a816a26a28
-#     accuracy_decimals: 1
-#     filters:
-#       - offset: -0.5
-#       - sliding_window_moving_average:
-#           window_size: 3
-#           send_every: 6
+sensor:
+  - platform: dallas_temp
+    name: DS18B20
+    id: pcb_temperature
+    address: 0x993c01a816a26a28
+    accuracy_decimals: 1
+    update_interval: 5s
+    filters:
+      - offset: -0.5
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 6
 
 binary_sensor:
   - platform: gpio

@@ -1,7 +1,9 @@
+# Patrick comment 5-Jul-2024
+# This code is from https://github.com/tube0013/tube_gateways/blob/main/models/retired/tubeszb-cc2652-poe/firmware/esphome/tubeszb-cc2652-poe.yaml
 esphome:
-  name: tubeszb-cc2652-poe-2022
+  name: tubeszb-cc2652-poe
   project: 
-    name: tubezb.cc2652-poe-2022
+    name: tubezb.cc2652-poe
     version: "3.0"
   on_boot:
     priority: 600
@@ -21,7 +23,7 @@ external_components:
   - source: github://syssi/esphome-zeroconf@main
 
 dashboard_import:
-  package_import_url: github://tube0013/tube_gateways/models/current/tubeszb-cc2652-poe-2022/firmware/esphome/tubeszb-cc2652-poe-2022_v2.yaml
+  package_import_url: github://tube0013/tube_gateways/models/retired/tubeszb-cc2652-poe/firmware/esphome/tubeszb-cc2652-poe.yaml
 
 #Olimex ESP32-PoE Ethernet
 ethernet:
@@ -47,6 +49,7 @@ api:
   reboot_timeout: 0s
 
 ota:
+  - platform: esphome
 
 web_server:
   port: 80
@@ -68,13 +71,13 @@ script:
       
 switch:
   - platform: gpio
-    pin: 13
+    pin: 33
     id: zRST_gpio
     inverted: yes
     restore_mode: ALWAYS_OFF
       
   - platform: gpio
-    pin: 4
+    pin: 32
     name: "Zigbee Module Bootloader Pin"
     id: zBSL
     inverted: yes

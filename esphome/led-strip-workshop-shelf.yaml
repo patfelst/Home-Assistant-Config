@@ -43,6 +43,7 @@ api:
     key: fal46JJVTAK4P0a5aAIRV429/7M9vIBZupcK1Bve1Mk=
 
 ota:
+  platform: esphome
 
 wifi:
   ssid: !secret wifi_ssid
@@ -61,16 +62,17 @@ globals:
   type: bool
   initial_value: 'true'
 
-dallas:
-  - pin: 25
-    update_interval: 5s
+one_wire:
+  - platform: gpio
+    pin: 25
 
 sensor:
-  - platform: dallas
+  - platform: dallas_temp
     name: DS18B20
     id: pcb_temperature
     address: 0x473c01a816206328
     accuracy_decimals: 1
+    update_interval: 5s
     filters:
       - offset: -0.5
       - sliding_window_moving_average:
