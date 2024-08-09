@@ -1,14 +1,3 @@
-- id: '1665379421018'
-  alias: Notify - Low battery level for all battery sensors (blueprint)
-  description: ''
-  use_blueprint:
-    path: Sbyx/low-battery-level-detection-notification-for-all-battery-sensors.yaml
-    input:
-      actions:
-      - service: notify.mobile_app_patricks_iphone_13
-        data:
-          message: Low battery warning for {{sensors}}
-      threshold: 80
 - id: '1665816721948'
   alias: Notify - workshop door opened
   description: ''
@@ -90,104 +79,6 @@
     target:
       entity_id: cover.all_blinds
   mode: single
-- id: '1667994480908'
-  alias: Notify - Garage door opened + still open every 15mins
-  description: Repeat every 15 minutes if left open
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.garage_door_bottom_magnet
-    to: 'on'
-    for:
-      hours: 0
-      minutes: 15
-      seconds: 0
-  condition:
-  - condition: state
-    state: not_home
-    entity_id: person.patrick
-    enabled: false
-  - condition: state
-    entity_id: input_boolean.garage_door_alerts
-    state: 'on'
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
-    data:
-      title: Garage Door!
-      message: Garage door has been open for {{ (((trigger.for.seconds) | int) / 60)
-        | round(0) }} minutes
-  - service: tts.cloud_say
-    data:
-      entity_id:
-      - media_player.homepod_mini_back_lounge
-      - media_player.workshop_speaker
-      message: Garage door has been open for {{ (((trigger.for.seconds) | int) / 60)
-        | round(0) }} minutes
-  - delay:
-      hours: 0
-      minutes: 15
-      seconds: 0
-      milliseconds: 0
-  - repeat:
-      while:
-      - condition: and
-        conditions:
-        - condition: state
-          entity_id: input_boolean.garage_door_alerts
-          state: 'on'
-        - condition: state
-          entity_id: binary_sensor.garage_door_bottom_magnet
-          state: 'on'
-      sequence:
-      - variables:
-          action_disable: '{{ ''DISABLE_'' ~ context.id }}'
-      - service: notify.mobile_app_patricks_iphone_13
-        data:
-          title: Garage Door!
-          message: '{{ trigger.to_state.name | replace(" Bottom Magnet","") }} has
-            been open since {{ (trigger.to_state.last_updated) | as_timestamp | timestamp_custom(''%I:%M
-            %p'') }}.'
-          data:
-            push:
-              sound: long_low_short_high.caf
-              interruption-level: time-sensitive
-            actions:
-            - action: '{{ action_disable }}'
-              title: Disable these notifications
-      - service: tts.cloud_say
-        data:
-          entity_id:
-          - media_player.homepod_mini_back_lounge
-          - media_player.workshop_speaker
-          message: Garage door has been open since {{ (trigger.to_state.last_updated)
-            | as_timestamp | timestamp_custom('%I:%M %p') }}.
-      - wait_for_trigger:
-        - platform: event
-          event_type: mobile_app_notification_action
-          event_data:
-            action: '{{ action_disable }}'
-        timeout:
-          hours: 0
-          minutes: 1
-          seconds: 0
-          milliseconds: 0
-      - choose:
-        - conditions:
-          - condition: template
-            value_template: '{{ wait.trigger.event.data.action == action_disable }}'
-          sequence:
-          - service: input_boolean.turn_off
-            target:
-              entity_id:
-              - input_boolean.garage_door_alerts
-            data: {}
-          - stop: Stopped the repeat loop by user actionable notification
-      - delay:
-          hours: 0
-          minutes: 14
-          seconds: 0
-          milliseconds: 0
-  mode: restart
 - id: '1668249041786'
   alias: Lights - on at sunset
   description: 'just before sunset when sun elevation < +5° '
@@ -325,12 +216,10 @@
       conditions:
       - condition: sun
         after: sunset
-        after_offset: 00:45:00
-        enabled: false
+        after_offset: 01:30:00
+        enabled: true
       - condition: sun
         before: sunrise
-      - condition: time
-        after: input_datetime.lights_off_time_1
     then:
     - service: light.turn_off
       data: {}
@@ -346,7 +235,7 @@
     - binary_sensor.workshop_ceiling_motion_occupancy
     from: 'off'
     to: 'on'
-    enabled: false
+    enabled: true
     id: motion detected
   - platform: state
     entity_id:
@@ -356,7 +245,7 @@
       hours: 0
       minutes: 4
       seconds: 0
-    enabled: false
+    enabled: true
   - platform: state
     entity_id:
     - binary_sensor.apollo_msr_2_3574ec_radar_zone_1_occupancy
@@ -364,7 +253,7 @@
     - binary_sensor.apollo_msr_2_3574ec_radar_zone_3_occupancy
     to: 'on'
     id: motion detected
-    enabled: true
+    enabled: false
   - platform: state
     entity_id:
     - binary_sensor.apollo_msr_2_3574ec_radar_target
@@ -373,7 +262,22 @@
       hours: 0
       minutes: 4
       seconds: 0
-    enabled: true
+    enabled: false
+  - platform: state
+    entity_id:
+    - binary_sensor.everything_presence_lite_22ca80_target_1_active
+    to: 'on'
+    id: motion detected
+    enabled: false
+  - platform: state
+    entity_id:
+    - binary_sensor.everything_presence_lite_22ca80_target_1_active
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 4
+      seconds: 0
+    enabled: false
   condition: []
   action:
   - if:
@@ -459,6 +363,7 @@
   - platform: state
     entity_id:
     - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_2_fielddetection
+    to: 'on'
   condition:
   - condition: numeric_state
     entity_id: sun.sun
@@ -467,56 +372,22 @@
   - condition: state
     entity_id: input_boolean.sleep_mode
     state: 'on'
-    enabled: false
   action:
   - service: light.turn_on
+    metadata: {}
     data: {}
     target:
-      entity_id:
-      - light.back_yard_lights
+      entity_id: light.back_yard_lights
   - delay:
       hours: 0
       minutes: 5
       seconds: 0
       milliseconds: 0
-  - if:
-    - condition: state
-      entity_id: input_boolean.sleep_mode
-      state: 'on'
-    then:
-    - service: light.turn_off
-      data: {}
-      target:
-        entity_id:
-        - light.back_yard_lights
-    else:
-    - service: light.turn_off
-      data: {}
-      target:
-        entity_id:
-        - light.alfresco_downlights
-        - light.pool_perimeter_downlights
-        - light.rear_flood_light
-    - if:
-      - condition: time
-        after: input_datetime.lights_off_time_1
-      then:
-      - service: light.turn_off
-        metadata: {}
-        data: {}
-        target:
-          entity_id: light.rear_garden_lights
-      - if:
-        - condition: time
-          after: input_datetime.lights_off_time_2
-        then:
-        - service: light.turn_off
-          metadata: {}
-          data: {}
-          target:
-            entity_id:
-            - light.led_strip_fire_pit_dimmer
-            - light.pool_light_controller_pool_lights
+  - service: light.turn_off
+    data: {}
+    target:
+      entity_id:
+      - light.back_yard_lights
   mode: restart
 - id: '1668938565078'
   alias: Light - Alfresco when alfresco door opens at night
@@ -535,16 +406,24 @@
   - service: light.turn_on
     data: {}
     target:
-      entity_id: light.alfresco_downlights
+      entity_id:
+      - light.alfresco_downlights
+      - light.rear_flood_light
+      - light.led_strip_fire_pit_dimmer
+      - light.laundry_bunker_light
   - delay:
       hours: 0
-      minutes: 7
+      minutes: 5
       seconds: 0
       milliseconds: 0
   - service: light.turn_off
     data: {}
     target:
-      entity_id: light.alfresco_downlights
+      entity_id:
+      - light.alfresco_downlights
+      - light.rear_flood_light
+      - light.led_strip_fire_pit_dimmer
+      - light.laundry_bunker_light
   mode: restart
 - id: '1669290456260'
   alias: Notify - Daily solar production report
@@ -801,7 +680,7 @@
         target:
           entity_id: switch.gas_heater
 - id: '1669631569864'
-  alias: Lights - Front yard lights ON when anyone arrives home
+  alias: Lights - House lights ON when anyone arrives home
   description: ''
   trigger:
   - platform: state
@@ -811,6 +690,10 @@
   - platform: state
     entity_id:
     - person.kathleen
+    to: home
+  - platform: state
+    entity_id:
+    - person.jess
     to: home
   condition:
   - condition: numeric_state
@@ -845,16 +728,9 @@
       - light.garage_downlights
       - light.front_lounge_sideboard_lamp
   - if:
-    - condition: or
-      conditions:
-      - condition: sun
-        after: sunset
-        after_offset: 00:45:00
-        enabled: false
-      - condition: sun
-        before: sunrise
-      - condition: time
-        after: input_datetime.lights_off_time_1
+    - condition: time
+      after: input_datetime.lights_off_time_1
+      before: sensor.sun_next_rising
     then:
     - service: light.turn_off
       data: {}
@@ -863,12 +739,9 @@
         - light.front_garden_lights
         - light.rear_garden_lights
   - if:
-    - condition: or
-      conditions:
-      - condition: time
-        after: input_datetime.lights_off_time_2
-      - condition: sun
-        before: sunrise
+    - condition: time
+      after: input_datetime.lights_off_time_2
+      before: sensor.sun_next_rising
     then:
     - service: light.turn_off
       data: {}
@@ -1513,7 +1386,7 @@
     enabled: true
   - platform: sun
     event: sunset
-    offset: 02:30:00
+    offset: 01:30:00
     enabled: false
   condition: []
   action:
@@ -1632,16 +1505,17 @@
         - light.courtyard_flood_light
   mode: single
 - id: '1678589815500'
-  alias: Notify - Grid power > 1.5kW, turn off with Actionable Notification
+  alias: Notify - Home power consumption is high
   description: ''
   trigger:
   - platform: numeric_state
-    entity_id: sensor.solarnet_power_grid
+    entity_id:
+    - sensor.solarnet_power_grid
     for:
       hours: 0
-      minutes: 15
+      minutes: 20
       seconds: 0
-    above: 1.5
+    above: 4
   condition:
   - condition: state
     entity_id: input_boolean.grid_power_alert
@@ -1700,6 +1574,16 @@
           minutes: 14
           seconds: 0
           milliseconds: 0
+    enabled: false
+  - service: notify.mobile_app_patricks_iphone_13
+    data:
+      title: High Power Usage
+      message: 'Grid import power is now: {{ states(''sensor.solarnet_power_grid'')
+        | round(1) }} kW. Consider turning off some appliances.'
+      data:
+        push:
+          sound: 3rdParty_Failure_Haptic.caf
+          interruption-level: time-sensitive
   mode: restart
 - id: '1678699026931'
   alias: Lights - pool & fire-pit lights off (second time of day)
@@ -1710,7 +1594,7 @@
     enabled: true
   - platform: sun
     event: sunset
-    offset: 03:00:00
+    offset: 02:00:00
     enabled: false
   condition: []
   action:
@@ -2362,14 +2246,15 @@
   mode: single
 - id: '1694562264439'
   alias: Notify - Consider turn OFF a/c as importing power
-  description: ''
+  description: A/C generally falls below 6kW within 1 hour, so notify if A/C is on
+    and power above for more than 1 hour
   trigger:
   - platform: numeric_state
     entity_id:
     - sensor.solarnet_power_grid
     for:
-      hours: 0
-      minutes: 20
+      hours: 1
+      minutes: 0
       seconds: 0
     above: 6
   condition:
@@ -2611,7 +2496,8 @@
       - cover.blind_5
   mode: single
 - id: '1697950024288'
-  alias: Light - front hall lamp RED when front door / gate open or unlocked 15 mins
+  alias: Light - front hall lamp RED when front door / gate / garage open or unlocked
+    15 mins
   description: ''
   trigger:
   - platform: state
@@ -3072,6 +2958,7 @@
       brightness_pct: 2
     target:
       entity_id: light.led_strip_kitchen_kicker
+    enabled: false
   - delay:
       hours: 0
       minutes: 2
@@ -3487,6 +3374,7 @@
     - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_2_fielddetection
     - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_3_fielddetection
     to: 'on'
+    enabled: true
   condition:
   - condition: or
     conditions:
@@ -3497,6 +3385,9 @@
         state: not_home
       - condition: state
         entity_id: person.kathleen
+        state: not_home
+      - condition: state
+        entity_id: person.jess
         state: not_home
     - condition: state
       entity_id: input_boolean.sleep_mode
@@ -4065,3 +3956,52 @@
         target:
           entity_id: light.apollo_msr_2_3574ec_rgb_light
   mode: single
+- id: '1720908527024'
+  alias: Sleep mode on and off at time of day
+  description: ''
+  trigger:
+  - platform: time
+    at: input_datetime.sleep_start
+    id: sleep on
+  - platform: time
+    id: sleep off
+    at: input_datetime.sleep_off
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - sleep on
+      sequence:
+      - service: input_boolean.turn_on
+        metadata: {}
+        data: {}
+        target:
+          entity_id: input_boolean.sleep_mode
+    - conditions:
+      - condition: trigger
+        id:
+        - sleep off
+      sequence:
+      - service: input_boolean.turn_off
+        target:
+          entity_id:
+          - input_boolean.sleep_mode
+        data: {}
+  mode: single
+- id: '1722746030498'
+  alias: Notify - Low Battery Notifications & Actions
+  description: ''
+  use_blueprint:
+    path: Blackshome/low-battery-notifications-and-actions.yaml
+    input:
+      include_button: enable_button_trigger
+      button_entity: input_button.check_for_low_batteries
+      include_time: time_enabled
+      time: '10:15:00'
+      sensor_selection: enable_all_sensors
+      include_easy_notify: enable_easy_okay_notify
+      notify_device:
+      - 0f5265246071d1e781aadc2b8aaea0c8
+      include_persistent_notification: enable_persistent_okay_notification

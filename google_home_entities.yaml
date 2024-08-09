@@ -55,7 +55,6 @@ google_actions:
       - light.workshop_downlight
       - light.workshop_rgb_light
       - light.led_strip_workshop_shelf_dimmer
-      - light.wled_16x16_matrix
       - light.pool_light_controller_pool_lights
   # entity_config:
   #   script.sunset_lights:

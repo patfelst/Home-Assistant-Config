@@ -70,7 +70,7 @@ config:
         service_data:
           element: temp-front-hallway
           text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
-    - entity: climate.ac_master_br
+    - entity: climate.ac_master_bed
       state_action:
         service: floorplan.text_set
         service_data:

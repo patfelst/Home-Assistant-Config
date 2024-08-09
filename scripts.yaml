@@ -183,7 +183,7 @@ tv_off:
   - service: media_player.turn_off
     data: {}
     target:
-      device_id: de8b43dac46be967e9f4d0db52519d26
+      entity_id: media_player.lg_webos_smart_tv
   - if:
     - condition: state
       entity_id: binary_sensor.colour_and_light_sensor_fetch_tv_power
@@ -205,7 +205,7 @@ tv_off:
   - service: media_player.turn_off
     data: {}
     target:
-      device_id: de8b43dac46be967e9f4d0db52519d26
+      entity_id: media_player.lg_webos_smart_tv
   mode: single
   icon: mdi:television-off
 tv_on:
@@ -254,6 +254,24 @@ tv_on:
     data:
       source: FetchTV
     target:
-      device_id: de8b43dac46be967e9f4d0db52519d26
+      entity_id: media_player.lg_webos_smart_tv
   mode: single
   icon: mdi:television
+confirmable_notification_turn_off_high_power_notifications:
+  alias: Confirmable Notification - turn off high power notifications
+  use_blueprint:
+    path: homeassistant/confirmable_notification.yaml
+    input:
+      notify_device: 0f5265246071d1e781aadc2b8aaea0c8
+      title: Home power usage HIGH
+      message: Check appliances as home is using xx kW. Repeat this notification every
+        15 mins?
+      dismiss_text: Stop notification
+      confirm_text: Continue notification
+      dismiss_action:
+      - service: input_boolean.turn_off
+        metadata: {}
+        data: {}
+        target:
+          entity_id: input_boolean.grid_power_alert
+  description: ''
