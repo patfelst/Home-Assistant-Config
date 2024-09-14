@@ -160,24 +160,20 @@
   trigger:
   - platform: state
     entity_id:
-    - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_1_linedetection
+    - input_boolean.driveway_camera_person
     to: 'on'
   - platform: state
     entity_id:
-    - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_1_fielddetection
-    to: 'on'
-  - platform: state
-    entity_id:
-    - binary_sensor.garage_door_bottom_magnet
-    to: 'on'
-  - platform: state
-    entity_id:
-    - binary_sensor.front_door_aqara_contact
+    - input_boolean.front_yard_camera_person
     to: 'on'
   - platform: state
     entity_id:
     - cover.pedestrian_gate
     to: open
+  - platform: state
+    entity_id:
+    - binary_sensor.garage_door_bottom_magnet
+    to: 'on'
   - platform: state
     entity_id:
     - binary_sensor.driveway_light_beam
@@ -186,6 +182,18 @@
     entity_id:
     - cover.driveway_gate
     to: opening
+  - platform: state
+    entity_id:
+    - binary_sensor.front_door_aqara_contact
+    to: 'on'
+  - platform: state
+    entity_id:
+    - lock.yale_smartlock_front_door
+    to: unlocking
+  - platform: state
+    entity_id:
+    - lock.yale_smartlock_front_door
+    to: unlocked
   condition:
   - condition: sun
     after: sunset
@@ -194,23 +202,39 @@
     entity_id: input_boolean.disable_front_yard_motion_lights
     state: 'off'
   action:
-  - service: light.turn_on
-    data: {}
+  - data: {}
     target:
       entity_id: light.front_yard_lights
+    action: light.turn_on
+  - action: light.turn_on
+    metadata: {}
+    data:
+      brightness_pct: 100
+    target:
+      entity_id: light.main_hall_downlights
   - delay:
       hours: 0
-      minutes: 7
+      minutes: 4
       seconds: 0
       milliseconds: 0
-  - service: light.turn_off
-    data: {}
+  - action: light.turn_off
+    data:
+      transition: 45
+    target:
+      entity_id: light.main_hall_downlights
+  - delay:
+      hours: 0
+      minutes: 3
+      seconds: 0
+      milliseconds: 0
+  - data: {}
     target:
       entity_id:
       - light.front_stone_up_down
       - light.front_porch
       - light.meterbox_bunker
       - light.front_north_side_flood
+    action: light.turn_off
   - if:
     - condition: or
       conditions:
@@ -221,10 +245,10 @@
       - condition: sun
         before: sunrise
     then:
-    - service: light.turn_off
-      data: {}
+    - data: {}
       target:
         entity_id: light.front_garden_lights
+      action: light.turn_off
   mode: restart
 - id: '1668816141842'
   alias: Motion - Workshop downlight
@@ -353,78 +377,98 @@
         entity_id: light.all_lights
   mode: single
 - id: '1668936398884'
-  alias: Lights - Back yard on CCTV intrusion back yard / alfresco
+  alias: Lights - Back yard on CCTV motion
   description: When sun elevation is < 0°
   trigger:
   - platform: state
     entity_id:
-    - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_3_fielddetection
+    - input_boolean.back_yard_camera_person
     to: 'on'
   - platform: state
     entity_id:
-    - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_2_fielddetection
+    - input_boolean.pool_alfresco_camera_person
     to: 'on'
   condition:
   - condition: numeric_state
     entity_id: sun.sun
     attribute: elevation
     below: 0
-  - condition: state
-    entity_id: input_boolean.sleep_mode
-    state: 'on'
   action:
-  - service: light.turn_on
-    metadata: {}
+  - metadata: {}
     data: {}
     target:
       entity_id: light.back_yard_lights
+    action: light.turn_on
   - delay:
       hours: 0
       minutes: 5
       seconds: 0
       milliseconds: 0
-  - service: light.turn_off
-    data: {}
+  - data: {}
     target:
       entity_id:
       - light.back_yard_lights
+    action: light.turn_off
   mode: restart
 - id: '1668938565078'
-  alias: Light - Alfresco when alfresco door opens at night
+  alias: Light - Back CCTV motion OR alfresco door opens at night
   description: When sun elevation < 0°
   trigger:
   - platform: state
     entity_id:
     - binary_sensor.alfresco_door_contact
     to: 'on'
+    enabled: true
+  - platform: state
+    entity_id:
+    - input_boolean.back_yard_camera_person
+    to: 'on'
+  - platform: state
+    entity_id:
+    - input_boolean.pool_alfresco_camera_person
+    to: 'on'
   condition:
   - condition: numeric_state
     entity_id: sun.sun
     attribute: elevation
     below: 0
   action:
-  - service: light.turn_on
-    data: {}
+  - data: {}
     target:
       entity_id:
       - light.alfresco_downlights
       - light.rear_flood_light
       - light.led_strip_fire_pit_dimmer
       - light.laundry_bunker_light
+    action: light.turn_on
+  - if:
+    - condition: and
+      conditions:
+      - condition: time
+        before: '22:00:00'
+      - condition: sun
+        after: sunset
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: light.courtyard_flood_light
   - delay:
       hours: 0
       minutes: 5
       seconds: 0
       milliseconds: 0
-  - service: light.turn_off
-    data: {}
+  - data: {}
     target:
       entity_id:
       - light.alfresco_downlights
       - light.rear_flood_light
       - light.led_strip_fire_pit_dimmer
       - light.laundry_bunker_light
-  mode: restart
+      - light.courtyard_flood_light
+    action: light.turn_off
+  mode: single
 - id: '1669290456260'
   alias: Notify - Daily solar production report
   description: ''
@@ -612,14 +656,15 @@
     input:
       action_sensor: sensor.button_patrick_bedside_action
       press_single:
-      - service: light.toggle
+      - action: light.toggle
+        metadata: {}
         data:
           brightness_pct: 7
         target:
-          entity_id:
-          - light.led_strip_kitchen_kicker
+          entity_id: light.led_strip_kitchen_kicker
       press_double:
-      - service: light.turn_on
+      - action: light.turn_on
+        metadata: {}
         data: {}
         target:
           entity_id:
@@ -627,11 +672,11 @@
           - light.back_yard_lights
           - light.courtyard_flood_light
       press_hold:
-      - service: light.turn_off
-        data: {}
+      - action: light.turn_off
         target:
           entity_id: light.all_lights
-      - service: switch.turn_off
+      - action: switch.turn_off
+        metadata: {}
         data: {}
         target:
           entity_id: switch.19_rack_fans
@@ -640,7 +685,7 @@
           entity_id: binary_sensor.workshop_window_contact
           state: 'on'
         then:
-        - service: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone_13
           data:
             message: Workshop window is open
             title: Window open
@@ -649,7 +694,7 @@
           entity_id: binary_sensor.alfresco_door_contact
           state: 'on'
         then:
-        - service: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone_13
           data:
             message: Alfresco door is open
             title: Door open
@@ -658,7 +703,7 @@
           entity_id: binary_sensor.front_door_aqara_contact
           state: 'on'
         then:
-        - service: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone_13
           data:
             message: Front door is open
             title: Door open
@@ -667,16 +712,15 @@
           after: '21:00:00'
           before: 06:00:00
         then:
-        - service: input_boolean.turn_on
+        - action: input_boolean.turn_on
           data: {}
           target:
             entity_id: input_boolean.sleep_mode
-        - service: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone_13
           data:
             message: Sleep mode turned on with long press of Patrick's bedside button
             title: Sleep mode ON
-      - service: switch.turn_off
-        data: {}
+      - action: switch.turn_off
         target:
           entity_id: switch.gas_heater
 - id: '1669631569864'
@@ -1081,25 +1125,30 @@
       press_single: []
       press_double: []
       press_hold:
-      - service: light.turn_off
+      - action: light.turn_off
         data: {}
         target:
           entity_id: light.all_lights
-      - service: switch.turn_off
+      - action: switch.turn_off
         data: {}
         target:
           entity_id: switch.19_rack_fans
-      - service: switch.turn_off
+      - action: switch.turn_off
         data: {}
         target:
           entity_id: switch.gas_heater
+      - action: input_boolean.turn_on
+        metadata: {}
+        data: {}
+        target:
+          entity_id: input_boolean.sleep_mode
 - id: '1672344646174'
-  alias: Lights - Side lights when CCTV line cross motion kitty cam
+  alias: Lights - Side lights when Courtyard CCTV motion
   description: When sun elevation is < 0°
   trigger:
   - platform: state
     entity_id:
-    - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_5_linedetection
+    - input_boolean.courtyard_camera_person
     to: 'on'
   condition:
   - condition: numeric_state
@@ -1108,23 +1157,31 @@
     below: 0
     enabled: true
   action:
-  - service: light.turn_on
-    data: {}
+  - data: {}
     target:
       entity_id:
-      - light.courtyard_flood_light
       - light.laundry_bunker_light
+    action: light.turn_on
+  - if:
+    - condition: time
+      before: '22:00:00'
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: light.courtyard_flood_light
   - delay:
       hours: 0
-      minutes: 7
+      minutes: 4
       seconds: 0
       milliseconds: 0
-  - service: light.turn_off
-    data: {}
+  - data: {}
     target:
       entity_id:
-      - light.courtyard_flood_light
       - light.laundry_bunker_light
+      - light.courtyard_flood_light
+    action: light.turn_off
   mode: restart
 - id: '1674383678869'
   alias: Octoprint 50% complete
@@ -1405,13 +1462,13 @@
     path: CrazyCoder/zigbee2mqtt_aqara_wireless_switch.yaml
     input:
       press_single:
-      - service: light.toggle
+      - action: light.toggle
         data: {}
         target:
           entity_id:
           - light.bedside_lamp_kathleen
       press_double:
-      - service: light.turn_on
+      - action: light.turn_on
         data: {}
         target:
           entity_id:
@@ -1419,11 +1476,11 @@
           - light.back_yard_lights
           - light.courtyard_flood_light
       press_hold:
-      - service: light.turn_off
+      - action: light.turn_off
         data: {}
         target:
           entity_id: light.all_lights
-      - service: switch.turn_off
+      - action: switch.turn_off
         data: {}
         target:
           entity_id: switch.19_rack_fans
@@ -1432,7 +1489,7 @@
           entity_id: binary_sensor.workshop_window_contact
           state: 'on'
         then:
-        - service: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone_13
           data:
             message: Workshop window is open
             title: Window open
@@ -1441,7 +1498,7 @@
           entity_id: binary_sensor.alfresco_door_contact
           state: 'on'
         then:
-        - service: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone_13
           data:
             message: Alfresco door is open
             title: Door open
@@ -1450,7 +1507,7 @@
           entity_id: binary_sensor.front_door_aqara_contact
           state: 'on'
         then:
-        - service: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone_13
           data:
             message: Front door is open
             title: Door open
@@ -1459,15 +1516,15 @@
           after: '21:00:00'
           before: 06:00:00
         then:
-        - service: input_boolean.turn_on
+        - action: input_boolean.turn_on
           data: {}
           target:
             entity_id: input_boolean.sleep_mode
-        - service: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone_13
           data:
             message: Sleep mode turned on with long press of Kathleen's bedside button
             title: Sleep mode ON
-      - service: switch.turn_off
+      - action: switch.turn_off
         data: {}
         target:
           entity_id: switch.gas_heater
@@ -1665,27 +1722,27 @@
     input:
       action_sensor: sensor.button_garage_action
       press_single:
-      - service: cover.open_cover
+      - action: cover.open_cover
         data: {}
         target:
           entity_id:
           - cover.garage_door
           - cover.driveway_gate
-      - service: input_datetime.set_datetime
+      - action: input_datetime.set_datetime
         metadata: {}
         data:
           datetime: '{{ now().strftime(''%Y-%m-%d %H:%M:%S'') }}'
         target:
           entity_id: input_datetime.garage_door_button_last_pressed
       press_hold:
-      - service: cover.close_cover
+      - action: cover.close_cover
         data: {}
         target:
           entity_id:
           - cover.driveway_gate
           - cover.garage_door
       press_double:
-      - service: cover.toggle
+      - action: cover.toggle
         data: {}
         target:
           entity_id: cover.driveway_gate
@@ -1856,12 +1913,27 @@
     path: Blackshome/bathroom-humidity-exhaust-fan.yaml
     input:
       trigger: sensor.ensuite_humidity_rate_of_change
-      rising_humidity: 3
-      falling_humidity: -1.5
+      rising_humidity: 1.5
+      falling_humidity: -1
       by_pass: sensor.ensuite_humidity_rate_of_change
       include_ha_restart: restart_enabled
       fan_switch:
-        entity_id: light.home_security_visualiser_pcb_ensuite_fan_indicator
+        entity_id: switch.ensuite_fan
+      bathroom_humidity_sensor: sensor.ensuite_environmental_humidity
+      include_max_humidity: maximum_humidity_enabled
+      time_delay: 4
+      time_out: 10
+      include_winter_mode: winter_mode_enabled
+      month_winter_mode:
+      - '6'
+      - '7'
+      - '8'
+      - '5'
+      - '9'
+      winter_rising_humidity: 1.5
+      winter_time_out: 15
+      winter_time_delay: 4
+      winter_include_max_humidity: maximum_humidity_enabled
 - id: '1682297394195'
   alias: Ensuite fan - control by humidity (notify for testing)
   description: ''
@@ -1903,53 +1975,139 @@
       entity_id: switch.gas_heater
   mode: single
 - id: '1684844548755'
-  alias: Notify - Motion in front yard
+  alias: CCTV Motion critical alert during sleep
   description: ''
   trigger:
   - platform: state
     entity_id:
-    - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_1_linedetection
+    - input_boolean.driveway_camera_person
     to: 'on'
+    id: front yard
   - platform: state
     entity_id:
-    - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_1_fielddetection
+    - input_boolean.front_yard_camera_person
     to: 'on'
+    id: front yard
   - platform: state
     entity_id:
     - binary_sensor.driveway_light_beam
     to: 'on'
+    id: front yard
+  - platform: state
+    entity_id:
+    - input_boolean.pool_alfresco_camera_person
+    to: 'on'
+    id: back yard
+  - platform: state
+    entity_id:
+    - input_boolean.back_yard_camera_person
+    to: 'on'
+    id: back yard
+  - platform: state
+    entity_id:
+    - input_boolean.courtyard_camera_person
+    to: 'on'
+    id: back yard
   condition:
   - condition: state
-    entity_id: input_boolean.disable_front_yard_motion_alerts
+    entity_id: input_boolean.disable_cctv_critical_alerts
     state: 'off'
-  - condition: time
-    after: '23:00:00'
-    before: 06:00:00
-    enabled: true
   - condition: template
     value_template: '{{ now() - states.cover.driveway_gate.last_changed > timedelta(seconds=120)
       }}'
   - condition: template
     value_template: '{{ now() - states.cover.garage_door.last_changed > timedelta(seconds=120)
       }}'
+  - condition: state
+    entity_id: input_boolean.sleep_mode
+    state: 'on'
   action:
-  - service: notify.patrick_and_kathleen
-    data:
-      title: Motion Front Yard
-      message: Motion due to {{ trigger.to_state.name }}
-      data:
-        push:
-          sound:
-            name: default
-            critical: 1
-            volume: 0.5
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - front yard
+      sequence:
+      - data:
+          title: CCTV motion
+          message: "{% if trigger is defined %}\n  {{ trigger.to_state.attributes.friendly_name
+            }} at {{\n  trigger.to_state.last_updated | as_timestamp | timestamp_custom('%I:%M
+            %p')\n  }}\n{% else %}\n  Manual Run at {{ now() | as_timestamp | timestamp_custom('%I:%M
+            %p') }}\n{% endif %}"
+          data:
+            push:
+              sound:
+                name: US-EN-Alexa-Motion-In-Front-Yard.wav
+                critical: 1
+                volume: 0.3
+            actions:
+            - action: URI
+              title: Go to CCTV page in HA
+              uri: /lovelace/cctv
+        action: notify.patrick_and_kathleen
+      - action: light.turn_on
+        metadata: {}
+        data: {}
+        target:
+          entity_id: light.front_yard_lights
+      - delay:
+          hours: 0
+          minutes: 4
+          seconds: 0
+          milliseconds: 0
+      - action: light.turn_off
+        target:
+          entity_id:
+          - light.front_yard_lights
+        data: {}
+    - conditions:
+      - condition: trigger
+        id:
+        - back yard
+      sequence:
+      - data:
+          title: CCTV motion
+          message: "{% if trigger is defined %}\n  {{ trigger.to_state.attributes.friendly_name
+            }} at {{\n  trigger.to_state.last_updated | as_timestamp | timestamp_custom('%I:%M
+            %p')\n  }}\n{% else %}\n  Manual Run at {{ now() | as_timestamp | timestamp_custom('%I:%M
+            %p') }}\n{% endif %}"
+          data:
+            push:
+              sound:
+                name: US-EN-Alexa-Motion-In-Back-Yard.wav
+                critical: 1
+                volume: 0.3
+            actions:
+            - action: URI
+              title: Go to CCTV page in HA
+              uri: /lovelace/cctv
+        action: notify.patrick_and_kathleen
+      - action: light.turn_on
+        metadata: {}
+        data: {}
+        target:
+          entity_id:
+          - light.back_yard_lights
+          - light.courtyard_flood_light
+          - light.laundry_bunker_light
+      - delay:
+          hours: 0
+          minutes: 4
+          seconds: 0
+          milliseconds: 0
+      - action: light.turn_off
+        target:
+          entity_id:
+          - light.back_yard_lights
+          - light.courtyard_flood_light
+          - light.laundry_bunker_light
+        data: {}
   - delay:
       hours: 0
       minutes: 0
-      seconds: 30
+      seconds: 20
       milliseconds: 0
-  mode: queued
-  max: 10
+  mode: single
 - id: '1685061501391'
   alias: Input boolean - Enable front yard motion alerts after 1 hour
   description: ''
@@ -1960,13 +2118,13 @@
       entity_id: timer.remaining_time_front_yard_motion_alerts_disabled
   condition:
   - condition: state
-    entity_id: input_boolean.disable_front_yard_motion_alerts
+    entity_id: input_boolean.disable_cctv_critical_alerts
     state: 'on'
   action:
   - service: input_boolean.turn_off
     data: {}
     target:
-      entity_id: input_boolean.disable_front_yard_motion_alerts
+      entity_id: input_boolean.disable_cctv_critical_alerts
   mode: single
 - id: '1685061918531'
   alias: Timer - remaining time to enable front yard motion alerts
@@ -1974,13 +2132,13 @@
   trigger:
   - platform: state
     entity_id:
-    - input_boolean.disable_front_yard_motion_alerts
+    - input_boolean.disable_cctv_critical_alerts
   condition: []
   action:
   - choose:
     - conditions:
       - condition: state
-        entity_id: input_boolean.disable_front_yard_motion_alerts
+        entity_id: input_boolean.disable_cctv_critical_alerts
         state: 'on'
       sequence:
       - service: timer.start
@@ -1989,7 +2147,7 @@
           entity_id: timer.remaining_time_front_yard_motion_alerts_disabled
     - conditions:
       - condition: state
-        entity_id: input_boolean.disable_front_yard_motion_alerts
+        entity_id: input_boolean.disable_cctv_critical_alerts
         state: 'off'
       sequence:
       - service: timer.finish
@@ -2074,26 +2232,23 @@
     input:
       action_sensor: sensor.button_hall_stand_action
       press_double:
-      - service: cover.open_cover
+      - action: cover.open_cover
+        metadata: {}
         data: {}
         target:
           entity_id: cover.pedestrian_gate
       press_single:
-      - service: cover.open_cover
+      - action: cover.open_cover
+        metadata: {}
         data: {}
         target:
           entity_id: cover.pedestrian_gate
       press_hold:
-      - service: cover.close_cover
+      - action: light.turn_on
         metadata: {}
         data: {}
         target:
-          entity_id: cover.pedestrian_gate
-      - service: lock.lock
-        metadata: {}
-        data: {}
-        target:
-          entity_id: lock.yale_smartlock_front_door
+          entity_id: light.front_yard_lights
 - id: '1689412431203'
   alias: Air con turn off timer
   description: ''
@@ -2742,7 +2897,7 @@
     input:
       action_sensor: sensor.button_washing_machine_action
       press_double:
-      - service: light.toggle
+      - action: light.toggle
         data: {}
         target:
           entity_id:
@@ -2758,22 +2913,22 @@
             above: 5
           - condition: state
             entity_id: input_boolean.sleep_mode
-            state: ''
+            state: 'on'
         then:
-        - service: light.turn_on
+        - action: light.turn_on
           data:
             kelvin: 2900
             brightness_pct: 40
           target:
             entity_id: light.back_lounge_sideboard_lamp
-        - service: light.turn_off
+        - action: light.turn_off
           data: {}
           target:
             entity_id: light.back_lounge_sideboard_lamp
         else:
         - if: []
           then:
-          - service: light.turn_on
+          - action: light.turn_on
             data:
               brightness_pct: 35
               kelvin: 2900
@@ -3032,61 +3187,6 @@
     data:
       title: Left Home
       message: You just left Home zone
-  mode: single
-- id: '1699759355459'
-  alias: Light - workshop 16x16 matrix ON
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - light.workshop_downlight
-    to: 'on'
-  condition: []
-  action:
-  - service: select.select_option
-    target:
-      entity_id: select.wled_16x16_matrix_color_palette
-    data:
-      option: Rainbow
-  - service: light.turn_on
-    target:
-      entity_id: light.wled_16x16_matrix
-    data:
-      effect: '{{ state_attr(''light.wled_16x16_matrix'', ''effect_list'') | random
-        }}'
-  - service: light.turn_on
-    metadata: {}
-    data:
-      brightness_pct: 25
-    target:
-      entity_id: light.wled_16x16_matrix
-  mode: single
-- id: '1699759417101'
-  alias: Light - workshop 16x16 RGB matrix OFF after 30 mins
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - light.wled_16x16_matrix
-    to: 'on'
-    for:
-      hours: 0
-      minutes: 30
-      seconds: 0
-  - platform: state
-    entity_id:
-    - light.led_strip_workshop_shelf_dimmer
-    to: 'off'
-    for:
-      hours: 0
-      minutes: 30
-      seconds: 0
-  condition: []
-  action:
-  - service: light.turn_off
-    data: {}
-    target:
-      entity_id: light.wled_16x16_matrix
   mode: single
 - id: '1701770661634'
   alias: Light - twinkly xmas lights random effect every 10 minutes
@@ -3360,56 +3460,6 @@
       value: '{{ states(''sensor.rostrevor_pool_inlet_water_temp_t02'') | float(0)
         }}'
   mode: single
-- id: '1703373162834'
-  alias: Notify - CCTV motion when nobody home or sleeping
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_1_linedetection
-    - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_6_linedetection
-    - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_4_linedetection
-    - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_5_linedetection
-    - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_8_linedetection
-    - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_2_fielddetection
-    - binary_sensor.ds_7608ni_i2_8p0820220623ccrrk17144184wcvu_3_fielddetection
-    to: 'on'
-    enabled: true
-  condition:
-  - condition: or
-    conditions:
-    - condition: and
-      conditions:
-      - condition: state
-        entity_id: person.patrick
-        state: not_home
-      - condition: state
-        entity_id: person.kathleen
-        state: not_home
-      - condition: state
-        entity_id: person.jess
-        state: not_home
-    - condition: state
-      entity_id: input_boolean.sleep_mode
-      state: 'on'
-    enabled: true
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
-    data:
-      title: CCTV motion
-      message: '{{ trigger.to_state.attributes.friendly_name }} at {{ trigger.to_state.last_updated
-        | as_timestamp | timestamp_custom(''%I:%M %p'') }}'
-      data:
-        push:
-          sound:
-            name: US-EN-Morgan-Freeman-Motion-Detected.wav
-            critical: 1
-            volume: 0.5
-        actions:
-        - action: URI
-          title: Go to CCTV page in HA
-          uri: /lovelace/cctv
-  mode: single
 - id: '1703547741330'
   alias: Awtrix - back lounge temperature
   description: ''
@@ -3436,18 +3486,18 @@
     input:
       action_sensor: sensor.button_soldering_iron_action
       press_single:
-      - service: switch.toggle
+      - action: switch.toggle
         target:
           entity_id: switch.workshop_power_strip
         data: {}
       press_double:
-      - service: light.toggle
+      - action: light.toggle
         target:
           entity_id: light.led_strip_workshop_shelf_dimmer
         data:
           brightness_pct: 100
       press_hold:
-      - service: light.turn_off
+      - action: light.turn_off
         target:
           area_id: electronics_lab
         data: {}
@@ -4005,3 +4055,189 @@
       notify_device:
       - 0f5265246071d1e781aadc2b8aaea0c8
       include_persistent_notification: enable_persistent_okay_notification
+- id: '1724062016510'
+  alias: Courtyard camera person
+  description: From Unifi Protect webhook
+  trigger:
+  - platform: webhook
+    allowed_methods:
+    - POST
+    local_only: true
+    webhook_id: aB3$eFg7!hIj9KlMn0PqRsTuVwX
+  condition: []
+  action:
+  - action: notify.mobile_app_patricks_iphone_13
+    metadata: {}
+    data:
+      title: Unifi CCTV Camera
+      message: "Courtyard: {% set triggers = trigger.json.alarm.triggers %} {% for
+        trigger in triggers -%}\n  {{ trigger.key }}\n{% endfor %}\n"
+    enabled: false
+  - action: input_boolean.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.courtyard_camera_person
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - action: input_boolean.turn_off
+    target:
+      entity_id:
+      - input_boolean.courtyard_camera_person
+    data: {}
+  mode: single
+- id: '1726141404103'
+  alias: Back Yard Camera Person
+  description: From Unifi Protect webhook
+  trigger:
+  - platform: webhook
+    allowed_methods:
+    - POST
+    local_only: true
+    webhook_id: OvyU3vgPH2l9AgSdTJVeZmASf0t
+  condition: []
+  action:
+  - action: notify.mobile_app_patricks_iphone_13
+    metadata: {}
+    data:
+      title: Unifi CCTV Camera
+      message: "Back Yard: {% set triggers = trigger.json.alarm.triggers %} {% for
+        trigger in triggers -%}\n  {{ trigger.key }}\n{% endfor %}\n"
+    enabled: false
+  - action: input_boolean.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.back_yard_camera_person
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - action: input_boolean.turn_off
+    target:
+      entity_id:
+      - input_boolean.back_yard_camera_person
+    data: {}
+  mode: single
+- id: '1726141806764'
+  alias: Driveway Camera Person
+  description: From Unifi Protect webhook
+  trigger:
+  - platform: webhook
+    allowed_methods:
+    - POST
+    local_only: true
+    webhook_id: 5fGh6IjK7!lMn8OpQr9StUvWxY
+  condition: []
+  action:
+  - action: notify.mobile_app_patricks_iphone_13
+    metadata: {}
+    data:
+      title: Unifi CCTV Camera
+      message: "Driveway: {% set triggers = trigger.json.alarm.triggers %} {% for
+        trigger in triggers -%}\n  {{ trigger.key }}\n{% endfor %}\n"
+    enabled: false
+  - action: input_boolean.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.driveway_camera_person
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - action: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.driveway_camera_person
+  mode: single
+- id: '1726142105464'
+  alias: Front Yard Camera Person
+  description: From Unifi Protect webhook
+  trigger:
+  - platform: webhook
+    allowed_methods:
+    - POST
+    local_only: true
+    webhook_id: 9of{RCd2H'&Qq'>d1EQS)f;FDf`
+  condition: []
+  action:
+  - action: notify.mobile_app_patricks_iphone_13
+    metadata: {}
+    data:
+      title: Unifi CCTV Camera
+      message: "Front Yard: {% set triggers = trigger.json.alarm.triggers %} {% for
+        trigger in triggers -%}\n  {{ trigger.key }}\n{% endfor %}\n"
+    enabled: false
+  - action: input_boolean.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.front_yard_camera_person
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - action: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.front_yard_camera_person
+  mode: single
+- id: '1726142223544'
+  alias: Pool and Alfresco Camera Person
+  description: From Unifi Protect webhook
+  trigger:
+  - platform: webhook
+    allowed_methods:
+    - POST
+    local_only: true
+    webhook_id: -_8MpGAtC7VoBX2m9aa90vbY5
+  condition: []
+  action:
+  - action: notify.mobile_app_patricks_iphone_13
+    metadata: {}
+    data:
+      title: Unifi CCTV Camera
+      message: "Pool and Alfresco: {% set triggers = trigger.json.alarm.triggers %}
+        {% for trigger in triggers -%}\n  {{ trigger.key }}\n{% endfor %}\n"
+    enabled: false
+  - action: input_boolean.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.pool_alfresco_camera_person
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - action: input_boolean.turn_off
+    data: {}
+    target:
+      entity_id: input_boolean.pool_alfresco_camera_person
+  mode: single
+- id: '1726349053457'
+  alias: Sleep mode off if alfresco door opens after 5am
+  description: ''
+  trigger:
+  - platform: state
+    entity_id:
+    - binary_sensor.alfresco_door_contact
+    to: 'on'
+  condition:
+  - condition: time
+    after: 05:30:00
+    before: 09:00:00
+  action:
+  - action: input_boolean.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.sleep_mode
+  mode: single

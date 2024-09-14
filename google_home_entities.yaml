@@ -32,19 +32,11 @@ google_actions:
       - light.front_yard_lights # Group
       - light.front_garden_lights
 
-      # - light.kitchen_lights # Group
-      # - light.kitchen_hall_downlights
-      # - light.kitchen_pendant
-      - light.kitchen_lights # Group
+      - light.kitchen_lights # group defined in helpers
       - light.dining_downlight
 
       - light.back_lounge_downlights
       - light.back_lounge_pendant
-      - light.back_lounge_sideboard_lamp
-      - light.lamp_rhs_fireplace
-
-      - light.laundry_downlight
-      - light.laundry_path_bunker_light
 
       - light.back_yard_lights # Group
       - light.alfresco_downlights
@@ -52,8 +44,9 @@ google_actions:
       - light.rear_flood_light
       - light.rear_garden_lights
 
+      - light.main_hall_downlights
+
       - light.workshop_downlight
-      - light.workshop_rgb_light
       - light.led_strip_workshop_shelf_dimmer
       - light.pool_light_controller_pool_lights
   # entity_config:
