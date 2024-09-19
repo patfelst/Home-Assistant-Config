@@ -438,7 +438,6 @@
       entity_id:
       - light.alfresco_downlights
       - light.rear_flood_light
-      - light.led_strip_fire_pit_dimmer
       - light.laundry_bunker_light
     action: light.turn_on
   - if:
@@ -456,7 +455,7 @@
         entity_id: light.courtyard_flood_light
   - delay:
       hours: 0
-      minutes: 5
+      minutes: 4
       seconds: 0
       milliseconds: 0
   - data: {}
@@ -464,7 +463,6 @@
       entity_id:
       - light.alfresco_downlights
       - light.rear_flood_light
-      - light.led_strip_fire_pit_dimmer
       - light.laundry_bunker_light
       - light.courtyard_flood_light
     action: light.turn_off
@@ -1009,20 +1007,19 @@
     at: 00:00:00
   condition: []
   action:
-  - service: input_boolean.turn_on
-    data: {}
+  - data: {}
     target:
       entity_id:
       - input_boolean.grid_power_alert
       - input_boolean.garage_door_alerts
-  - service: automation.turn_on
-    metadata: {}
+    action: input_boolean.turn_on
+  - metadata: {}
     data: {}
     target:
       entity_id:
-      - automation.lights_back_yard_on_cctv_intrusion_back_yard_alfresco
       - automation.door_open_alfresco_turn_on_alfresco_lights
       - automation.notify_motion_in_front_yard
+    action: automation.turn_on
   mode: single
 - id: '1671333862212'
   alias: Google say - Workshop CO2 level getting high
@@ -1921,8 +1918,8 @@
         entity_id: switch.ensuite_fan
       bathroom_humidity_sensor: sensor.ensuite_environmental_humidity
       include_max_humidity: maximum_humidity_enabled
-      time_delay: 4
-      time_out: 10
+      time_delay: 1
+      time_out: 8
       include_winter_mode: winter_mode_enabled
       month_winter_mode:
       - '6'
@@ -1931,8 +1928,8 @@
       - '5'
       - '9'
       winter_rising_humidity: 1.5
-      winter_time_out: 15
-      winter_time_delay: 4
+      winter_time_out: 8
+      winter_time_delay: 1
       winter_include_max_humidity: maximum_humidity_enabled
 - id: '1682297394195'
   alias: Ensuite fan - control by humidity (notify for testing)
@@ -2010,6 +2007,9 @@
     id: back yard
   condition:
   - condition: state
+    entity_id: input_boolean.sleep_mode
+    state: 'on'
+  - condition: state
     entity_id: input_boolean.disable_cctv_critical_alerts
     state: 'off'
   - condition: template
@@ -2018,9 +2018,6 @@
   - condition: template
     value_template: '{{ now() - states.cover.garage_door.last_changed > timedelta(seconds=120)
       }}'
-  - condition: state
-    entity_id: input_boolean.sleep_mode
-    state: 'on'
   action:
   - choose:
     - conditions:
@@ -4223,7 +4220,7 @@
       entity_id: input_boolean.pool_alfresco_camera_person
   mode: single
 - id: '1726349053457'
-  alias: Sleep mode off if alfresco door opens after 5am
+  alias: Sleep mode off if alfresco door opens after 4:30am
   description: ''
   trigger:
   - platform: state
@@ -4232,7 +4229,7 @@
     to: 'on'
   condition:
   - condition: time
-    after: 05:30:00
+    after: 04:30:00
     before: 09:00:00
   action:
   - action: input_boolean.turn_off
