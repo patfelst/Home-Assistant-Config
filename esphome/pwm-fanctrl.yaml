@@ -285,7 +285,7 @@ sensor:
             if (id(above_ambient).state > 0) {
               fan_desired_temp = id(workshop_temperature).state + id(above_ambient).state;
 
-              // Update the target temp to °C above ambient so user can see in front end
+              // Update the target temp to ambient + above ambient so user can see in front end
               auto call = id(set_target_temp).make_call();
               call.set_value(fan_desired_temp);
               call.perform();
@@ -293,7 +293,7 @@ sensor:
             else {
               fan_desired_temp = id(set_target_temp).state;
             }
-            ESP_LOGI("Desired", "Desired temp = %.1f °C", fan_desired_temp);
+            // ESP_LOGI("Desired", "Desired temp = %.1f °C", fan_desired_temp);
 
             float diff = fan_actual_temp - fan_desired_temp;
             id(fan_sum) =id(fan_sum) + diff;
