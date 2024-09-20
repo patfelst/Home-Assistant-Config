@@ -63,10 +63,25 @@ number:
     restore_value: True
     unit_of_measurement: °C
     device_class: "TEMPERATURE"
+
+  - platform: template
+    id: above_ambient
+    name: Temp Above Ambient
+    optimistic: True
+    min_value: 0
+    max_value: 10
+    initial_value: "2"
+    step: 1
+    restore_value: True
+    unit_of_measurement: °C
+    device_class: "TEMPERATURE"
     on_value: 
       then:
-        - lambda: |-
-            ESP_LOGI("Target temp", "Target temp set to %.1f", x);
+        - number.set:
+            # adjust the target temp when user changes "above ambient" in the front end
+            id: set_target_temp
+            value: !lambda |-
+              return ((int)id(workshop_temperature).state + x);
 
   - platform: template
     id: set_alarm_temp
@@ -171,6 +186,12 @@ i2c:
     frequency: 800khz
 
 sensor:
+  - platform: homeassistant
+    internal: true
+    id: workshop_temperature
+    entity_id: climate.ac_workshop
+    attribute: "current_temperature"
+
   - platform: aht10
     i2c_id: bus_b
     address: 0x38
@@ -255,11 +276,12 @@ sensor:
                 id(alarm_sen).publish_state(false);
       # example using GLOBAL to maintain persistant SUM for each fan
       - lambda: |-
-          ESP_LOGI("Temp 1", "Temperature-1: %.1f °C", x);
+          // ESP_LOGI("Temp 1", "Temperature-1: %.1f °C", x);
           // Patrick's mod for all 4 fans to act in parallel based on Fan 1 auto setting and temp sensor 1 temperature
           if (id(auto_fan).state) {
-            float fan_actual_temp =  x;
+            float fan_actual_temp =  x; // x is from Dallas temperature sensor 1
             float fan_desired_temp = id(set_target_temp).state;
+
             float diff = fan_actual_temp - fan_desired_temp;
             id(fan_sum) =id(fan_sum) + diff;
             float fan_pdiff=diff * $ptemp;
@@ -325,9 +347,9 @@ sensor:
       - offset: 0.0 #Calibration
     unit_of_measurement: "°C"
     name: Temperature 2
-    on_value:
-      lambda: |-
-        ESP_LOGW("Temp 2", "Temperature-2: %.1f °C", x);
+    # on_value:
+    #   lambda: |-
+    #     ESP_LOGW("Temp 2", "Temperature-2: %.1f °C", x);
 
 fan:
   - platform: speed
