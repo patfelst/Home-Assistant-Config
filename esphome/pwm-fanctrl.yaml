@@ -75,13 +75,13 @@ number:
     restore_value: True
     unit_of_measurement: °C
     device_class: "TEMPERATURE"
-    on_value: 
-      then:
-        - number.set:
-            # adjust the target temp when user changes "above ambient" in the front end
-            id: set_target_temp
-            value: !lambda |-
-              return ((int)id(workshop_temperature).state + x);
+    # on_value: 
+    #   then:
+    #     - number.set:
+    #         # adjust the target temp when user changes "above ambient" in the front end
+    #         id: set_target_temp
+    #         value: !lambda |-
+    #           return ((int)id(workshop_temperature).state + x);
 
   - platform: template
     id: set_alarm_temp
@@ -280,7 +280,20 @@ sensor:
           // Patrick's mod for all 4 fans to act in parallel based on Fan 1 auto setting and temp sensor 1 temperature
           if (id(auto_fan).state) {
             float fan_actual_temp =  x; // x is from Dallas temperature sensor 1
-            float fan_desired_temp = id(set_target_temp).state;
+            float fan_desired_temp = 0.0;
+            // If user has set an "above ambient", then use that as the target temp, otherwise just use the target_temp
+            if (id(above_ambient).state > 0) {
+              fan_desired_temp = id(workshop_temperature).state + id(above_ambient).state;
+
+              // Update the target temp to °C above ambient so user can see in front end
+              auto call = id(set_target_temp).make_call();
+              call.set_value(fan_desired_temp);
+              call.perform();
+            }
+            else {
+              fan_desired_temp = id(set_target_temp).state;
+            }
+            ESP_LOGI("Desired", "Desired temp = %.1f °C", fan_desired_temp);
 
             float diff = fan_actual_temp - fan_desired_temp;
             id(fan_sum) =id(fan_sum) + diff;
