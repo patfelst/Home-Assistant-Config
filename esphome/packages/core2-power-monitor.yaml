@@ -358,7 +358,7 @@ display:
   - platform: ili9xxx
     model: M5STACK
     id: lcd_display
-    invert_colors: false
+    invert_colors: true
     # dimensions: "320X280"
     update_interval: 500ms
     cs_pin: 5
