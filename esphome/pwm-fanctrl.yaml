@@ -7,9 +7,17 @@ substitutions:
   fdevicename: PWM Rack Fan Ctrl
   ip: 192.168.20.145 # For static IP adressing
 
-  alarm_temp: "30" # Threshold for alarm when implemented
-  ptemp: "20"
-  itemp: "0.1"
+  # Threshold for alarm when implemented
+  alarm_temp: "30"
+
+  # A higher PTEMP will cause the fan speed to ramp more aggressively
+  # proportional to the difference between target and actual
+  # Range of 10-20 is typical. Default is 20. 
+  ptemp: "30" 
+  
+  # ITEMP has less effect but in effect and is the scaling factor of the
+  # running sum of the temperature difference. 0.1 to 0.5 are typical ranges
+  itemp: "0.9"
 
   # Connect your Dallas sensors with logger: DEBUG enabled (factory flash default).
   # Open the ESPHome webtool, connect to the ECB board, view the "Logs" window, hit "Reset",
@@ -52,6 +60,26 @@ globals:
     initial_value: "0"
 
 number:
+  - platform: template
+    id: pid_ptemp
+    name: PID Proportional Factor
+    optimistic: True
+    min_value: 5
+    max_value: 50
+    initial_value: "20"
+    step: 2
+    restore_value: True
+
+  - platform: template
+    id: pid_itemp
+    name: PID Integral Factor
+    optimistic: True
+    min_value: 0.0
+    max_value: 2.0
+    initial_value: "0.1"
+    step: 0.1
+    restore_value: True
+
   - platform: template
     id: set_target_temp
     name: Target Temp
@@ -247,7 +275,7 @@ sensor:
     update_interval: 30s
 
   - platform: dallas_temp
-    address: ${dallasaddress1}
+    address: ${dallasaddress2}
     update_interval: 2s
     id: temp1
     filters:
@@ -293,19 +321,38 @@ sensor:
             else {
               fan_desired_temp = id(set_target_temp).state;
             }
-            // ESP_LOGI("Desired", "Desired temp = %.1f °C", fan_desired_temp);
 
             float diff = fan_actual_temp - fan_desired_temp;
-            id(fan_sum) =id(fan_sum) + diff;
-            float fan_pdiff=diff * $ptemp;
-            float fan_idiff= id(fan_sum) * $itemp;
+            ESP_LOGI("", "Actual Temp = %.2f°C, Desired temp = %.2f°C, Diff = %.2f", fan_actual_temp, fan_desired_temp, diff);
+
+            ESP_LOGI("", "fan_sum (BEFORE)= %.2f", id(fan_sum));
+            id(fan_sum) = id(fan_sum) + diff;
+            ESP_LOGI("", "fan_sum (AFTER) = %.2f", id(fan_sum));
+            
+            // float fan_pdiff = diff * $ptemp;
+            float fan_pdiff = diff * id(pid_ptemp).state;
+            ESP_LOGI("", "fan_pdiff = %.2f", fan_pdiff);
+
+            // float fan_idiff = id(fan_sum) * $itemp;
+            float fan_idiff = id(fan_sum) * id(pid_itemp).state;
+            ESP_LOGI("", "fan_idiff = %.2f", fan_idiff);
+
+            if (id(fan_sum) > 100)
+              id(fan_sum) = 100;
+
+            if (id(fan_sum) < -100)
+              id(fan_sum) = -100;
+
             float fan_set_speed = fan_pdiff + fan_idiff;
-            if (fan_set_speed >100) fan_set_speed =100;
-            if (fan_set_speed <10) fan_set_speed=1;
-            if (id(fan_sum) >100) id(fan_sum) = 100;
-            if (id(fan_sum) < -100) id(fan_sum) = -100;
-            if (fan_set_speed <10) {
-              fan_set_speed=1;
+            ESP_LOGI("", "fan_set_speed = %.2f", fan_set_speed);
+
+            if (fan_set_speed > 100)
+              fan_set_speed = 100;
+
+            // Turn off fan, or set fan speed
+            if (fan_set_speed < 10) {
+
+              fan_set_speed = 1;
 
               // Turn off fan 1
               auto calloff1 = id(fan1_speed).turn_off();
@@ -352,7 +399,7 @@ sensor:
           }
 
   - platform: dallas_temp
-    address: ${dallasaddress2}
+    address: ${dallasaddress1}
     update_interval: 2s
     id: temp2
     filters:
@@ -369,25 +416,25 @@ fan:
     output: fan1
     id: fan1_speed
     name: Fan1 Speed
-    restore_mode: RESTORE_DEFAULT_OFF
+    restore_mode: ALWAYS_OFF
 
   - platform: speed
     output: fan2
     id: fan2_speed
     name: Fan2 Speed
-    restore_mode: RESTORE_DEFAULT_OFF
+    restore_mode: ALWAYS_OFF
 
   - platform: speed
     output: fan3
     id: fan3_speed
     name: Fan3 Speed
-    restore_mode: RESTORE_DEFAULT_OFF
+    restore_mode: ALWAYS_OFF
 
   - platform: speed
     output: fan4
     id: fan4_speed
     name: Fan4 Speed
-    restore_mode: RESTORE_DEFAULT_OFF
+    restore_mode: ALWAYS_OFF
 
 text_sensor:
   - platform: version

@@ -1931,6 +1931,8 @@
       winter_time_out: 8
       winter_time_delay: 1
       winter_include_max_humidity: maximum_humidity_enabled
+      include_manual_fan_switch: enable_manual_fan_switch_auto_off
+      manual_fan_switch_time_delay: 20
 - id: '1682297394195'
   alias: Ensuite fan - control by humidity (notify for testing)
   description: ''
