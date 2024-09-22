@@ -29,7 +29,11 @@ esphome:
   name: ${devicename}
   friendly_name: ${fdevicename}
   comment: Quad PWM fan controller from Tindie "ESP32andmore - ECB"
-
+  # on_boot:
+  # - priority: 900.0
+  #   then:
+  #     - lambda: |-
+  #         id(fan_sum) = 0.0;
 esp32:
   # board: wemos_d1_mini32
   board: esp32dev
@@ -57,7 +61,7 @@ globals:
   - id: fan_sum
     type: float
     restore_value: no
-    initial_value: "0"
+    initial_value: "0.0"
 
 number:
   - platform: template
@@ -324,6 +328,10 @@ sensor:
 
             float diff = fan_actual_temp - fan_desired_temp;
             ESP_LOGI("", "Actual Temp = %.2f°C, Desired temp = %.2f°C, Diff = %.2f", fan_actual_temp, fan_desired_temp, diff);
+
+            // Fix for global variable initial value of 0.0 doesn't seem to work making fan_sum = nan
+            if (isnan(id(fan_sum)))
+              id(fan_sum) = 0.0;
 
             ESP_LOGI("", "fan_sum (BEFORE)= %.2f", id(fan_sum));
             id(fan_sum) = id(fan_sum) + diff;

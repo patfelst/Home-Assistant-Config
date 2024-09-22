@@ -1068,50 +1068,6 @@
     target:
       entity_id: fan.workshop_ceiling_fan
   mode: single
-- id: '1671357311185'
-  alias: Rack fans - ON when rack > 28°C during daytime
-  description: ''
-  trigger:
-  - platform: numeric_state
-    entity_id: sensor.rack_temperature_ds18b20
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 0
-    above: 28
-  condition:
-  - condition: state
-    entity_id: binary_sensor.workshop_ceiling_motion_occupancy
-    state: 'off'
-    for:
-      hours: 0
-      minutes: 6
-      seconds: 0
-  - condition: time
-    before: '21:30:00'
-    after: 07:00:00
-    alias: Time between 7am-9:30pm
-  action:
-  - service: fan.turn_on
-    data: {}
-    target:
-      entity_id: fan.19_rack_fans
-  - wait_template: '{{ (states(''sensor.rack_temperature_ds18b20'')|float - states(''sensor.workshop_temperature_from_ac'')|float)
-      < 1.0 }}'
-    continue_on_timeout: true
-    timeout: 00:30:00
-    enabled: false
-  - wait_for_trigger:
-    - platform: numeric_state
-      entity_id: sensor.rack_temperature_ds18b20
-      below: 25
-    - platform: time
-      at: '21:30:00'
-  - service: fan.turn_off
-    data: {}
-    target:
-      entity_id: fan.19_rack_fans
-  mode: single
 - id: '1671794465452'
   alias: Button - Jess bedside
   description: ''
@@ -2324,31 +2280,32 @@
   - condition: state
     entity_id: switch.pool_pump
     state: 'on'
+    enabled: false
   action:
-  - service: switch.turn_on
-    metadata: {}
+  - metadata: {}
     data: {}
     target:
       entity_id: switch.pool_pump
+    action: switch.turn_on
   - delay:
       hours: 0
       minutes: 0
       seconds: 5
       milliseconds: 0
-  - service: climate.set_hvac_mode
-    data:
+  - data:
       hvac_mode: heat
     target:
       entity_id: climate.rostrevor_pool
-  - service: climate.turn_on
-    data: {}
+    action: climate.set_hvac_mode
+  - data: {}
     target:
       entity_id: climate.rostrevor_pool
-  - service: notify.mobile_app_patricks_iphone_13
-    data:
+    action: climate.turn_on
+  - data:
       title: Pool heater
       message: Turned on pool pump and heater because exporting more than 2.1kW ({{
         -(trigger.to_state.state | float | round(1)) }}kW) and pump is ON.
+    action: notify.mobile_app_patricks_iphone_13
   mode: single
 - id: '1693827066966'
   alias: Pool heater - turn OFF when grid importing for 20 mins or pool pump turns
@@ -2450,19 +2407,25 @@
         id:
         - power high
       sequence:
-      - service: notify.mobile_app_patricks_iphone_13
-        data:
+      - data:
           title: Sump pump!
           message: Sump pump turned ON!
+        action: notify.mobile_app_patricks_iphone_13
+      - action: input_datetime.set_datetime
+        metadata: {}
+        data:
+          datetime: '{{now().strftime(''%Y-%m-%d %H:%M:%S'') }}'
+        target:
+          entity_id: input_datetime.sump_pump_last_run
     - conditions:
       - condition: trigger
         id:
         - power low
       sequence:
-      - service: notify.mobile_app_patricks_iphone_13
-        data:
+      - data:
           title: Sump pump!
           message: Sump pump turned OFF!
+        action: notify.mobile_app_patricks_iphone_13
   mode: single
 - id: '1694818227771'
   alias: Blinds - CLOSE when sunny and hot (based on solar energy for the day at 10AM)
@@ -3922,89 +3885,6 @@
       message: "{% if trigger %}\n  {{ trigger.to_state.attributes.friendly_name }}\n{%
         else %}\n  Check the system for more details.\n{% endif %}\n"
   mode: single
-- id: '1718938224852'
-  alias: Motion - Workshop Apollo RGB LED
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.apollo_msr_2_3574ec_radar_zone_1_occupancy
-    to: 'on'
-    id: zone 1
-  - platform: state
-    entity_id:
-    - binary_sensor.apollo_msr_2_3574ec_radar_zone_2_occupancy
-    to: 'on'
-    id: zone 2
-  - platform: state
-    entity_id:
-    - binary_sensor.apollo_msr_2_3574ec_radar_zone_3_occupancy
-    to: 'on'
-    id: zone 3
-  - platform: state
-    entity_id:
-    - binary_sensor.apollo_msr_2_3574ec_radar_target
-    to: 'off'
-    id: no zone
-  condition: []
-  action:
-  - choose:
-    - conditions:
-      - condition: trigger
-        id:
-        - zone 1
-      sequence:
-      - service: light.turn_on
-        metadata: {}
-        data:
-          rgb_color:
-          - 4
-          - 255
-          - 0
-          brightness_pct: 100
-        target:
-          entity_id: light.apollo_msr_2_3574ec_rgb_light
-    - conditions:
-      - condition: trigger
-        id:
-        - zone 2
-      sequence:
-      - service: light.turn_on
-        metadata: {}
-        data:
-          rgb_color:
-          - 255
-          - 149
-          - 0
-          brightness_pct: 100
-        target:
-          entity_id: light.apollo_msr_2_3574ec_rgb_light
-    - conditions:
-      - condition: trigger
-        id:
-        - zone 3
-      sequence:
-      - service: light.turn_on
-        metadata: {}
-        data:
-          rgb_color:
-          - 255
-          - 0
-          - 0
-          brightness_pct: 100
-        target:
-          entity_id: light.apollo_msr_2_3574ec_rgb_light
-    - conditions:
-      - condition: trigger
-        id:
-        - no zone
-      sequence:
-      - service: light.turn_off
-        metadata: {}
-        data: {}
-        target:
-          entity_id: light.apollo_msr_2_3574ec_rgb_light
-  mode: single
 - id: '1720908527024'
   alias: Sleep mode on and off at time of day
   description: ''
@@ -4239,4 +4119,33 @@
     data: {}
     target:
       entity_id: input_boolean.sleep_mode
+  mode: single
+- id: '1726959314317'
+  alias: Rack Fans - set low speed at night or sleep
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id:
+    - fan.pwm_fanctrl_fan1_speed
+    above: 30
+  condition:
+  - condition: state
+    entity_id: input_boolean.sleep_mode
+    state: 'on'
+  action:
+  - action: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.pwm_fanctrl_fan_auto_mode
+  - action: fan.set_percentage
+    metadata: {}
+    data:
+      percentage: 20
+    target:
+      entity_id:
+      - fan.pwm_fanctrl_fan1_speed
+      - fan.pwm_fanctrl_fan2_speed
+      - fan.pwm_fanctrl_fan3_speed
+      - fan.pwm_fanctrl_fan4_speed
   mode: single
