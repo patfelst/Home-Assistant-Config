@@ -221,8 +221,7 @@ sensor:
   - platform: homeassistant
     internal: true
     id: workshop_temperature
-    entity_id: climate.ac_workshop
-    attribute: "current_temperature"
+    entity_id: sensor.ac_workshop_temperature
 
   - platform: aht10
     i2c_id: bus_b
