@@ -25,7 +25,6 @@ google_actions:
       - switch.workshop_power_strip
       - switch.gas_heater
       - switch.pool_robot
-      - switch.pool_pump
 
       - light.all_lights
 
@@ -37,6 +36,7 @@ google_actions:
 
       - light.back_lounge_downlights
       - light.back_lounge_pendant
+      - light.back_lounge_sideboard_lamp
 
       - light.back_yard_lights # Group
       - light.alfresco_downlights

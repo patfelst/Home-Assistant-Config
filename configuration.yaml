@@ -40,8 +40,8 @@ notify:
   - name: "patrick and kathleen"
     platform: group
     services:
-      - service: mobile_app_patricks_iphone_13
-      - service: mobile_app_kathleens_iphone
+      - action: mobile_app_patricks_iphone
+      - action: mobile_app_kathleens_iphone
 
 #CPU Temperature
 command_line:
@@ -93,18 +93,18 @@ cover:
           - condition: state
             entity_id: binary_sensor.garage_door_bottom_magnet
             state: "off"
-          - service: switch.turn_on
+          - action: switch.turn_on
             target:
               entity_id: switch.garage_door
         close_cover:
           - condition: state
             entity_id: binary_sensor.garage_door_top_magnet
             state: "off"
-          - service: switch.turn_on
+          - action: switch.turn_on
             target:
               entity_id: switch.garage_door
         stop_cover:
-          - service: switch.turn_on
+          - action: switch.turn_on
             target:
               entity_id: switch.garage_door
   - platform: template
@@ -127,24 +127,24 @@ cover:
           - condition: state
             entity_id: binary_sensor.driveway_gate_closed
             state: "on"
-          - service: switch.turn_on
+          - action: switch.turn_on
             target:
               entity_id: switch.driveway_gate
         close_cover:
           - condition: state
             entity_id: binary_sensor.driveway_gate_open
             state: "on"
-          - service: switch.turn_on
+          - action: switch.turn_on
             target:
               entity_id: switch.driveway_gate
         stop_cover:
-          - service: switch.turn_on
+          - action: switch.turn_on
             target:
               entity_id: switch.driveway_gate
 
 template:
   - trigger:
-      - platform: state
+      - trigger: state
         entity_id:
           - binary_sensor.garage_door_top_magnet
           - binary_sensor.garage_door_bottom_magnet
@@ -168,7 +168,7 @@ template:
             {% endif %}
           {% endif %}
   - trigger:
-      - platform: state
+      - trigger: state
         entity_id:
           - binary_sensor.driveway_gate_closed
           - binary_sensor.driveway_gate_open
@@ -195,22 +195,6 @@ template:
   - sensor:
       - name: "Number of lights on"
         state: "{{ expand(state_attr('light.all_lights', 'entity_id'))| selectattr('state','eq','on')|map(attribute='entity_id')|list|count }}"
-
-  - sensor:
-      - name: "Workshop temperature from AC"
-        device_class: temperature
-        unique_id: id_workshop_temperature
-        state_class: measurement
-        unit_of_measurement: "°C" # or F
-        state: "{{ state_attr('climate.ac_workshop', 'current_temperature') }}"
-        availability: "{{ state_attr('climate.ac_workshop', 'current_temperature')|is_number }}"
-      - name: "Back Lounge temperature from AC"
-        unique_id: id_back_lounge_temperature
-        device_class: temperature
-        state_class: measurement
-        unit_of_measurement: "°C" # or F
-        state: "{{ state_attr('climate.ac_back_lounge', 'current_temperature') }}"
-        availability: "{{ state_attr('climate.ac_back_lounge', 'current_temperature')|is_number }}"
 
   - sensor:
       # pool pump power:

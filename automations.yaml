@@ -1,8 +1,8 @@
 - id: '1665816721948'
   alias: Notify - workshop door opened
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - binary_sensor.workshop_door_contact
     from: 'off'
@@ -11,13 +11,11 @@
   - condition: state
     entity_id: person.patrick
     state: not_home
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Door opened
-      message: '{{ trigger.to_state.name }} just opened
-
-        '
+      message: '{{ trigger.to_state.name }} just opened'
       data:
         push:
           sound: Workshop door opened.wav
@@ -27,14 +25,14 @@
 - id: '1667473720137'
   alias: Blinds close at sunset
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id: sun.sun
     attribute: elevation
     below: -7.3
   condition: []
-  action:
-  - service: tts.cloud_say
+  actions:
+  - action: tts.cloud_say
     data:
       message: Blinds are about to close
       entity_id: media_player.homepod_mini_back_lounge
@@ -44,7 +42,7 @@
       minutes: 0
       seconds: 5
       milliseconds: 0
-  - service: cover.close_cover
+  - action: cover.close_cover
     data: {}
     target:
       entity_id: cover.all_blinds
@@ -52,20 +50,20 @@
 - id: '1667474758731'
   alias: Blinds open at 6:30AM
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id: sun.sun
     attribute: elevation
     above: 3
     enabled: false
-  - platform: time
+  - trigger: time
     at: 06:30:00
   condition:
   - condition: state
     entity_id: binary_sensor.workday_sensor
     state: 'on'
-  action:
-  - service: tts.cloud_say
+  actions:
+  - action: tts.cloud_say
     data:
       entity_id: media_player.homepod_mini_back_lounge
       message: Blinds are about to open
@@ -74,7 +72,7 @@
       minutes: 0
       seconds: 5
       milliseconds: 0
-  - service: cover.open_cover
+  - action: cover.open_cover
     data: {}
     target:
       entity_id: cover.all_blinds
@@ -82,14 +80,14 @@
 - id: '1668249041786'
   alias: Lights - on at sunset
   description: 'just before sunset when sun elevation < +5° '
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id: sun.sun
     attribute: elevation
     below: 5
   condition: []
-  action:
-  - service: light.turn_on
+  actions:
+  - action: light.turn_on
     data: {}
     target:
       entity_id:
@@ -99,42 +97,42 @@
       - light.rear_garden_lights
       - light.front_garden_lights
       - light.pool_light_controller_pool_lights
-  - service: light.turn_on
+  - action: light.turn_on
     data:
       brightness_pct: 35
       kelvin: 2900
     target:
       entity_id:
       - light.back_lounge_sideboard_lamp
-  - service: light.turn_on
+  - action: light.turn_on
     data:
       brightness_pct: 35
       color_temp: 358
     target:
       entity_id:
       - light.front_hall_lamp
-  - service: light.turn_on
+  - action: light.turn_on
     data:
       brightness_pct: 20
     target:
       entity_id: light.led_strip_front_hall_dimmer
-  - service: light.turn_on
+  - action: light.turn_on
     data:
       color_temp: 358
       brightness_pct: 18
     target:
       entity_id: light.front_lounge_sideboard_lamp
-  - service: light.turn_on
+  - action: light.turn_on
     data:
       brightness_pct: 12
     target:
       entity_id: light.led_strip_kitchen_kicker
-  - service: light.turn_on
+  - action: light.turn_on
     data:
       brightness_pct: 35
     target:
       entity_id: light.led_strip_fire_pit_dimmer
-  - service: light.turn_on
+  - action: light.turn_on
     data:
       brightness_pct: 50
       color_temp: 358
@@ -147,7 +145,7 @@
       entity_id: input_boolean.sleep_mode
       state: 'off'
     then:
-    - service: light.turn_on
+    - action: light.turn_on
       data:
         brightness_pct: 25
       target:
@@ -157,61 +155,74 @@
   alias: 'Lights - Front yard lights ON when front door open / CCTV line cross / garage
     door opened '
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - input_boolean.driveway_camera_person
     to: 'on'
-  - platform: state
+  - trigger: state
     entity_id:
     - input_boolean.front_yard_camera_person
     to: 'on'
-  - platform: state
+  - trigger: state
     entity_id:
     - cover.pedestrian_gate
     to: open
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.garage_door_bottom_magnet
     to: 'on'
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.driveway_light_beam
     to: 'on'
-  - platform: state
+  - trigger: state
     entity_id:
     - cover.driveway_gate
     to: opening
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.front_door_aqara_contact
     to: 'on'
-  - platform: state
+  - trigger: state
     entity_id:
     - lock.yale_smartlock_front_door
     to: unlocking
-  - platform: state
+  - trigger: state
     entity_id:
     - lock.yale_smartlock_front_door
     to: unlocked
-  condition:
+  conditions:
   - condition: sun
     after: sunset
     before: sunrise
   - condition: state
     entity_id: input_boolean.disable_front_yard_motion_lights
     state: 'off'
-  action:
+  - condition: not
+    conditions:
+    - condition: time
+      weekday:
+      - wed
+      before: 07:00:00
+  actions:
   - data: {}
     target:
       entity_id: light.front_yard_lights
     action: light.turn_on
-  - action: light.turn_on
-    metadata: {}
-    data:
-      brightness_pct: 100
-    target:
-      entity_id: light.main_hall_downlights
+  - if:
+    - condition: state
+      entity_id: input_boolean.sleep_mode
+      state: 'off'
+    - condition: time
+      after: '17:00:00'
+    then:
+    - action: light.turn_on
+      metadata: {}
+      data:
+        brightness_pct: 100
+      target:
+        entity_id: light.main_hall_downlights
   - delay:
       hours: 0
       minutes: 4
@@ -253,15 +264,15 @@
 - id: '1668816141842'
   alias: Motion - Workshop downlight
   description: Any time of day
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - binary_sensor.workshop_ceiling_motion_occupancy
     from: 'off'
     to: 'on'
     enabled: true
     id: motion detected
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.workshop_ceiling_motion_occupancy
     to: 'off'
@@ -270,7 +281,7 @@
       minutes: 4
       seconds: 0
     enabled: true
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.apollo_msr_2_3574ec_radar_zone_1_occupancy
     - binary_sensor.apollo_msr_2_3574ec_radar_zone_2_occupancy
@@ -278,7 +289,7 @@
     to: 'on'
     id: motion detected
     enabled: false
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.apollo_msr_2_3574ec_radar_target
     to: 'off'
@@ -287,13 +298,13 @@
       minutes: 4
       seconds: 0
     enabled: false
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.everything_presence_lite_22ca80_target_1_active
     to: 'on'
     id: motion detected
     enabled: false
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.everything_presence_lite_22ca80_target_1_active
     to: 'off'
@@ -303,7 +314,7 @@
       seconds: 0
     enabled: false
   condition: []
-  action:
+  actions:
   - if:
     - condition: trigger
       id:
@@ -314,13 +325,13 @@
         entity_id: input_boolean.sleep_mode
         state: 'on'
       then:
-      - service: light.turn_on
+      - action: light.turn_on
         data:
           brightness_pct: 33
         target:
           entity_id: light.led_strip_workshop_shelf_dimmer
       else:
-      - service: light.turn_on
+      - action: light.turn_on
         data:
           brightness_pct: 100
         target:
@@ -328,7 +339,7 @@
           - light.workshop_downlight
           - light.led_strip_workshop_shelf_dimmer
     else:
-    - service: light.turn_off
+    - action: light.turn_off
       data: {}
       target:
         entity_id:
@@ -338,26 +349,26 @@
 - id: '1668855016367'
   alias: Auto off - all lights and power when last person leaves house
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id: zone.home
     below: 1
   condition:
   - condition: state
     entity_id: sun.sun
     state: above_horizon
-  action:
+  actions:
   - if:
     - condition: state
       entity_id: switch.workshop_power_strip
       state: 'on'
     then:
-    - service: notify.mobile_app_patricks_iphone_13
+    - action: notify.mobile_app_patricks_iphone
       data:
         message: Workshop power strip turned off for safety when last person left
           home
         title: Workshop power strip!
-    - service: switch.turn_off
+    - action: switch.turn_off
       data: {}
       target:
         entity_id: switch.workshop_power_strip
@@ -366,64 +377,30 @@
       entity_id: light.all_lights
       state: 'on'
     then:
-    - service: notify.mobile_app_patricks_iphone_13
+    - action: notify.mobile_app_patricks_iphone
       data:
         title: All lights off!
         message: Turned off {{ states('sensor.number_of_lights_on') }} lights when
           last person left home.
-    - service: light.turn_off
+    - action: light.turn_off
       data: {}
       target:
         entity_id: light.all_lights
   mode: single
-- id: '1668936398884'
-  alias: Lights - Back yard on CCTV motion
-  description: When sun elevation is < 0°
-  trigger:
-  - platform: state
-    entity_id:
-    - input_boolean.back_yard_camera_person
-    to: 'on'
-  - platform: state
-    entity_id:
-    - input_boolean.pool_alfresco_camera_person
-    to: 'on'
-  condition:
-  - condition: numeric_state
-    entity_id: sun.sun
-    attribute: elevation
-    below: 0
-  action:
-  - metadata: {}
-    data: {}
-    target:
-      entity_id: light.back_yard_lights
-    action: light.turn_on
-  - delay:
-      hours: 0
-      minutes: 5
-      seconds: 0
-      milliseconds: 0
-  - data: {}
-    target:
-      entity_id:
-      - light.back_yard_lights
-    action: light.turn_off
-  mode: restart
 - id: '1668938565078'
   alias: Light - Back CCTV motion OR alfresco door opens at night
   description: When sun elevation < 0°
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - binary_sensor.alfresco_door_contact
     to: 'on'
     enabled: true
-  - platform: state
+  - trigger: state
     entity_id:
     - input_boolean.back_yard_camera_person
     to: 'on'
-  - platform: state
+  - trigger: state
     entity_id:
     - input_boolean.pool_alfresco_camera_person
     to: 'on'
@@ -432,7 +409,7 @@
     entity_id: sun.sun
     attribute: elevation
     below: 0
-  action:
+  actions:
   - data: {}
     target:
       entity_id:
@@ -470,38 +447,38 @@
 - id: '1669290456260'
   alias: Notify - Daily solar production report
   description: ''
-  trigger:
-  - platform: time
+  triggers:
+  - trigger: time
     at: '20:30:00'
   condition: []
-  action:
+  actions:
   - if:
     - condition: numeric_state
       entity_id: sensor.solarnet_energy_day
       above: input_number.max_day_solar_amount
     then:
-    - service: input_number.set_value
+    - action: input_number.set_value
       target:
         entity_id: input_number.max_day_solar_amount
       data:
         value: '{{ states(''sensor.solarnet_energy_day'') | float(0) | round(1) }}'
-    - service: input_datetime.set_datetime
+    - action: input_datetime.set_datetime
       target:
         entity_id: input_datetime.max_day_solar_date
       data:
         date: '{{ now().strftime(''%Y-%m-%d'') }}'
-    - service: notify.patrick_and_kathleen
+    - action: notify.patrick_and_kathleen
       data:
         title: New solar max!
         message: New maximum daily solar this year of {{ states('input_number.max_day_solar_amount')
           | float(0) | round(1) }} kWh
-    - service: notify.lg_webos_smart_tv
+    - action: notify.lg_webos_smart_tv
       data:
         title: New Solar Max!
         message: 'Solar energy: New maximum daily solar this year of {{ states(''input_number.max_day_solar_amount'')
           | float(0) | round(1) }} kWh'
     else:
-    - service: notify.patrick_and_kathleen
+    - action: notify.patrick_and_kathleen
       data:
         title: Solar generated daily report
         message: Today you generated {{ states('sensor.solarnet_energy_day') | float(0)
@@ -511,7 +488,7 @@
           - action: URI
             title: View solar page
             uri: /lovelace/solar
-    - service: notify.lg_webos_smart_tv
+    - action: notify.lg_webos_smart_tv
       data:
         title: Solar generated daily report
         message: Today you generated {{ states('sensor.solarnet_energy_day') | float(0)
@@ -520,8 +497,8 @@
 - id: '1669522933161'
   alias: Soldering - workshop soldering irons OFF when NO MOTION
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - switch.workshop_power_strip
     to: 'on'
@@ -530,7 +507,7 @@
       minutes: 30
       seconds: 0
     enabled: false
-  - platform: state
+  - trigger: state
     entity_id:
     - light.workshop_downlight
     to: 'off'
@@ -542,12 +519,12 @@
   - condition: state
     entity_id: switch.workshop_power_strip
     state: 'on'
-  action:
-  - service: switch.turn_off
+  actions:
+  - action: switch.turn_off
     data: {}
     target:
       entity_id: switch.workshop_power_strip
-  - service: notify.mobile_app_patricks_iphone_13
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Workshop soldering iron
       message: Turned off soldering iron becuase workshop downlight off for 5 minutes
@@ -556,7 +533,7 @@
       before: '21:30:00'
       after: 07:00:00
     then:
-    - service: tts.cloud_say
+    - action: tts.cloud_say
       data:
         message: "Turned off soldering iron becuase\n{% if \"occupancy\" in trigger.entity_id
           -%}\n  no motion for 10 minutes\n{% elif \"power_strip\" in trigger.entity_id
@@ -566,25 +543,25 @@
 - id: '1669532232781'
   alias: Soldering - Workshop light to RED when soldering iron turned ON
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - switch.workshop_power_strip
     to: 'on'
   condition: []
-  action:
-  - service: light.turn_on
+  actions:
+  - action: light.turn_on
     target:
       entity_id: light.wled_workshop
     data: {}
     enabled: false
-  - service: select.select_option
+  - action: select.select_option
     target:
       entity_id: select.wled_workshop_preset
     data:
       option: soldering on
     enabled: false
-  - service: light.turn_on
+  - action: light.turn_on
     data:
       color_name: red
       brightness_pct: 70
@@ -595,32 +572,32 @@
   alias: Soldering - Workshop light to BLUE for 2mins then OFF when soldering iron
     turned OFF
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - switch.workshop_power_strip
     to: 'off'
   condition: []
-  action:
-  - service: light.turn_on
+  actions:
+  - action: light.turn_on
     target:
       entity_id:
       - light.wled_workshop
     data: {}
     enabled: false
-  - service: select.select_option
+  - action: select.select_option
     target:
       entity_id: select.wled_workshop_preset
     data:
       option: soldering off
     enabled: false
-  - service: number.set_value
+  - action: number.set_value
     target:
       entity_id: number.wled_workshop_speed
     data:
       value: '125'
     enabled: false
-  - service: light.turn_on
+  - action: light.turn_on
     data:
       rgb_color:
       - 82
@@ -635,11 +612,11 @@
       minutes: 2
       seconds: 0
       milliseconds: 0
-  - service: light.turn_off
+  - action: light.turn_off
     data: {}
     target:
       entity_id: light.workshop_rgb_light
-  - service: select.select_option
+  - action: select.select_option
     target:
       entity_id: select.wled_workshop_preset
     data:
@@ -673,6 +650,7 @@
       - action: light.turn_off
         target:
           entity_id: light.all_lights
+        data: {}
       - action: switch.turn_off
         metadata: {}
         data: {}
@@ -683,7 +661,7 @@
           entity_id: binary_sensor.workshop_window_contact
           state: 'on'
         then:
-        - action: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone
           data:
             message: Workshop window is open
             title: Window open
@@ -692,7 +670,7 @@
           entity_id: binary_sensor.alfresco_door_contact
           state: 'on'
         then:
-        - action: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone
           data:
             message: Alfresco door is open
             title: Door open
@@ -701,7 +679,7 @@
           entity_id: binary_sensor.front_door_aqara_contact
           state: 'on'
         then:
-        - action: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone
           data:
             message: Front door is open
             title: Door open
@@ -714,42 +692,58 @@
           data: {}
           target:
             entity_id: input_boolean.sleep_mode
-        - action: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone
           data:
             message: Sleep mode turned on with long press of Patrick's bedside button
             title: Sleep mode ON
+      - if:
+        - condition: state
+          state: 'on'
+          entity_id: binary_sensor.small_roller_door_contact
+        then:
+        - action: notify.mobile_app_patricks_iphone
+          data:
+            message: Harvey roller door is open
+            title: Harvey roller door
       - action: switch.turn_off
         target:
           entity_id: switch.gas_heater
+        data: {}
+      - action: switch.turn_off
+        data: {}
+        target:
+          entity_id: switch.pool_pump
 - id: '1669631569864'
   alias: Lights - House lights ON when anyone arrives home
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - person.patrick
     to: home
-  - platform: state
+  - trigger: state
     entity_id:
     - person.kathleen
     to: home
-  - platform: state
+  - trigger: state
     entity_id:
     - person.jess
     to: home
-  condition:
+  conditions:
   - condition: numeric_state
     entity_id: sun.sun
     attribute: elevation
     below: 5
-  action:
-  - service: light.turn_on
+  - condition: time
+    after: '16:00:00'
+  actions:
+  - action: light.turn_on
     data: {}
     target:
       entity_id:
       - light.front_yard_lights
       - light.garage_downlights
-  - service: automation.trigger
+  - action: automation.trigger
     data:
       skip_condition: true
     target:
@@ -759,7 +753,7 @@
       minutes: 7
       seconds: 0
       milliseconds: 0
-  - service: light.turn_off
+  - action: light.turn_off
     data: {}
     target:
       entity_id:
@@ -774,7 +768,7 @@
       after: input_datetime.lights_off_time_1
       before: sensor.sun_next_rising
     then:
-    - service: light.turn_off
+    - action: light.turn_off
       data: {}
       target:
         entity_id:
@@ -785,7 +779,7 @@
       after: input_datetime.lights_off_time_2
       before: sensor.sun_next_rising
     then:
-    - service: light.turn_off
+    - action: light.turn_off
       data: {}
       target:
         entity_id:
@@ -795,29 +789,29 @@
 - id: '1669710613722'
   alias: Google say - person arrived home
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - person.kathleen
     - person.patrick
     to: home
-  condition:
+  conditions:
   - condition: state
     entity_id: input_boolean.sleep_mode
     state: 'off'
-  action:
-  - service: tts.cloud_say
+  actions:
+  - action: tts.cloud_say
     data:
       entity_id:
-      - media_player.homepod_mini_back_lounge
+      - media_player.back_longe_speaker
       - media_player.workshop_speaker
       message: '{{ trigger.entity_id | replace(''person.'', '''') }} is home'
   mode: single
 - id: '1669888397242'
   alias: Notify - Leaving home and a door left open
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - zone.home
     to: '0'
@@ -830,8 +824,8 @@
     - condition: state
       entity_id: binary_sensor.front_door_aqara_contact
       state: 'on'
-  action:
-  - service: notify.patrick_and_kathleen
+  actions:
+  - action: notify.patrick_and_kathleen
     data:
       title: Security alert!
       message: "{% set doors = [\n   states.binary_sensor.alfresco_door_contact,\n
@@ -850,8 +844,8 @@
 - id: '1669961250496'
   alias: Notify - Door opened when nobody is home
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - binary_sensor.alfresco_door_contact
     - binary_sensor.front_door_aqara_contact
@@ -870,8 +864,8 @@
   - condition: numeric_state
     entity_id: zone.home
     below: 1
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Intruder Alarm
       message: 'Nobody is home and the {{ trigger.to_state.name }} door just opened!
@@ -886,7 +880,7 @@
             critical: 1
             volume: 0.5
     enabled: false
-  - service: notify.patrick_and_kathleen
+  - action: notify.patrick_and_kathleen
     data:
       title: Intruder Alarm
       message: 'Nobody is home and the {{ trigger.to_state.name | replace("aqara contact",
@@ -903,8 +897,8 @@
 - id: '1670040126536'
   alias: Notify - Garage door closed
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - binary_sensor.garage_door_bottom_magnet
     to: 'off'
@@ -917,8 +911,8 @@
     state: not_home
     entity_id: person.patrick
     enabled: false
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Garage Door!
       message: '{{ trigger.to_state.name | replace(" Bottom Magnet", "")}} has closed
@@ -933,8 +927,8 @@
 - id: '1670132740049'
   alias: Notify - Shelly getting hot (> 60°C)
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id:
     - sensor.alfresco_downlights_device_temperature
     - sensor.pool_perimeter_downlights_device_temperature
@@ -963,8 +957,8 @@
       seconds: 0
     above: 60
   condition: []
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Shelly temperature
       message: 'Shelly "{{ trigger.to_state.name | replace(" Device Temperature",
@@ -977,20 +971,20 @@
 - id: '1670664345843'
   alias: 'Notify - Calendar: Put bins out'
   description: ''
-  trigger:
-  - platform: calendar
+  triggers:
+  - trigger: calendar
     event: start
     offset: -0:0:0
     entity_id: calendar.rubbish_bins
   condition: []
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Calendar notification
       message: Put out {{ trigger.calendar_event.summary }} for collection tomorrow
         morning. {{ trigger.calendar_event.start | as_timestamp | timestamp_custom('%I:%M
         %p') }}
-  - service: tts.cloud_say
+  - action: tts.cloud_say
     data:
       entity_id:
       - media_player.homepod_mini_back_lounge
@@ -1000,13 +994,13 @@
   mode: queued
   max: 10
 - id: '1671250102998'
-  alias: Input booleans and counters - Reset and midnight
+  alias: Input booleans and counters - Reset at 7am
   description: ''
-  trigger:
-  - platform: time
-    at: 00:00:00
-  condition: []
-  action:
+  triggers:
+  - trigger: time
+    at: 07:00:00
+  conditions: []
+  actions:
   - data: {}
     target:
       entity_id:
@@ -1019,25 +1013,27 @@
       entity_id:
       - automation.door_open_alfresco_turn_on_alfresco_lights
       - automation.notify_motion_in_front_yard
+      - automation.front_door_open_turn_front_yard_lights_on
+      - automation.lights_front_yard_lights_on_when_anyone_arrives_home
     action: automation.turn_on
   mode: single
 - id: '1671333862212'
   alias: Google say - Workshop CO2 level getting high
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id: sensor.co2_workshop_core2_sensor
     above: 700
   condition:
   - condition: time
     before: '22:30:00'
     after: 07:00:00
-  action:
-  - service: fan.turn_on
+  actions:
+  - action: fan.turn_on
     data: {}
     target:
       entity_id: fan.workshop_ceiling_fan
-  - service: tts.cloud_say
+  - action: tts.cloud_say
     data:
       entity_id: media_player.workshop_speaker
       message: Workshop carbon dioxide getting high, it's above {{ trigger.above |
@@ -1053,7 +1049,7 @@
         entity_id: sensor.co2_workshop_core2_sensor
         below: 600
       sequence:
-      - service: tts.cloud_say
+      - action: tts.cloud_say
         data:
           entity_id: media_player.workshop_speaker
           message: Workshop carbon dioxide is still high at {{ states('sensor.co2_workshop_core2_sensor')
@@ -1063,7 +1059,7 @@
           minutes: 5
           seconds: 0
           milliseconds: 0
-  - service: fan.turn_off
+  - action: fan.turn_off
     data: {}
     target:
       entity_id: fan.workshop_ceiling_fan
@@ -1098,18 +1094,24 @@
 - id: '1672344646174'
   alias: Lights - Side lights when Courtyard CCTV motion
   description: When sun elevation is < 0°
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - input_boolean.courtyard_camera_person
     to: 'on'
-  condition:
+  conditions:
   - condition: numeric_state
     entity_id: sun.sun
     attribute: elevation
     below: 0
     enabled: true
-  action:
+  - condition: not
+    conditions:
+    - condition: time
+      weekday:
+      - wed
+      before: 07:00:00
+  actions:
   - data: {}
     target:
       entity_id:
@@ -1139,13 +1141,13 @@
 - id: '1674383678869'
   alias: Octoprint 50% complete
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id: sensor.octoprint_job_percentage
     above: 50
   condition: []
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: 3D Printer
       message: 3D print is 50% complete
@@ -1153,15 +1155,15 @@
 - id: '1674384425478'
   alias: Octoprint - print finished
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - sensor.octoprint_current_state
     from: Printing
     to: Operational
   condition: []
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: 3D Printer
       message: Print has finished!
@@ -1169,7 +1171,7 @@
         push:
           sound: HummingbirdCompletion_Haptic.caf
           interruption-level: time-sensitive
-  - service: fan.turn_off
+  - action: fan.turn_off
     data: {}
     target:
       entity_id: fan.workshop_ceiling_fan
@@ -1177,8 +1179,8 @@
 - id: '1674775378226'
   alias: Notify - leaving home and front door unlocked
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - zone.home
     to: '0'
@@ -1186,8 +1188,8 @@
   - condition: state
     entity_id: lock.yale_smartlock_front_door
     state: unlocked
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Security alert!
       message: You just left home but the front door is unlocked! Will try and lock
@@ -1204,7 +1206,7 @@
       state: 'off'
       alias: Confirm front door is closed
     then:
-    - service: lock.lock
+    - action: lock.lock
       data: {}
       target:
         entity_id:
@@ -1213,15 +1215,15 @@
 - id: '1674880600732'
   alias: Notify - UPS battery low (not required, done by NUT UPS add-on option)
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id: sensor.ups_battery_charge
     below: 5
   condition: []
-  action:
-  - service: hassio.host_shutdown
+  actions:
+  - action: hassio.host_shutdown
     data: {}
-  - service: notify.mobile_app_patricks_iphone_13
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Power Outage
       message: 'UPS battery is below {{ trigger.below }}% so shutting down home assistant.
@@ -1231,12 +1233,12 @@
 - id: '1674888763657'
   alias: Notify - UPS state change
   description: ''
-  trigger:
-  - platform: event
+  triggers:
+  - trigger: event
     event_type: nut.ups_event
   condition: []
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data_template:
       title: UPS {{ trigger.event.data.notify_type }}
       message: "{% set ups_msg = trigger.event.data.notify_msg | replace('UPS@localhost
@@ -1249,8 +1251,8 @@
 - id: '1675156383173'
   alias: Notify - Leaving home and a window left open
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - zone.home
     to: '0'
@@ -1260,8 +1262,8 @@
     - condition: state
       entity_id: binary_sensor.workshop_window_contact
       state: 'on'
-  action:
-  - service: notify.patrick_and_kathleen
+  actions:
+  - action: notify.patrick_and_kathleen
     data:
       title: Security alert!
       message: "{% set windows = [\n   states.binary_sensor.workshop_window_contact
@@ -1280,23 +1282,23 @@
 - id: '1675158213480'
   alias: Notify - Water leak
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - binary_sensor.dishwasher_leak_sensor_water_leak
     - binary_sensor.washing_machine_leak_sensor_water_leak
     to: 'on'
     from: 'off'
   condition: []
-  action:
-  - service: tts.cloud_say
+  actions:
+  - action: tts.cloud_say
     data:
       entity_id:
       - media_player.homepod_mini_back_lounge
       - media_player.workshop_speaker
       message: Water is leaking in the {{ trigger.to_state.name | replace("leak sensor
         water leak", "") }}
-  - service: notify.patrick_and_kathleen
+  - action: notify.patrick_and_kathleen
     data:
       title: Water Leak!
       message: Water is leaking in the {{ trigger.to_state.name | replace("leak sensor
@@ -1308,15 +1310,14 @@
 - id: '1676543396010'
   alias: Air con ON when HOT back lounge (people at home)
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
-    - climate.ac_back_lounge
-    attribute: current_temperature
-  - platform: state
+    - sensor.ac_back_lounge_temperature
+  - trigger: state
     entity_id:
     - sensor.solarnet_power_grid
-  condition:
+  conditions:
   - condition: numeric_state
     entity_id: zone.home
     above: 0
@@ -1327,36 +1328,35 @@
     entity_id: climate.ac
     state: 'off'
   - condition: numeric_state
-    entity_id: climate.ac_back_lounge
-    attribute: current_temperature
+    entity_id: sensor.ac_back_lounge_temperature
     above: 25
   - condition: sun
     after: sunrise
   - condition: sun
     before: sunset
-  action:
-  - service: climate.turn_on
+  actions:
+  - action: climate.turn_on
     data: {}
     target:
       entity_id: climate.ac
-  - service: climate.set_temperature
+  - action: climate.set_temperature
     data:
       temperature: 24
       hvac_mode: cool
     target:
       entity_id: climate.ac
-  - service: climate.set_hvac_mode
+  - action: climate.set_hvac_mode
     data:
       hvac_mode: cool
     target:
       entity_id: climate.ac
     enabled: true
-  - service: climate.set_fan_mode
+  - action: climate.set_fan_mode
     data:
       fan_mode: medium
     target:
       entity_id: climate.ac
-  - service: climate.set_temperature
+  - action: climate.set_temperature
     data:
       temperature: 24
       hvac_mode: cool
@@ -1368,7 +1368,7 @@
       - climate.ac_kitchen
       - climate.ac_master_br
       - climate.ac_workshop
-  - service: climate.set_hvac_mode
+  - action: climate.set_hvac_mode
     data:
       hvac_mode: 'off'
     enabled: true
@@ -1376,7 +1376,7 @@
       entity_id:
       - climate.ac_front_lounge
       - climate.ac_spare_br
-  - service: notify.mobile_app_patricks_iphone_13
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Air con turned on (People at home)
       message: Turned on air conditioner as Back Lounge temperature is above 25° and
@@ -1390,17 +1390,17 @@
 - id: '1677320260752'
   alias: Lights - garden lights off (first time of day)
   description: ''
-  trigger:
-  - platform: time
+  triggers:
+  - trigger: time
     at: input_datetime.lights_off_time_1
     enabled: true
-  - platform: sun
+  - trigger: sun
     event: sunset
     offset: 01:30:00
     enabled: false
   condition: []
-  action:
-  - service: light.turn_off
+  actions:
+  - action: light.turn_off
     data: {}
     target:
       entity_id:
@@ -1442,7 +1442,7 @@
           entity_id: binary_sensor.workshop_window_contact
           state: 'on'
         then:
-        - action: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone
           data:
             message: Workshop window is open
             title: Window open
@@ -1451,7 +1451,7 @@
           entity_id: binary_sensor.alfresco_door_contact
           state: 'on'
         then:
-        - action: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone
           data:
             message: Alfresco door is open
             title: Door open
@@ -1460,7 +1460,7 @@
           entity_id: binary_sensor.front_door_aqara_contact
           state: 'on'
         then:
-        - action: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone
           data:
             message: Front door is open
             title: Door open
@@ -1473,42 +1473,56 @@
           data: {}
           target:
             entity_id: input_boolean.sleep_mode
-        - action: notify.mobile_app_patricks_iphone_13
+        - action: notify.mobile_app_patricks_iphone
           data:
             message: Sleep mode turned on with long press of Kathleen's bedside button
             title: Sleep mode ON
+      - if:
+        - condition: state
+          state: 'on'
+          entity_id: binary_sensor.small_roller_door_contact
+        then:
+        - action: notify.mobile_app_patricks_iphone
+          data:
+            message: Harvey roller door is open
+            title: Harvey roller door
       - action: switch.turn_off
         data: {}
         target:
           entity_id: switch.gas_heater
+      - action: switch.turn_off
+        metadata: {}
+        data: {}
+        target:
+          entity_id: switch.pool_pump
       action_sensor: sensor.button_kathleen_bedside_action
 - id: '1678303773548'
   alias: Light - Courtyard follows bunker light
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - light.laundry_bunker_light
     to: 'on'
     id: light on
-  - platform: state
+  - trigger: state
     entity_id:
     - light.laundry_bunker_light
     to: 'off'
     id: light off
   condition: []
-  action:
+  actions:
   - if:
     - condition: trigger
       id:
       - light on
     then:
-    - service: light.turn_on
+    - action: light.turn_on
       data: {}
       target:
         entity_id: light.courtyard_flood_light
     else:
-    - service: light.turn_off
+    - action: light.turn_off
       data: {}
       target:
         entity_id:
@@ -1517,8 +1531,8 @@
 - id: '1678589815500'
   alias: Notify - Home power consumption is high
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id:
     - sensor.solarnet_power_grid
     for:
@@ -1530,7 +1544,7 @@
   - condition: state
     entity_id: input_boolean.grid_power_alert
     state: 'on'
-  action:
+  actions:
   - repeat:
       until:
       - condition: or
@@ -1544,7 +1558,7 @@
       sequence:
       - variables:
           action_disable: '{{ ''DISABLE_'' ~ context.id }}'
-      - service: notify.mobile_app_patricks_iphone_13
+      - action: notify.mobile_app_patricks_iphone
         data:
           title: Drawing excessive power from the grid for 15 mins!
           message: 'Grid import power is now: {{ states(''sensor.solarnet_power_grid'')
@@ -1560,10 +1574,10 @@
               title: Go to energy page in HA
               uri: /lovelace/solar
       - wait_for_trigger:
-        - platform: event
+        - trigger: event
           event_type: mobile_app_notification_action
           event_data:
-            action: '{{ action_disable }}'
+            actions: '{{ action_disable }}'
         timeout:
           hours: 0
           minutes: 1
@@ -1574,7 +1588,7 @@
           - condition: template
             value_template: '{{ wait.trigger.event.data.action == action_disable }}'
           sequence:
-          - service: input_boolean.turn_off
+          - action: input_boolean.turn_off
             target:
               entity_id: input_boolean.grid_power_alert
             data: {}
@@ -1585,7 +1599,7 @@
           seconds: 0
           milliseconds: 0
     enabled: false
-  - service: notify.mobile_app_patricks_iphone_13
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: High Power Usage
       message: 'Grid import power is now: {{ states(''sensor.solarnet_power_grid'')
@@ -1598,17 +1612,17 @@
 - id: '1678699026931'
   alias: Lights - pool & fire-pit lights off (second time of day)
   description: ''
-  trigger:
-  - platform: time
+  triggers:
+  - trigger: time
     at: input_datetime.lights_off_time_2
     enabled: true
-  - platform: sun
+  - trigger: sun
     event: sunset
     offset: 02:00:00
     enabled: false
   condition: []
-  action:
-  - service: light.turn_off
+  actions:
+  - action: light.turn_off
     data: {}
     target:
       entity_id:
@@ -1618,15 +1632,15 @@
 - id: '1679693076266'
   alias: Automatic - open garage and gate when PATRICK arrives home in when driving
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - device_tracker.fsc_bp104d_pat
     to: home
     enabled: true
-  condition:
+  conditions:
   - condition: state
-    entity_id: sensor.patricks_iphone_13_activity
+    entity_id: sensor.patricks_iphone_activity
     state: Automotive
   - condition: template
     value_template: '{{ now() - state_attr(''automation.automatic_open_garage_and_gate_when_kathleen_arrives_home_in_when_driving'',
@@ -1634,10 +1648,10 @@
   - condition: state
     entity_id: cover.driveway_gate
     state: closed
-  action:
-  - service: script.open_gate_and_garage
+  actions:
+  - action: script.open_gate_and_garage
     data: {}
-  - service: notify.mobile_app_patricks_iphone_13
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Arrived Home - BLE Beacon
       message: You just arrived home - triggered by BLE beacon ({{ (now()) | as_timestamp
@@ -1647,13 +1661,13 @@
 - id: '1679726945385'
   alias: Automatic - open garage and gate when KATHLEEN arrives home in when driving
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - device_tracker.fsc_bp104d_kat
     to: home
     enabled: true
-  condition:
+  conditions:
   - condition: state
     entity_id: sensor.kathleens_iphone_activity
     state: Automotive
@@ -1663,8 +1677,8 @@
   - condition: state
     entity_id: cover.driveway_gate
     state: closed
-  action:
-  - service: script.open_gate_and_garage
+  actions:
+  - action: script.open_gate_and_garage
     data: {}
   mode: single
 - id: '1679792693634'
@@ -1687,6 +1701,17 @@
           datetime: '{{ now().strftime(''%Y-%m-%d %H:%M:%S'') }}'
         target:
           entity_id: input_datetime.garage_door_button_last_pressed
+      - if:
+        - condition: zone
+          entity_id: person.patrick
+          zone: zone.home
+        then:
+        - action: lock.unlock
+          metadata: {}
+          data: {}
+          target:
+            entity_id: lock.patrick_s_tesla_model_3_lock
+        enabled: false
       press_hold:
       - action: cover.close_cover
         data: {}
@@ -1702,15 +1727,15 @@
 - id: '1680405230305'
   alias: Octoprint - Start
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - sensor.octoprint_current_state
     from: Operational
     to: Printing
   condition: []
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: 3D Print Start
       message: 3D print started, turning on workshop fan
@@ -1718,7 +1743,7 @@
         push:
           sound: HummingbirdCompletion_Haptic.caf
           interruption-level: time-sensitive
-  - service: fan.turn_on
+  - action: fan.turn_on
     data: {}
     target:
       entity_id: fan.workshop_ceiling_fan
@@ -1726,8 +1751,8 @@
 - id: '1680482830475'
   alias: Automatic - Close garage and gate if nobody home more than 2 mins
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - cover.driveway_gate
     to: open
@@ -1735,7 +1760,7 @@
       hours: 0
       minutes: 2
       seconds: 0
-  - platform: state
+  - trigger: state
     entity_id:
     - cover.garage_door
     to: open
@@ -1750,10 +1775,10 @@
   - condition: state
     entity_id: person.patrick
     state: not_home
-  action:
-  - service: script.close_gate_and_garage
+  actions:
+  - action: script.close_gate_and_garage
     data: {}
-  - service: notify.mobile_app_patricks_iphone_13
+  - action: notify.mobile_app_patricks_iphone
     data:
       message: Gate and Garage automatically closed because nobody home more than
         2 mins
@@ -1762,25 +1787,25 @@
 - id: '1680685928321'
   alias: Lights - vacation - all off at approx 10:30pm
   description: ''
-  trigger:
-  - platform: time
+  triggers:
+  - trigger: time
     at: '22:30:00'
   condition: []
-  action:
+  actions:
   - delay:
       hours: 0
       minutes: '{{ range(0,30) | random }}'
       seconds: 0
       milliseconds: 0
-  - service: light.turn_off
+  - action: light.turn_off
     data: {}
     target:
       entity_id: light.all_lights
-  - service: climate.turn_off
+  - action: climate.turn_off
     data: {}
     target:
       entity_id: climate.ac
-  - service: notify.mobile_app_patricks_iphone_13
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Vacation - lights and A/C off
       message: 'Turned lights and A/C off a random 30 mins after 10:30pm ({{ now()
@@ -1797,7 +1822,7 @@
       power_sensor: sensor.washing_machine_current_consumption
       starting_threshold: 100
       actions:
-      - service: notify.patrick_and_kathleen
+      - action: notify.patrick_and_kathleen
         data:
           title: Washing machine finish
           message: 'Washing machine finished - please hang out ({{ (now()) | as_timestamp
@@ -1808,26 +1833,26 @@
         - condition: sun
           before: sunset
         then:
-        - service: light.turn_on
+        - action: light.turn_on
           data:
             color_name: purple
             brightness_pct: 100
           target:
             entity_id: light.back_lounge_sideboard_lamp
         else:
-        - service: light.turn_on
+        - action: light.turn_on
           data:
             color_name: purple
             brightness_pct: 50
           target:
             entity_id: light.back_lounge_sideboard_lamp
-      - service: notify.lg_webos_smart_tv
+      - action: notify.lg_webos_smart_tv
         data:
           title: Washing machine finished
           message: Washing machine finished - please hang out ({{ (now()) | as_timestamp
             | timestamp_custom('%I:%M %p') }})
       pre_actions:
-      - service: notify.mobile_app_patricks_iphone_13
+      - action: notify.mobile_app_patricks_iphone
         data:
           title: Washing machine started
           message: Sit back and relax while the machines do your work!
@@ -1837,8 +1862,8 @@
 - id: '1681615571224'
   alias: Ensuite fan - control by humidity (notify for testing)
   description: Based on humidity sensor
-  trigger:
-  - platform: template
+  triggers:
+  - trigger: template
     value_template: '{% set humid = states(''sensor.ensuite_environmental_humidity'')|int
       %}
 
@@ -1851,8 +1876,8 @@
       minutes: 0
       seconds: 30
   condition: []
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Ensuite shower
       message: Shower is now on because ensuite humidity is 5% above 24hr average
@@ -1865,7 +1890,7 @@
   use_blueprint:
     path: Blackshome/bathroom-humidity-exhaust-fan.yaml
     input:
-      trigger: sensor.ensuite_humidity_rate_of_change
+      triggers: sensor.ensuite_humidity_rate_of_change
       rising_humidity: 1.5
       falling_humidity: -1
       by_pass: sensor.ensuite_humidity_rate_of_change
@@ -1892,17 +1917,17 @@
 - id: '1682297394195'
   alias: Ensuite fan - control by humidity (notify for testing)
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id: sensor.ensuite_humidity_rate_of_change
     above: 2.7
   condition: []
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       message: Ensuite fan ON
   - wait_for_trigger:
-    - platform: numeric_state
+    - trigger: numeric_state
       entity_id: sensor.ensuite_humidity_rate_of_change
       below: -1.5
     continue_on_timeout: false
@@ -1911,20 +1936,20 @@
       minutes: 30
       seconds: 0
       milliseconds: 0
-  - service: notify.mobile_app_patricks_iphone_13
+  - action: notify.mobile_app_patricks_iphone
     data:
       message: Ensuite fan OFF
   mode: single
 - id: '1683635574099'
   alias: Auto off - gas heater when last person leaves home
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id: zone.home
     below: 0
   condition: []
-  action:
-  - service: switch.turn_off
+  actions:
+  - action: switch.turn_off
     data: {}
     target:
       entity_id: switch.gas_heater
@@ -1932,37 +1957,40 @@
 - id: '1684844548755'
   alias: CCTV Motion critical alert during sleep
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - input_boolean.driveway_camera_person
     to: 'on'
     id: front yard
-  - platform: state
+  - trigger: state
     entity_id:
     - input_boolean.front_yard_camera_person
     to: 'on'
     id: front yard
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.driveway_light_beam
     to: 'on'
     id: front yard
-  - platform: state
+  - trigger: state
     entity_id:
     - input_boolean.pool_alfresco_camera_person
     to: 'on'
     id: back yard
-  - platform: state
+    enabled: false
+  - trigger: state
     entity_id:
     - input_boolean.back_yard_camera_person
     to: 'on'
     id: back yard
-  - platform: state
+    enabled: false
+  - trigger: state
     entity_id:
     - input_boolean.courtyard_camera_person
     to: 'on'
     id: back yard
+    enabled: false
   condition:
   - condition: state
     entity_id: input_boolean.sleep_mode
@@ -1976,7 +2004,7 @@
   - condition: template
     value_template: '{{ now() - states.cover.garage_door.last_changed > timedelta(seconds=120)
       }}'
-  action:
+  actions:
   - choose:
     - conditions:
       - condition: trigger
@@ -2066,8 +2094,8 @@
 - id: '1685061501391'
   alias: Input boolean - Enable front yard motion alerts after 1 hour
   description: ''
-  trigger:
-  - platform: event
+  triggers:
+  - trigger: event
     event_type: timer.finished
     event_data:
       entity_id: timer.remaining_time_front_yard_motion_alerts_disabled
@@ -2075,8 +2103,8 @@
   - condition: state
     entity_id: input_boolean.disable_cctv_critical_alerts
     state: 'on'
-  action:
-  - service: input_boolean.turn_off
+  actions:
+  - action: input_boolean.turn_off
     data: {}
     target:
       entity_id: input_boolean.disable_cctv_critical_alerts
@@ -2084,19 +2112,19 @@
 - id: '1685061918531'
   alias: Timer - remaining time to enable front yard motion alerts
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - input_boolean.disable_cctv_critical_alerts
   condition: []
-  action:
+  actions:
   - choose:
     - conditions:
       - condition: state
         entity_id: input_boolean.disable_cctv_critical_alerts
         state: 'on'
       sequence:
-      - service: timer.start
+      - action: timer.start
         data: {}
         target:
           entity_id: timer.remaining_time_front_yard_motion_alerts_disabled
@@ -2105,7 +2133,7 @@
         entity_id: input_boolean.disable_cctv_critical_alerts
         state: 'off'
       sequence:
-      - service: timer.finish
+      - action: timer.finish
         data: {}
         target:
           entity_id: timer.remaining_time_front_yard_motion_alerts_disabled
@@ -2113,8 +2141,8 @@
 - id: '1685102688097'
   alias: Input boolean - Enable front yard motion lights after 5 mins
   description: ''
-  trigger:
-  - platform: event
+  triggers:
+  - trigger: event
     event_type: timer.finished
     event_data:
       entity_id: timer.remaining_time_front_yard_motion_lights_disabled
@@ -2122,8 +2150,8 @@
   - condition: state
     entity_id: input_boolean.disable_front_yard_motion_lights
     state: 'on'
-  action:
-  - service: input_boolean.turn_off
+  actions:
+  - action: input_boolean.turn_off
     data: {}
     target:
       entity_id:
@@ -2132,19 +2160,19 @@
 - id: '1685103116029'
   alias: Timer - remaining time to enable front yard lights
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - input_boolean.disable_front_yard_motion_lights
   condition: []
-  action:
+  actions:
   - choose:
     - conditions:
       - condition: state
         entity_id: input_boolean.disable_front_yard_motion_lights
         state: 'on'
       sequence:
-      - service: timer.start
+      - action: timer.start
         data: {}
         target:
           entity_id:
@@ -2154,7 +2182,7 @@
         entity_id: input_boolean.disable_front_yard_motion_lights
         state: 'off'
       sequence:
-      - service: timer.finish
+      - action: timer.finish
         data: {}
         target:
           entity_id:
@@ -2163,16 +2191,16 @@
 - id: '1685241223269'
   alias: Notify - Yale lock, unlocked with keypad PIN
   description: ''
-  trigger:
-  - platform: template
+  triggers:
+  - trigger: template
     value_template: '{{ is_state(''sensor.yale_smartlock_front_door_action'', ''unlock'')
       and is_state(''sensor.yale_smartlock_front_door_action_source_name'', ''keypad'')
       }}
 
       '
   condition: []
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Yale front door lock
       message: 'Unlocked with kaypad PIN
@@ -2207,16 +2235,16 @@
 - id: '1689412431203'
   alias: Air con turn off timer
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - input_number.air_con_off_timer
-  - platform: state
+  - trigger: state
     entity_id:
     - input_button.set_air_con_off_timer
   condition: []
-  action:
-  - service: climate.turn_on
+  actions:
+  - action: climate.turn_on
     data: {}
     target:
       entity_id: climate.ac
@@ -2225,7 +2253,7 @@
       minutes: 0
       seconds: 2
       milliseconds: 0
-  - service: advantage_air.set_time_to
+  - action: advantage_air.set_time_to
     data:
       minutes: '{{ states(''input_number.air_con_off_timer'') }}
 
@@ -2237,8 +2265,8 @@
   alias: Auto off - Pool robot (Shelly) when power drops to zero
   description: Robot turns itself off after 2 hrs, even with Shelly switch power applied.
     So this is to turn Shelly output off.
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id: sensor.pool_robot_power
     below: 4
     for:
@@ -2246,17 +2274,17 @@
       minutes: 0
       seconds: 30
   condition: []
-  action:
-  - service: switch.turn_off
+  actions:
+  - action: switch.turn_off
     data: {}
     target:
       entity_id: switch.pool_robot
-  - service: notify.mobile_app_patricks_iphone_13
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: "Pool robot cleaner \U0001F3CA \U0001F916"
       message: Turned off pool cleaner because power dropped below {{ trigger.below
         }} Watts for 30 seconds.
-  - service: tts.cloud_say
+  - action: tts.cloud_say
     data:
       cache: true
       entity_id: media_player.homepod_mini_back_lounge
@@ -2265,15 +2293,15 @@
 - id: '1693826918399'
   alias: Pool heater and pump - turn ON when grid export power > 2.1kW
   description: ''
-  trigger:
-  - platform: template
+  triggers:
+  - trigger: template
     value_template: '{{ states(''sensor.solarnet_power_grid'')|float < -2.1 }}'
     id: trigger_power
     for:
       hours: 0
       minutes: 6
       seconds: 0
-  condition:
+  conditions:
   - condition: state
     entity_id: climate.rostrevor_pool
     state: 'off'
@@ -2281,7 +2309,7 @@
     entity_id: switch.pool_pump
     state: 'on'
     enabled: false
-  action:
+  actions:
   - metadata: {}
     data: {}
     target:
@@ -2305,62 +2333,78 @@
       title: Pool heater
       message: Turned on pool pump and heater because exporting more than 2.1kW ({{
         -(trigger.to_state.state | float | round(1)) }}kW) and pump is ON.
-    action: notify.mobile_app_patricks_iphone_13
+    action: notify.mobile_app_patricks_iphone
   mode: single
 - id: '1693827066966'
-  alias: Pool heater - turn OFF when grid importing for 20 mins or pool pump turns
-    OFF
+  alias: Pool heater and pump - turn OFF when grid importing for 20 mins or pool pump
+    turns OFF
   description: ''
-  trigger:
-  - platform: numeric_state
-    entity_id: sensor.solarnet_power_grid
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.solarnet_power_grid
     for:
       hours: 0
       minutes: 20
       seconds: 0
-    above: 0
+    above: 0.5
     id: not enough power
-  - platform: state
+  - trigger: state
     entity_id:
     - switch.pool_pump
     to: 'off'
     id: pump_off
-  condition:
+  conditions:
   - condition: state
     entity_id: climate.rostrevor_pool
     state: heat
-  action:
-  - service: climate.turn_off
-    data: {}
+  actions:
+  - data: {}
     target:
       entity_id: climate.rostrevor_pool
+    action: climate.turn_off
   - choose:
     - conditions:
       - condition: trigger
         id:
         - not enough power
       sequence:
-      - service: notify.mobile_app_patricks_iphone_13
-        data:
-          title: Pool heater
-          message: Turned off pool heater because importing power from grid for {{
-            (((trigger.for.seconds) | int) / 60) | round(0) }} minutes.
+      - if:
+        - condition: time
+          after: '17:00:00'
+        then:
+        - action: switch.turn_off
+          metadata: {}
+          data: {}
+          target:
+            entity_id: switch.pool_pump
+        - data:
+            title: Pool heater
+            message: Turned off pool pump because after 5PM and importing power from
+              grid for {{ (((trigger.for.seconds) | int) / 60) | round(0) }} minutes.
+          action: notify.mobile_app_patricks_iphone
+        else:
+        - data:
+            title: Pool heater
+            message: Turned off pool heater because importing power from grid for
+              {{ (((trigger.for.seconds) | int) / 60) | round(0) }} minutes.
+          action: notify.mobile_app_patricks_iphone
     - conditions:
       - condition: trigger
         id:
         - pump_off
       sequence:
-      - service: notify.mobile_app_patricks_iphone_13
-        data:
+      - data:
           title: Pool heater
           message: Turned off pool heater because pump just switched off.
+        action: notify.mobile_app_patricks_iphone
   mode: single
 - id: '1694562264439'
   alias: Notify - Consider turn OFF a/c as importing power
   description: A/C generally falls below 6kW within 1 hour, so notify if A/C is on
     and power above for more than 1 hour
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id:
     - sensor.solarnet_power_grid
     for:
@@ -2377,8 +2421,8 @@
     - condition: state
       entity_id: climate.ac
       state: heat
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Air con - consider turning off
       message: Consider turning OFF air conditioner as now importing power {{ states('sensor.solarnet_power_grid')
@@ -2388,19 +2432,19 @@
 - id: '1694750544303'
   alias: Notify - sump pump ON/OFF
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id:
     - sensor.sump_pump_power
     above: 100
     id: power high
-  - platform: numeric_state
+  - trigger: numeric_state
     entity_id:
     - sensor.sump_pump_power
     below: 10
     id: power low
   condition: []
-  action:
+  actions:
   - choose:
     - conditions:
       - condition: trigger
@@ -2410,7 +2454,7 @@
       - data:
           title: Sump pump!
           message: Sump pump turned ON!
-        action: notify.mobile_app_patricks_iphone_13
+        action: notify.mobile_app_patricks_iphone
       - action: input_datetime.set_datetime
         metadata: {}
         data:
@@ -2425,28 +2469,28 @@
       - data:
           title: Sump pump!
           message: Sump pump turned OFF!
-        action: notify.mobile_app_patricks_iphone_13
+        action: notify.mobile_app_patricks_iphone
   mode: single
 - id: '1694818227771'
   alias: Blinds - CLOSE when sunny and hot (based on solar energy for the day at 10AM)
   description: ''
-  trigger:
-  - platform: time
+  triggers:
+  - trigger: time
     at: '10:00:00'
   condition: []
-  action:
+  actions:
   - if:
     - condition: numeric_state
       entity_id: sensor.solarnet_energy_day
       above: 9.8
     then:
-    - service: notify.mobile_app_patricks_iphone_13
+    - action: notify.mobile_app_patricks_iphone
       data:
         title: Closed blinds to reduce heat
         message: Closed rear blinds 1, and 3-5 as it's {{ trigger.now | as_timestamp
           | timestamp_custom('%I:%M %p') }} and solar energy for the day is above
           9.8kWh ({{ states('sensor.solarnet_energy_day') | float | round(1) }}kWh).
-    - service: cover.close_cover
+    - action: cover.close_cover
       data: {}
       target:
         entity_id:
@@ -2454,7 +2498,7 @@
         - cover.blind_4
         - cover.blind_5
     else:
-    - service: notify.mobile_app_patricks_iphone_13
+    - action: notify.mobile_app_patricks_iphone
       data:
         title: Didn't close blinds
         message: Didn't close rear blinds as at {{ trigger.now | as_timestamp | timestamp_custom('%I:%M
@@ -2464,20 +2508,20 @@
 - id: '1694846476742'
   alias: Pool pump - ON at 8am
   description: ''
-  trigger:
-  - platform: time
+  triggers:
+  - trigger: time
     at: 08:00:00
     id: trigger_time
   condition:
   - condition: state
     entity_id: switch.pool_pump
     state: 'off'
-  action:
-  - service: switch.turn_on
+  actions:
+  - action: switch.turn_on
     data: {}
     target:
       entity_id: switch.pool_pump
-  - service: notify.mobile_app_patricks_iphone_13
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Pool pump turned ON
       message: Pool pump turned ON at {{ trigger.now | as_timestamp | timestamp_custom('%I:%M
@@ -2487,17 +2531,20 @@
 - id: '1694847669808'
   alias: Pool pump - OFF at 5pm (Spring / Summer)
   description: ''
-  trigger:
-  - platform: time
+  triggers:
+  - trigger: time
     at: '17:00:00'
     id: trigger_time
-  condition: []
-  action:
-  - service: switch.turn_off
+  conditions:
+  - condition: state
+    entity_id: climate.rostrevor_pool
+    state: 'off'
+  actions:
+  - action: switch.turn_off
     data: {}
     target:
       entity_id: switch.pool_pump
-  - service: notify.mobile_app_patricks_iphone_13
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Pool pump turned OFF
       message: Pool pump turned OFF Spring/Summer at {{ trigger.now | as_timestamp
@@ -2507,14 +2554,14 @@
 - id: '1695267626675'
   alias: 'Blinds - open all (except #1) in the afternoon when sun < 25°'
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id: sun.sun
     attribute: elevation
     below: 25
   condition: []
-  action:
-  - service: cover.open_cover
+  actions:
+  - action: cover.open_cover
     data: {}
     target:
       entity_id:
@@ -2526,8 +2573,8 @@
 - id: '1695452208621'
   alias: Gate - close automatically after car passes through
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - binary_sensor.driveway_light_beam
     to: 'on'
@@ -2539,9 +2586,9 @@
   - condition: template
     value_template: '{{ as_timestamp(now()) - as_timestamp(states(''input_datetime.garage_door_button_last_pressed''))
       < 5*60 }}'
-  action:
+  actions:
   - wait_for_trigger:
-    - platform: state
+    - trigger: state
       entity_id:
       - binary_sensor.driveway_light_beam
       to: 'off'
@@ -2556,7 +2603,7 @@
       seconds: 2
       milliseconds: 0
     enabled: true
-  - service: cover.close_cover
+  - action: cover.close_cover
     data: {}
     target:
       entity_id:
@@ -2566,15 +2613,15 @@
 - id: '1696560418641'
   alias: Blinds - open blind 1 just before sunset
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id:
     - sun.sun
     attribute: elevation
-    below: 4.5
-  condition: []
-  action:
-  - service: cover.open_cover
+    below: 2.5
+  conditions: []
+  actions:
+  - action: cover.open_cover
     data: {}
     target:
       entity_id:
@@ -2583,27 +2630,26 @@
 - id: '1696932809329'
   alias: Blinds - close at 10:30AM if kitchen hot (>24C)
   description: ''
-  trigger:
-  - platform: time
+  triggers:
+  - trigger: time
     at: '10:30:00'
-  condition:
+  conditions:
   - condition: numeric_state
-    entity_id: climate.ac_kitchen
-    attribute: current_temperature
+    entity_id: sensor.ac_kitchen_temperature
     above: 24
   - condition: numeric_state
     entity_id: sensor.solarnet_energy_day
     above: 9
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Closed blinds to reduce heat
       message: Closed rear blinds 1, and 3-5 as it's {{ trigger.now | as_timestamp
         | timestamp_custom('%I:%M %p') }} and kitchen temperature is above 22°C  ({{
-        state_attr('climate.ac_kitchen', 'current_temperature') | float | round(1)
-        }}°C), solar energy for the day is above 9.0kWh ({{ states('sensor.solarnet_energy_day')
+        states_attr('sensor.ac_kitchen_temperature') | float | round(1) }}°C), solar
+        energy for the day is above 9.0kWh ({{ states('sensor.solarnet_energy_day')
         | float | round(1) }}kWh)
-  - service: cover.close_cover
+  - action: cover.close_cover
     data: {}
     target:
       entity_id:
@@ -2616,8 +2662,8 @@
   alias: Light - front hall lamp RED when front door / gate / garage open or unlocked
     15 mins
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - lock.yale_smartlock_front_door
     to: unlocked
@@ -2626,7 +2672,7 @@
       minutes: 15
       seconds: 0
     id: front door lock
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.front_door_aqara_contact
     to: 'on'
@@ -2635,7 +2681,7 @@
       minutes: 15
       seconds: 0
     id: front door
-  - platform: state
+  - trigger: state
     entity_id:
     - cover.garage_door
     to: open
@@ -2644,7 +2690,7 @@
       minutes: 15
       seconds: 0
     id: garage door
-  - platform: state
+  - trigger: state
     entity_id:
     - cover.driveway_gate
     for:
@@ -2654,14 +2700,14 @@
     to: open
     id: driveway gate
   condition: []
-  action:
+  actions:
   - choose:
     - conditions:
       - condition: trigger
         id:
         - front door lock
       sequence:
-      - service: notify.mobile_app_patricks_iphone_13
+      - action: notify.mobile_app_patricks_iphone
         data:
           title: Security alert!
           message: Front door has been unlocked for {{ (((trigger.for.seconds) | int)
@@ -2673,7 +2719,7 @@
                 name: default
                 critical: 1
                 volume: 0.5
-      - service: tts.cloud_say
+      - action: tts.cloud_say
         data:
           entity_id:
           - media_player.homepod_mini_back_lounge
@@ -2681,11 +2727,11 @@
           message: Front door has been unlocked for {{ (((trigger.for.seconds) | int)
             / 60) | round(0) }} minutes. Will try and lock it now, but please double
             check it.
-      - service: lock.lock
+      - action: lock.lock
         data: {}
         target:
           entity_id: lock.yale_smartlock_front_door
-      - service: light.turn_on
+      - action: light.turn_on
         data:
           rgb_color:
           - 255
@@ -2699,7 +2745,7 @@
         id:
         - front door
       sequence:
-      - service: notify.mobile_app_patricks_iphone_13
+      - action: notify.mobile_app_patricks_iphone
         data:
           title: Security alert!
           message: Front door has been open for {{ (((trigger.for.seconds) | int)
@@ -2710,14 +2756,14 @@
                 name: default
                 critical: 1
                 volume: 0.5
-      - service: tts.cloud_say
+      - action: tts.cloud_say
         data:
           entity_id:
           - media_player.homepod_mini_back_lounge
           - media_player.workshop_speaker
           message: Front door has been open for {{ (((trigger.for.seconds) | int)
             / 60) | round(0) }} minutes. Please go and close it.
-      - service: light.turn_on
+      - action: light.turn_on
         data:
           rgb_color:
           - 255
@@ -2734,7 +2780,7 @@
         entity_id: input_boolean.garage_door_alerts
         state: 'on'
       sequence:
-      - service: notify.mobile_app_patricks_iphone_13
+      - action: notify.mobile_app_patricks_iphone
         data:
           title: Security alert!
           message: Garage door has been open for {{ (((trigger.for.seconds) | int)
@@ -2745,14 +2791,14 @@
                 name: default
                 critical: 1
                 volume: 0.5
-      - service: tts.cloud_say
+      - action: tts.cloud_say
         data:
           entity_id:
           - media_player.homepod_mini_back_lounge
           - media_player.workshop_speaker
           message: Garage door has been open for {{ (((trigger.for.seconds) | int)
             / 60) | round(0) }} minutes. Please go and close it.
-      - service: light.turn_on
+      - action: light.turn_on
         data:
           rgb_color:
           - 255
@@ -2769,7 +2815,7 @@
         entity_id: input_boolean.garage_door_alerts
         state: ''
       sequence:
-      - service: notify.mobile_app_patricks_iphone_13
+      - action: notify.mobile_app_patricks_iphone
         data:
           title: Security alert!
           message: Driveway gate has been open for {{ (((trigger.for.seconds) | int)
@@ -2780,14 +2826,14 @@
                 name: default
                 critical: 1
                 volume: 0.5
-      - service: tts.cloud_say
+      - action: tts.cloud_say
         data:
           entity_id:
           - media_player.homepod_mini_back_lounge
           - media_player.workshop_speaker
           message: Driveway gate has been open for {{ (((trigger.for.seconds) | int)
             / 60) | round(0) }} minutes. Please go and close it.
-      - service: light.turn_on
+      - action: light.turn_on
         data:
           rgb_color:
           - 255
@@ -2800,8 +2846,8 @@
 - id: '1697960300615'
   alias: Light - front hall lamp REMOVE RED when front door / gate closed
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - lock.yale_smartlock_front_door
     to: locked
@@ -2809,7 +2855,7 @@
       hours: 0
       minutes: 0
       seconds: 0
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.front_door_aqara_contact
     to: 'off'
@@ -2817,7 +2863,7 @@
       hours: 0
       minutes: 0
       seconds: 0
-  - platform: state
+  - trigger: state
     entity_id:
     - cover.garage_door
     to: closed
@@ -2825,28 +2871,34 @@
       hours: 0
       minutes: 0
       seconds: 0
-  - platform: state
+  - trigger: state
     entity_id:
     - cover.driveway_gate
     to: closed
-  condition:
+  conditions:
   - condition: template
     value_template: '{{ is_state_attr(''light.front_hall_lamp'' , ''rgb_color'' ,
       (255, 0, 0)) }}'
-  action:
+  - condition: state
+    entity_id: cover.garage_door
+    state: closed
+  - condition: state
+    entity_id: cover.driveway_gate
+    state: closed
+  actions:
   - if:
     - condition: state
       entity_id: light.led_strip_front_hall_dimmer
       state: 'on'
     then:
-    - service: light.turn_on
+    - action: light.turn_on
       data:
         color_temp: 358
         brightness_pct: 40
       target:
         entity_id: light.front_hall_lamp
     else:
-    - service: light.turn_off
+    - action: light.turn_off
       data: {}
       target:
         entity_id: light.front_hall_lamp
@@ -2899,13 +2951,13 @@
 - id: '1698533404217'
   alias: Motion - butlers pantry lights
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - binary_sensor.everything_presence_lite_223508_occupancy
     to: 'on'
     id: motion detected
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.everything_presence_lite_223508_occupancy
     to: 'off'
@@ -2914,7 +2966,7 @@
       minutes: 1
       seconds: 0
     enabled: true
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.everything_presence_lite_223508_occupancy
     to: 'off'
@@ -2924,7 +2976,7 @@
       seconds: 0
     enabled: false
   condition: []
-  action:
+  actions:
   - if:
     - condition: trigger
       id:
@@ -2935,14 +2987,14 @@
         entity_id: input_boolean.sleep_mode
         state: 'on'
       then:
-      - service: light.turn_on
+      - action: light.turn_on
         data:
           brightness_pct: 2
         target:
           entity_id:
           - light.led_strip_butlers_overhead_cupboards
       else:
-      - service: light.turn_on
+      - action: light.turn_on
         data:
           brightness_pct: 50
         target:
@@ -2950,7 +3002,7 @@
           - light.butlers_downlight
           - light.led_strip_butlers_overhead_cupboards
     else:
-    - service: light.turn_off
+    - action: light.turn_off
       data: {}
       target:
         entity_id:
@@ -2960,13 +3012,13 @@
 - id: '1698534798412'
   alias: Motion - WIR downlights
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - binary_sensor.wir_sensor_occupancy
     to: 'on'
     id: motion detected
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.wir_sensor_occupancy
     to: 'off'
@@ -2975,7 +3027,7 @@
       minutes: 2
       seconds: 0
   condition: []
-  action:
+  actions:
   - if:
     - condition: trigger
       id:
@@ -2986,32 +3038,32 @@
         entity_id: input_boolean.sleep_mode
         state: 'on'
       then:
-      - service: light.turn_on
+      - action: light.turn_on
         data:
           brightness_pct: 7
         target:
           entity_id: light.wir_downlight
         enabled: false
-      - service: light.turn_on
+      - action: light.turn_on
         metadata: {}
         data:
           brightness_pct: 24
         target:
           entity_id: light.led_strip_wir
       else:
-      - service: light.turn_on
+      - action: light.turn_on
         data:
           brightness_pct: 100
         target:
           entity_id: light.wir_downlight
-      - service: light.turn_on
+      - action: light.turn_on
         metadata: {}
         data:
           brightness_pct: 60
         target:
           entity_id: light.led_strip_wir
     else:
-    - service: light.turn_off
+    - action: light.turn_off
       data:
         transition: 5
       target:
@@ -3022,13 +3074,13 @@
 - id: '1698537751935'
   alias: Motion - Hallway turn lights
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - binary_sensor.hallway_sensor_occupancy
     to: 'on'
     id: motion detected
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.hallway_sensor_occupancy
     to: 'off'
@@ -3041,36 +3093,36 @@
   - condition: state
     entity_id: input_boolean.sleep_mode
     state: 'on'
-  action:
+  actions:
   - if:
     - condition: trigger
       id:
       - motion detected
     then:
-    - service: light.turn_on
+    - action: light.turn_on
       data:
         brightness_pct: 5
       target:
         entity_id: light.led_strip_kitchen_kicker
-    - service: light.turn_on
+    - action: light.turn_on
       data:
         brightness_step_pct: 10
       target:
         entity_id: light.led_strip_front_hall_dimmer
     else:
-    - service: light.turn_off
+    - action: light.turn_off
       data: {}
       target:
         entity_id:
         - light.led_strip_kitchen_kicker
         - light.led_strip_front_hall_dimmer
     enabled: false
-  - service: light.turn_on
+  - action: light.turn_on
     data:
       brightness_pct: 10
     target:
       entity_id: light.led_strip_front_hall_dimmer
-  - service: light.turn_on
+  - action: light.turn_on
     data:
       brightness_pct: 2
     target:
@@ -3081,7 +3133,7 @@
       minutes: 2
       seconds: 45
       milliseconds: 0
-  - service: light.turn_off
+  - action: light.turn_off
     data: {}
     target:
       entity_id:
@@ -3091,18 +3143,18 @@
 - id: '1698538309359'
   alias: Motion - garage lights
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - binary_sensor.garage_sensor_occupancy
     to: 'on'
     id: motion detected
-  - platform: state
+  - trigger: state
     entity_id:
     - cover.garage_door
     to: opening
     id: motion detected
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.garage_sensor_occupancy
     to: 'off'
@@ -3110,7 +3162,7 @@
       hours: 0
       minutes: 7
       seconds: 0
-  - platform: state
+  - trigger: state
     entity_id:
     - cover.garage_door
     to: closed
@@ -3119,18 +3171,18 @@
       minutes: 7
       seconds: 0
   condition: []
-  action:
+  actions:
   - if:
     - condition: trigger
       id:
       - motion detected
     then:
-    - service: light.turn_on
+    - action: light.turn_on
       data: {}
       target:
         entity_id: light.garage_downlights
     else:
-    - service: light.turn_off
+    - action: light.turn_off
       data: {}
       target:
         entity_id: light.garage_downlights
@@ -3138,14 +3190,14 @@
 - id: '1699674375223'
   alias: Notify - leaving home
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
-    - device_tracker.patricks_iphone_13
+    - device_tracker.patricks_iphone
     to: not_home
-  condition: []
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  conditions: []
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Left Home
       message: You just left Home zone
@@ -3153,8 +3205,8 @@
 - id: '1701770661634'
   alias: Light - twinkly xmas lights random effect every 10 minutes
   description: ''
-  trigger:
-  - platform: time_pattern
+  triggers:
+  - trigger: time_pattern
     minutes: /10
   condition:
   - condition: numeric_state
@@ -3164,8 +3216,8 @@
   - condition: state
     entity_id: input_boolean.sleep_mode
     state: 'off'
-  action:
-  - service: light.turn_on
+  actions:
+  - action: light.turn_on
     data:
       effect: '{{ range(0,6) | random | int }}'
     target:
@@ -3174,12 +3226,12 @@
 - id: '1701857008891'
   alias: Xmas - snow village ON at 8:30pm
   description: ''
-  trigger:
-  - platform: time
+  triggers:
+  - trigger: time
     at: '20:30:00'
   condition: []
-  action:
-  - service: light.turn_on
+  actions:
+  - action: light.turn_on
     target:
       entity_id:
       - light.xmas_village
@@ -3190,12 +3242,12 @@
 - id: '1701857080434'
   alias: Xmas - snow village OFF at 9:00pm
   description: ''
-  trigger:
-  - platform: time
+  triggers:
+  - trigger: time
     at: '21:00:00'
   condition: []
-  action:
-  - service: light.turn_off
+  actions:
+  - action: light.turn_off
     data: {}
     target:
       entity_id: light.xmas_village
@@ -3203,13 +3255,13 @@
 - id: '1701990925626'
   alias: Notify - eMTB charger
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: numeric_state
     entity_id:
     - sensor.emtb_charger_current_consumption
     id: start
     above: 5
-  - platform: numeric_state
+  - trigger: numeric_state
     entity_id:
     - sensor.emtb_charger_current_consumption
     below: 10
@@ -3219,24 +3271,24 @@
       seconds: 0
     id: finish
   condition: []
-  action:
+  actions:
   - choose:
     - conditions:
       - condition: trigger
         id:
         - start
       sequence:
-      - service: notify.mobile_app_patricks_iphone_13
+      - action: notify.mobile_app_patricks_iphone
         data:
           title: eMTB charge started
           message: Started eMTB charging ({{ now() | as_timestamp | timestamp_custom('%I:%M:%S
             %p') }})
-      - service: input_datetime.set_datetime
+      - action: input_datetime.set_datetime
         target:
           entity_id: input_datetime.emtb_charge_start
         data:
           datetime: '{{ now().strftime(''%Y-%m-%d %H:%M:%S'') }}'
-      - service: input_datetime.set_datetime
+      - action: input_datetime.set_datetime
         target:
           entity_id: input_datetime.emtb_charge_finish
         data:
@@ -3246,17 +3298,17 @@
         id:
         - finish
       sequence:
-      - service: switch.turn_off
+      - action: switch.turn_off
         target:
           entity_id: switch.emtb_charger
         data: {}
         enabled: true
-      - service: input_datetime.set_datetime
+      - action: input_datetime.set_datetime
         target:
           entity_id: input_datetime.emtb_charge_finish
         data:
           datetime: '{{ now().strftime(''%Y-%m-%d %H:%M:%S'') }}'
-      - service: notify.mobile_app_patricks_iphone_13
+      - action: notify.mobile_app_patricks_iphone
         data:
           title: eMTB charge finished
           message: Charge power has dropped below {{ trigger.below }}W for {{ (((trigger.for.seconds)
@@ -3400,11 +3452,11 @@
     Updates are slow, approx once per hour, hence in the morning, add an update at
     8:15am to allow pump to circulate water and let measured temp stabilise to correct
     / meaningful value.'
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - sensor.rostrevor_pool_inlet_water_temp_t02
-  - platform: time
+  - trigger: time
     at: 08:15:00
   condition:
   - condition: state
@@ -3414,8 +3466,8 @@
       hours: 0
       minutes: 7
       seconds: 0
-  action:
-  - service: input_number.set_value
+  actions:
+  - action: input_number.set_value
     target:
       entity_id: input_number.pool_temperature_while_pump_on
     data:
@@ -3466,12 +3518,12 @@
 - id: '1704841406186'
   alias: Backup to NAS
   description: Daily 6am backup to Synology NAS
-  trigger:
-  - platform: time
+  triggers:
+  - trigger: time
     at: 06:00:00
   condition: []
-  action:
-  - service: hassio.backup_full
+  actions:
+  - action: hassio.backup_full
     metadata: {}
     data:
       compressed: true
@@ -3482,15 +3534,15 @@
 - id: '1704847078415'
   alias: Notify - Backps are stale
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - binary_sensor.backups_stale
     from: 'off'
     to: 'on'
   condition: []
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     metadata: {}
     data:
       title: Backups are Stale
@@ -3500,8 +3552,8 @@
 - id: '1705405175945'
   alias: Unlock front door when ped gate opens
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - cover.pedestrian_gate
     to: open
@@ -3520,8 +3572,8 @@
   - condition: state
     entity_id: lock.yale_smartlock_front_door
     state: locked
-  action:
-  - service: lock.unlock
+  actions:
+  - action: lock.unlock
     metadata: {}
     data: {}
     target:
@@ -3530,8 +3582,8 @@
 - id: '1706520388923'
   alias: Apple TV - dim lights on PLAY
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - media_player.apple_tv_back_lounge
     to: playing
@@ -3540,7 +3592,7 @@
       hours: 0
       minutes: 0
       seconds: 0
-  - platform: state
+  - trigger: state
     entity_id:
     - media_player.apple_tv_back_lounge
     to: paused
@@ -3549,19 +3601,19 @@
       hours: 0
       minutes: 0
       seconds: 0
-  - platform: state
+  - trigger: state
     entity_id:
     - media_player.apple_tv_back_lounge
     to: 'off'
     id: turned off
     enabled: true
-  - platform: state
+  - trigger: state
     entity_id:
     - media_player.apple_tv_back_lounge
     to: standby
     id: standby
     enabled: true
-  - platform: state
+  - trigger: state
     entity_id:
     - media_player.apple_tv_back_lounge
     to: idle
@@ -3576,7 +3628,7 @@
     attribute: media_content_type
     state: video
     enabled: false
-  action:
+  actions:
   - choose:
     - conditions:
       - condition: and
@@ -3589,12 +3641,12 @@
           id:
           - playing
       sequence:
-      - service: light.turn_off
+      - action: light.turn_off
         metadata: {}
         data: {}
         target:
           entity_id: light.back_lounge_pendant
-      - service: light.turn_on
+      - action: light.turn_on
         metadata: {}
         data:
           brightness_pct: 12
@@ -3607,12 +3659,12 @@
         - paused
         - idle
       sequence:
-      - service: light.turn_on
+      - action: light.turn_on
         target:
           entity_id:
           - light.back_lounge_pendant
         data: {}
-      - service: light.turn_on
+      - action: light.turn_on
         metadata: {}
         data:
           transition: 6
@@ -3623,13 +3675,13 @@
 - id: '1707039891559'
   alias: Motion - WIR MMWave
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - binary_sensor.ld2410_esp32c3_b_presence
     to: 'on'
     id: motion detected
-  - platform: state
+  - trigger: state
     entity_id:
     - binary_sensor.ld2410_esp32c3_b_presence
     to: 'off'
@@ -3638,7 +3690,7 @@
       minutes: 3
       seconds: 0
   condition: []
-  action:
+  actions:
   - if:
     - condition: trigger
       id:
@@ -3649,32 +3701,32 @@
         entity_id: input_boolean.sleep_mode
         state: 'on'
       then:
-      - service: light.turn_on
+      - action: light.turn_on
         data:
           brightness_pct: 7
         target:
           entity_id: light.wir_downlight
         enabled: false
-      - service: light.turn_on
+      - action: light.turn_on
         metadata: {}
         data:
           brightness_pct: 24
         target:
           entity_id: light.led_strip_wir
       else:
-      - service: light.turn_on
+      - action: light.turn_on
         data:
           brightness_pct: 100
         target:
           entity_id: light.wir_downlight
-      - service: light.turn_on
+      - action: light.turn_on
         metadata: {}
         data:
           brightness_pct: 60
         target:
           entity_id: light.led_strip_wir
     else:
-    - service: light.turn_off
+    - action: light.turn_off
       data:
         transition: 5
       target:
@@ -3689,7 +3741,7 @@
     path: Tahutipai/report_zigbee_zwave_devices_gone_offline.yaml
     input:
       actions:
-      - service: notify.mobile_app_patricks_iphone_13
+      - action: notify.mobile_app_patricks_iphone
         metadata: {}
         data:
           title: Offline devices
@@ -3697,15 +3749,14 @@
 - id: '1709106061138'
   alias: Air con ON when HOT back lounge (nobody at home)
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
-    - climate.ac_back_lounge
-    attribute: current_temperature
-  - platform: state
+    - sensor.ac_back_lounge_temperature
+  - trigger: state
     entity_id:
     - sensor.solarnet_power_photovoltaics
-  condition:
+  conditions:
   - condition: numeric_state
     entity_id: zone.home
     below: 1
@@ -3714,35 +3765,34 @@
     entity_id: climate.ac
     state: 'off'
   - condition: numeric_state
-    entity_id: climate.ac_back_lounge
-    attribute: current_temperature
+    entity_id: sensor.ac_back_lounge_temperature
     above: 26
   - condition: numeric_state
     entity_id: sensor.solarnet_power_photovoltaics
     above: 5
-  action:
-  - service: climate.turn_on
+  actions:
+  - action: climate.turn_on
     data: {}
     target:
       entity_id: climate.ac
-  - service: climate.set_temperature
+  - action: climate.set_temperature
     data:
       temperature: 25
       hvac_mode: cool
     target:
       entity_id: climate.ac
-  - service: climate.set_hvac_mode
+  - action: climate.set_hvac_mode
     data:
       hvac_mode: cool
     target:
       entity_id: climate.ac
     enabled: true
-  - service: climate.set_fan_mode
+  - action: climate.set_fan_mode
     data:
       fan_mode: medium
     target:
       entity_id: climate.ac
-  - service: climate.set_temperature
+  - action: climate.set_temperature
     data:
       temperature: 25
       hvac_mode: cool
@@ -3755,7 +3805,7 @@
       - climate.ac_master_br
       - climate.ac_spare_br
       - climate.ac_workshop
-  - service: climate.set_hvac_mode
+  - action: climate.set_hvac_mode
     data:
       hvac_mode: 'off'
     enabled: true
@@ -3763,7 +3813,7 @@
       entity_id:
       - climate.ac_front_lounge
       - climate.ac_spare_br
-  - service: notify.mobile_app_patricks_iphone_13
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Air con ON (Nobody at home)
       message: Turned on air conditioner as Back Lounge temperature is above 26° and
@@ -3778,10 +3828,10 @@
 - id: '1709935543205'
   alias: Air con ON when HOT back lounge (people at home) v2
   description: ''
-  trigger:
-  - platform: time_pattern
+  triggers:
+  - trigger: time_pattern
     minutes: /10
-  condition:
+  conditions:
   - condition: numeric_state
     entity_id: zone.home
     above: 0
@@ -3792,32 +3842,31 @@
     entity_id: climate.ac
     state: 'off'
   - condition: numeric_state
-    entity_id: climate.ac_back_lounge
-    attribute: current_temperature
+    entity_id: sensor.ac_back_lounge_temperature
     above: 25
-  action:
-  - service: climate.turn_on
+  actions:
+  - action: climate.turn_on
     data: {}
     target:
       entity_id: climate.ac
-  - service: climate.set_temperature
+  - action: climate.set_temperature
     data:
       temperature: 24
       hvac_mode: cool
     target:
       entity_id: climate.ac
-  - service: climate.set_hvac_mode
+  - action: climate.set_hvac_mode
     data:
       hvac_mode: cool
     target:
       entity_id: climate.ac
     enabled: true
-  - service: climate.set_fan_mode
+  - action: climate.set_fan_mode
     data:
       fan_mode: medium
     target:
       entity_id: climate.ac
-  - service: climate.set_temperature
+  - action: climate.set_temperature
     data:
       temperature: 24
       hvac_mode: cool
@@ -3829,7 +3878,7 @@
       - climate.ac_kitchen
       - climate.ac_master_br
       - climate.ac_workshop
-  - service: climate.set_hvac_mode
+  - action: climate.set_hvac_mode
     data:
       hvac_mode: 'off'
     enabled: true
@@ -3837,7 +3886,7 @@
       entity_id:
       - climate.ac_front_lounge
       - climate.ac_spare_br
-  - service: notify.mobile_app_patricks_iphone_13
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Air con turned on (People at home)
       message: Turned on air conditioner as Back Lounge temperature is above 25° and
@@ -3851,17 +3900,17 @@
 - id: '1712976105136'
   alias: Pool pump - OFF at 12pm (Autumn / Winter)
   description: ''
-  trigger:
-  - platform: time
+  triggers:
+  - trigger: time
     at: '12:00:00'
     id: trigger_time
   condition: []
-  action:
-  - service: switch.turn_off
+  actions:
+  - action: switch.turn_off
     data: {}
     target:
       entity_id: switch.pool_pump
-  - service: notify.mobile_app_patricks_iphone_13
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: Pool pump turned OFF
       message: Pool pump turned OFF Autumn/Winter at {{ trigger.now | as_timestamp
@@ -3871,15 +3920,15 @@
 - id: '1713615252706'
   alias: Shelly Overheating Alert
   description: Trigger an alert if any sensor ending with '_overheating' is triggered
-  trigger:
-  - platform: template
+  triggers:
+  - trigger: template
     value_template: "{% set ns = namespace(found=false) %}\n{% for state in states.binary_sensor
       %}\n  {% if state.entity_id.endswith('_overheating') and state.state == 'on'
       %}\n    {% set ns.found = true %}\n  {% endif %}\n{% endfor %}\n{{ ns.found
       }}"
   condition: []
-  action:
-  - service: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     data:
       title: "⚠️ Shelly Overheating \U0001F525"
       message: "{% if trigger %}\n  {{ trigger.to_state.attributes.friendly_name }}\n{%
@@ -3888,22 +3937,22 @@
 - id: '1720908527024'
   alias: Sleep mode on and off at time of day
   description: ''
-  trigger:
-  - platform: time
+  triggers:
+  - trigger: time
     at: input_datetime.sleep_start
     id: sleep on
-  - platform: time
+  - trigger: time
     id: sleep off
     at: input_datetime.sleep_off
   condition: []
-  action:
+  actions:
   - choose:
     - conditions:
       - condition: trigger
         id:
         - sleep on
       sequence:
-      - service: input_boolean.turn_on
+      - action: input_boolean.turn_on
         metadata: {}
         data: {}
         target:
@@ -3913,7 +3962,7 @@
         id:
         - sleep off
       sequence:
-      - service: input_boolean.turn_off
+      - action: input_boolean.turn_off
         target:
           entity_id:
           - input_boolean.sleep_mode
@@ -3933,19 +3982,19 @@
       include_easy_notify: enable_easy_okay_notify
       notify_device:
       - 0f5265246071d1e781aadc2b8aaea0c8
-      include_persistent_notification: enable_persistent_okay_notification
+      include_persistent_notification: disabled_persistent_notification
 - id: '1724062016510'
   alias: Courtyard camera person
   description: From Unifi Protect webhook
-  trigger:
-  - platform: webhook
+  triggers:
+  - trigger: webhook
     allowed_methods:
     - POST
     local_only: true
     webhook_id: aB3$eFg7!hIj9KlMn0PqRsTuVwX
   condition: []
-  action:
-  - action: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     metadata: {}
     data:
       title: Unifi CCTV Camera
@@ -3971,15 +4020,15 @@
 - id: '1726141404103'
   alias: Back Yard Camera Person
   description: From Unifi Protect webhook
-  trigger:
-  - platform: webhook
+  triggers:
+  - trigger: webhook
     allowed_methods:
     - POST
     local_only: true
     webhook_id: OvyU3vgPH2l9AgSdTJVeZmASf0t
   condition: []
-  action:
-  - action: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     metadata: {}
     data:
       title: Unifi CCTV Camera
@@ -4005,15 +4054,15 @@
 - id: '1726141806764'
   alias: Driveway Camera Person
   description: From Unifi Protect webhook
-  trigger:
-  - platform: webhook
+  triggers:
+  - trigger: webhook
     allowed_methods:
     - POST
     local_only: true
     webhook_id: 5fGh6IjK7!lMn8OpQr9StUvWxY
   condition: []
-  action:
-  - action: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     metadata: {}
     data:
       title: Unifi CCTV Camera
@@ -4038,15 +4087,15 @@
 - id: '1726142105464'
   alias: Front Yard Camera Person
   description: From Unifi Protect webhook
-  trigger:
-  - platform: webhook
+  triggers:
+  - trigger: webhook
     allowed_methods:
     - POST
     local_only: true
     webhook_id: 9of{RCd2H'&Qq'>d1EQS)f;FDf`
   condition: []
-  action:
-  - action: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     metadata: {}
     data:
       title: Unifi CCTV Camera
@@ -4071,15 +4120,15 @@
 - id: '1726142223544'
   alias: Pool and Alfresco Camera Person
   description: From Unifi Protect webhook
-  trigger:
-  - platform: webhook
+  triggers:
+  - trigger: webhook
     allowed_methods:
     - POST
     local_only: true
     webhook_id: -_8MpGAtC7VoBX2m9aa90vbY5
   condition: []
-  action:
-  - action: notify.mobile_app_patricks_iphone_13
+  actions:
+  - action: notify.mobile_app_patricks_iphone
     metadata: {}
     data:
       title: Unifi CCTV Camera
@@ -4104,8 +4153,8 @@
 - id: '1726349053457'
   alias: Sleep mode off if alfresco door opens after 4:30am
   description: ''
-  trigger:
-  - platform: state
+  triggers:
+  - trigger: state
     entity_id:
     - binary_sensor.alfresco_door_contact
     to: 'on'
@@ -4113,7 +4162,7 @@
   - condition: time
     after: 04:30:00
     before: 09:00:00
-  action:
+  actions:
   - action: input_boolean.turn_off
     metadata: {}
     data: {}
@@ -4123,21 +4172,27 @@
 - id: '1726959314317'
   alias: Rack Fans - set low speed at night or sleep
   description: ''
-  trigger:
-  - platform: numeric_state
+  triggers:
+  - trigger: state
     entity_id:
-    - fan.pwm_fanctrl_fan1_speed
-    above: 30
+    - input_boolean.sleep_mode
+    to: 'on'
+    id: sleep
   condition:
-  - condition: state
-    entity_id: input_boolean.sleep_mode
-    state: 'on'
-  action:
+  - condition: template
+    value_template: '{{ state_attr(''fan.pwm_fanctrl_fan1_speed'', ''percentage'')
+      > 30 }}'
+  actions:
   - action: switch.turn_off
     metadata: {}
     data: {}
     target:
       entity_id: switch.pwm_fanctrl_fan_auto_mode
+  - action: input_boolean.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.rack_fans_auto_mode_turned_off_at_sleep
   - action: fan.set_percentage
     metadata: {}
     data:
@@ -4148,4 +4203,264 @@
       - fan.pwm_fanctrl_fan2_speed
       - fan.pwm_fanctrl_fan3_speed
       - fan.pwm_fanctrl_fan4_speed
+  mode: single
+- id: '1727000617515'
+  alias: Rack fans - enable auto mode in morning
+  description: Re-enable rack fan auto mode if was turned off the night before during
+    sleep and fans were too fast (noisy)
+  triggers:
+  - at: 06:30:00
+    trigger: time
+  conditions:
+  - condition: state
+    entity_id: switch.pwm_fanctrl_fan_auto_mode
+    state: 'off'
+  - condition: state
+    entity_id: input_boolean.rack_fans_auto_mode_turned_off_at_sleep
+    state: 'on'
+  actions:
+  - action: switch.turn_on
+    target:
+      entity_id:
+      - switch.pwm_fanctrl_fan_auto_mode
+    data: {}
+  - action: input_boolean.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: input_boolean.rack_fans_auto_mode_turned_off_at_sleep
+  mode: single
+- id: '1727092853512'
+  alias: Notify - Harvey Roller door left open
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.small_roller_door_contact
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 15
+      seconds: 0
+  condition: []
+  actions:
+  - action: notify.patrick_and_kathleen
+    metadata: {}
+    data:
+      title: Harvey Roller Door
+      message: Left open for {{ (((trigger.for.seconds) | int) / 60) | round(0) }}
+        minutes, be careful!
+      data:
+        push:
+          sound:
+            name: default
+            critical: 1
+            volume: 0.3
+  mode: single
+- id: '1727693357170'
+  alias: Decrement Irrigation Rain Delay
+  description: Decrements the irrigation rain delay each day and enables irrigation
+    when delay reaches zero.
+  triggers:
+  - trigger: time
+    at: 00:00:00
+  condition:
+  - condition: numeric_state
+    entity_id: input_number.irrigation_rain_delay
+    above: 0
+  actions:
+  - variables:
+      new_value: '{{ (states(''input_number.irrigation_rain_delay'') | int) - 1 }}'
+  - data:
+      entity_id: input_number.irrigation_rain_delay
+      value: '{{ [new_value, 0] | max }}'
+    action: input_number.set_value
+  - choose:
+    - conditions:
+      - condition: numeric_state
+        entity_id: input_number.irrigation_rain_delay
+        below: 1
+      sequence:
+      - action: input_boolean.turn_on
+        data: {}
+        target:
+          entity_id: input_boolean.enable_irrigation
+      - action: notify.mobile_app_patricks_iphone
+        data:
+          title: Irrigation
+          message: Rain delay ended, irrigation is enabled
+  mode: single
+- id: '1728161381884'
+  alias: Irrigation - rain delay silder turn enable boolean ON or OFF
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_number.irrigation_rain_delay
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: numeric_state
+        entity_id: input_number.irrigation_rain_delay
+        above: 0
+      sequence:
+      - action: input_boolean.turn_off
+        metadata: {}
+        data: {}
+        target:
+          entity_id: input_boolean.enable_irrigation
+    - conditions:
+      - condition: numeric_state
+        entity_id: input_number.irrigation_rain_delay
+        below: 1
+      sequence:
+      - action: input_boolean.turn_on
+        target:
+          entity_id:
+          - input_boolean.enable_irrigation
+        data: {}
+  mode: single
+- id: '1730060540153'
+  alias: Speaker say - back lawn sprinklers on soon
+  description: ''
+  triggers:
+  - value_template: "{{ (as_timestamp(states('sensor.back_lawn_sprinklers_rain_bird_sprinkler_back_next_run'))
+      | timestamp_custom('%Y-%m-%d %H:%M:%S', true) \n      == (now() + timedelta(hours=0,
+      minutes=5)).strftime('%Y-%m-%d %H:%M:%S') ) }}"
+    trigger: template
+    id: first warning
+  - value_template: "{{ (as_timestamp(states('sensor.back_lawn_sprinklers_rain_bird_sprinkler_shed_next_run'))
+      | timestamp_custom('%Y-%m-%d %H:%M:%S', true) \n      == (now() + timedelta(hours=0,
+      minutes=5)).strftime('%Y-%m-%d %H:%M:%S') ) }}"
+    trigger: template
+    id: first warning
+  - value_template: "{{ (as_timestamp(states('sensor.back_lawn_sprinklers_rain_bird_sprinkler_back_next_run'))
+      | timestamp_custom('%Y-%m-%d %H:%M:%S', true) \n      == (now() + timedelta(hours=0,
+      minutes=2)).strftime('%Y-%m-%d %H:%M:%S') ) }}"
+    trigger: template
+    id: second warning
+  - value_template: "{{ (as_timestamp(states('sensor.back_lawn_sprinklers_rain_bird_sprinkler_shed_next_run'))
+      | timestamp_custom('%Y-%m-%d %H:%M:%S', true) \n      == (now() + timedelta(hours=0,
+      minutes=2)).strftime('%Y-%m-%d %H:%M:%S') ) }}"
+    trigger: template
+    id: second warning
+  - trigger: state
+    entity_id:
+    - switch.back_lawn_sprinklers
+    to: 'on'
+    id: on now
+  - trigger: state
+    entity_id:
+    - switch.back_lawn_sprinklers
+    to: 'off'
+    id: finished
+  conditions:
+  - condition: numeric_state
+    entity_id: input_number.irrigation_rain_delay
+    below: 1
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - first warning
+      sequence:
+      - action: tts.cloud_say
+        data:
+          message: Back lawn sprinkler on in five minutes!
+          entity_id: media_player.back_longe_speaker
+    - conditions:
+      - condition: trigger
+        id:
+        - second warning
+      sequence:
+      - action: tts.cloud_say
+        data:
+          entity_id: media_player.back_longe_speaker
+          message: Back lawn sprinkler on in two minutes!
+    - conditions:
+      - condition: trigger
+        id:
+        - on now
+      sequence:
+      - action: tts.cloud_say
+        data:
+          entity_id: media_player.back_longe_speaker
+          message: Back lawn sprinklers on NOW!
+      - action: light.turn_on
+        metadata: {}
+        data:
+          brightness_pct: 100
+          color_name: green
+        target:
+          entity_id: light.back_lounge_sideboard_lamp
+    - conditions:
+      - condition: trigger
+        id:
+        - finished
+      sequence:
+      - action: tts.cloud_say
+        data:
+          entity_id: media_player.back_longe_speaker
+          message: Back lawn sprinklers finished
+      - action: light.turn_on
+        metadata: {}
+        data:
+          kelvin: 2900
+          brightness_pct: 35
+        target:
+          entity_id: light.back_lounge_sideboard_lamp
+  mode: single
+- id: '1730458549995'
+  alias: Hall lamp RED when garge or gate open
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - cover.garage_door
+    to: open
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+    id: garage door
+  - trigger: state
+    entity_id:
+    - cover.driveway_gate
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+    to: opening
+    id: driveway gate
+  - trigger: state
+    entity_id:
+    - cover.garage_door
+    to: open
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+    id: garage door
+  - trigger: state
+    entity_id:
+    - cover.garage_door
+    to: opening
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+    id: garage door
+  conditions: []
+  actions:
+  - action: light.turn_on
+    data:
+      rgb_color:
+      - 255
+      - 0
+      - 0
+      brightness_pct: 100
+    target:
+      entity_id: light.front_hall_lamp
   mode: single
