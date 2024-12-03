@@ -52,54 +52,54 @@ config:
         service_data:
           element: temp-alfresco
           text: ${functions.FormatTemperature(Number(entity.state))}
-    - entity: climate.ac_back_lounge
+    - entity: sensor.ac_back_lounge_temperature
       state_action:
         service: floorplan.text_set
         service_data:
           element: temp-back-lounge
-          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
-    - entity: climate.ac_kitchen
+          text: ${functions.FormatTemperature(Number(entity.state))}
+    - entity: sensor.ac_kitchen_temperature
       state_action:
         service: floorplan.text_set
         service_data:
           element: temp-kitchen
-          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
-    - entity: climate.ac_entry
+          text: ${functions.FormatTemperature(Number(entity.state))}
+    - entity: sensor.ac_entry_temperature
       state_action:
         service: floorplan.text_set
         service_data:
           element: temp-front-hallway
-          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
-    - entity: climate.ac_master_bed
+          text: ${functions.FormatTemperature(Number(entity.state))}
+    - entity: sensor.ac_master_bed_temperature
       state_action:
         service: floorplan.text_set
         service_data:
           element: temp-mbr
-          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
-    - entity: climate.ac_jess_br
+          text: ${functions.FormatTemperature(Number(entity.state))}
+    - entity: sensor.ac_jess_br_temperature
       state_action:
         service: floorplan.text_set
         service_data:
           element: temp-jess
-          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
-    - entity: climate.ac_front_lounge
+          text: ${functions.FormatTemperature(Number(entity.state))}
+    - entity: sensor.ac_front_lounge_temperature
       state_action:
         service: floorplan.text_set
         service_data:
           element: temp-front-lounge
-          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
-    - entity: climate.ac_spare_br
+          text: ${functions.FormatTemperature(Number(entity.state))}
+    - entity: sensor.ac_spare_br_temperature
       state_action:
         service: floorplan.text_set
         service_data:
           element: temp-spare-br
-          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
-    - entity: climate.ac_workshop
+          text: ${functions.FormatTemperature(Number(entity.state))}
+    - entity: sensor.ac_workshop_temperature
       state_action:
         service: floorplan.text_set
         service_data:
           element: temp-workshop
-          text: ${functions.FormatTemperature(entity.attributes.current_temperature)}
+          text: ${functions.FormatTemperature(Number(entity.state))}
     - name: Heaters
       entity: switch.gas_heater
       element: gas-heater

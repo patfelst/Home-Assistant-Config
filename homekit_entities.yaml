@@ -56,6 +56,8 @@
 
       - light.garage_downlights
 
+      - light.front_xmas_tree
+
   entity_config:
     light.pool_light_controller_pool_lights:
       name: Swimming Pool Lights

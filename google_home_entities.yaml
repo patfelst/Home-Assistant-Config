@@ -49,6 +49,9 @@ google_actions:
       - light.workshop_downlight
       - light.led_strip_workshop_shelf_dimmer
       - light.pool_light_controller_pool_lights
+
+      - light.front_xmas_tree
+
   # entity_config:
   #   script.sunset_lights:
   #     name: Evening lights
