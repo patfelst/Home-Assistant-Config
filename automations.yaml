@@ -100,14 +100,14 @@
     - action: light.turn_on
       data:
         brightness_pct: 35
-        kelvin: 2900
+        color_temp_kelvin: 2900
       target:
         entity_id:
           - light.back_lounge_sideboard_lamp
     - action: light.turn_on
       data:
         brightness_pct: 35
-        color_temp: 358
+        color_temp_kelvin: 358
       target:
         entity_id:
           - light.front_hall_lamp
@@ -118,7 +118,7 @@
         entity_id: light.led_strip_front_hall_dimmer
     - action: light.turn_on
       data:
-        color_temp: 358
+        color_temp_kelvin: 358
         brightness_pct: 18
       target:
         entity_id: light.front_lounge_sideboard_lamp
@@ -135,7 +135,7 @@
     - action: light.turn_on
       data:
         brightness_pct: 50
-        color_temp: 358
+        color_temp_kelvin: 358
       target:
         entity_id:
           - light.lamp_rhs_fireplace
@@ -150,11 +150,6 @@
             brightness_pct: 25
           target:
             entity_id: light.bedside_lamp_kathleen
-    - action: switch.turn_on
-      metadata: {}
-      data: {}
-      target:
-        entity_id: switch.tapo_spare_2
   mode: single
 - id: "1668760849772"
   alias:
@@ -2396,7 +2391,7 @@
         - sensor.solarnet_power_grid
       for:
         hours: 0
-        minutes: 20
+        minutes: 10
         seconds: 0
       above: 0.5
       id: not enough power
@@ -2963,7 +2958,7 @@
       then:
         - action: light.turn_on
           data:
-            color_temp: 358
+            color_temp_kelvin: 358
             brightness_pct: 40
           target:
             entity_id: light.front_hall_lamp
@@ -3001,7 +2996,7 @@
           then:
             - action: light.turn_on
               data:
-                kelvin: 2900
+                color_temp_kelvin: 2900
                 brightness_pct: 40
               target:
                 entity_id: light.back_lounge_sideboard_lamp
@@ -3015,7 +3010,7 @@
                 - action: light.turn_on
                   data:
                     brightness_pct: 35
-                    kelvin: 2900
+                    color_temp_kelvin: 2900
                   target:
                     entity_id: light.back_lounge_sideboard_lamp
 - id: "1698533404217"
@@ -3240,12 +3235,17 @@
         hours: 0
         minutes: 7
         seconds: 0
-  condition: []
+  conditions: []
   actions:
     - if:
-        - condition: trigger
-          id:
-            - motion detected
+        - condition: and
+          conditions:
+            - condition: trigger
+              id:
+                - motion detected
+            - condition: state
+              entity_id: input_boolean.sleep_mode
+              state: "off"
       then:
         - action: light.turn_on
           data: {}
@@ -3278,7 +3278,12 @@
   triggers:
     - trigger: time_pattern
       minutes: /10
-  condition:
+      enabled: false
+    - trigger: numeric_state
+      entity_id: sun.sun
+      attribute: elevation
+      below: 5
+  conditions:
     - condition: numeric_state
       entity_id: sun.sun
       attribute: elevation
@@ -3289,7 +3294,7 @@
   actions:
     - action: light.turn_on
       data:
-        effect: "{{ range(0,6) | random | int }}"
+        effect: "{{ range(0,10) | random | int }}"
       target:
         entity_id: light.twinkly_back_lounge
   mode: single
@@ -3752,7 +3757,7 @@
                 entity_id: light.lamp_rhs_fireplace
   mode: single
 - id: "1707039891559"
-  alias: Motion - WIR MMWave
+  alias: Motion - WIR Lights
   description: ""
   triggers:
     - trigger: state
@@ -3760,6 +3765,7 @@
         - binary_sensor.ld2410_esp32c3_b_presence
       to: "on"
       id: motion detected
+      enabled: true
     - trigger: state
       entity_id:
         - binary_sensor.ld2410_esp32c3_b_presence
@@ -3768,7 +3774,21 @@
         hours: 0
         minutes: 3
         seconds: 0
-  condition: []
+      enabled: true
+    - trigger: state
+      entity_id:
+        - binary_sensor.wir_sensor_occupancy
+      to: "on"
+      id: motion detected
+    - trigger: state
+      entity_id:
+        - binary_sensor.wir_sensor_occupancy
+      to: "off"
+      for:
+        hours: 0
+        minutes: 3
+        seconds: 0
+  conditions: []
   actions:
     - if:
         - condition: trigger
@@ -3780,12 +3800,6 @@
               entity_id: input_boolean.sleep_mode
               state: "on"
           then:
-            - action: light.turn_on
-              data:
-                brightness_pct: 7
-              target:
-                entity_id: light.wir_downlight
-              enabled: false
             - action: light.turn_on
               metadata: {}
               data:
@@ -4356,31 +4370,16 @@
   triggers:
     - trigger: time
       at: 00:00:00
-  condition:
+  conditions:
     - condition: numeric_state
       entity_id: input_number.irrigation_rain_delay
       above: 0
   actions:
-    - variables:
-        new_value: "{{ (states('input_number.irrigation_rain_delay') | int) - 1 }}"
-    - data:
+    - action: input_number.decrement
+      metadata: {}
+      data: {}
+      target:
         entity_id: input_number.irrigation_rain_delay
-        value: "{{ [new_value, 0] | max }}"
-      action: input_number.set_value
-    - choose:
-        - conditions:
-            - condition: numeric_state
-              entity_id: input_number.irrigation_rain_delay
-              below: 1
-          sequence:
-            - action: input_boolean.turn_on
-              data: {}
-              target:
-                entity_id: input_boolean.enable_irrigation
-            - action: notify.mobile_app_patricks_iphone
-              data:
-                title: Irrigation
-                message: Rain delay ended, irrigation is enabled
   mode: single
 - id: "1728161381884"
   alias: Irrigation - rain delay silder turn enable boolean ON or OFF
@@ -4397,21 +4396,31 @@
               entity_id: input_number.irrigation_rain_delay
               above: 0
           sequence:
-            - action: input_boolean.turn_off
+            - action: switch.turn_off
               metadata: {}
               data: {}
               target:
-                entity_id: input_boolean.enable_irrigation
+                entity_id:
+                  - switch.enable_program
+                  - switch.enable_program_2
+                  - switch.enable_program_3
         - conditions:
             - condition: numeric_state
               entity_id: input_number.irrigation_rain_delay
               below: 1
           sequence:
-            - action: input_boolean.turn_on
+            - action: switch.turn_on
+              metadata: {}
+              data: {}
               target:
                 entity_id:
-                  - input_boolean.enable_irrigation
-              data: {}
+                  - switch.enable_program
+                  - switch.enable_program_2
+                  - switch.enable_program_3
+            - action: notify.mobile_app_patricks_iphone
+              data:
+                title: "Irrigation \U0001F4A6"
+                message: Rain delay ended, irrigation is enabled
   mode: single
 - id: "1730060540153"
   alias: Speaker say - back lawn sprinklers on soon
@@ -4424,19 +4433,7 @@
       trigger: template
       id: first warning
     - value_template:
-        "{{ (as_timestamp(states('sensor.back_lawn_sprinklers_rain_bird_sprinkler_shed_next_run'))
-        | timestamp_custom('%Y-%m-%d %H:%M:%S', true) \n      == (now() + timedelta(hours=0,
-        minutes=5)).strftime('%Y-%m-%d %H:%M:%S') ) }}"
-      trigger: template
-      id: first warning
-    - value_template:
         "{{ (as_timestamp(states('sensor.back_lawn_sprinklers_rain_bird_sprinkler_back_next_run'))
-        | timestamp_custom('%Y-%m-%d %H:%M:%S', true) \n      == (now() + timedelta(hours=0,
-        minutes=2)).strftime('%Y-%m-%d %H:%M:%S') ) }}"
-      trigger: template
-      id: second warning
-    - value_template:
-        "{{ (as_timestamp(states('sensor.back_lawn_sprinklers_rain_bird_sprinkler_shed_next_run'))
         | timestamp_custom('%Y-%m-%d %H:%M:%S', true) \n      == (now() + timedelta(hours=0,
         minutes=2)).strftime('%Y-%m-%d %H:%M:%S') ) }}"
       trigger: template
@@ -4503,7 +4500,7 @@
             - action: light.turn_on
               metadata: {}
               data:
-                kelvin: 2900
+                color_temp_kelvin: 2900
                 brightness_pct: 35
               target:
                 entity_id: light.back_lounge_sideboard_lamp
@@ -4559,4 +4556,602 @@
         brightness_pct: 100
       target:
         entity_id: light.front_hall_lamp
+  mode: single
+- id: "1735957878118"
+  alias: Button - workshop
+  description: ""
+  triggers:
+    - domain: mqtt
+      device_id: 656b55c99717ed704e669e0d521be10f
+      type: action
+      subtype: single
+      trigger: device
+      id: trigger single
+    - domain: mqtt
+      device_id: 656b55c99717ed704e669e0d521be10f
+      type: action
+      subtype: double
+      trigger: device
+      id: trigger double
+    - domain: mqtt
+      device_id: 656b55c99717ed704e669e0d521be10f
+      type: action
+      subtype: hold
+      trigger: device
+      id: trigger hold
+  conditions: []
+  actions:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger single
+          sequence:
+            - action: switch.toggle
+              metadata: {}
+              data: {}
+              target:
+                entity_id: switch.workshop_power_strip
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger double
+          sequence:
+            - action: light.toggle
+              metadata: {}
+              data: {}
+              target:
+                entity_id: light.led_strip_workshop_shelf_dimmer
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger hold
+          sequence:
+            - action: light.turn_off
+              metadata: {}
+              data: {}
+              target:
+                area_id: electronics_lab
+  mode: single
+- id: "1735959432396"
+  alias: Button garage
+  description: ""
+  triggers:
+    - domain: mqtt
+      device_id: ad7e33ba164f20aa9d1d7fcabfdf2196
+      type: action
+      subtype: single
+      trigger: device
+      id: trigger single
+    - domain: mqtt
+      device_id: ad7e33ba164f20aa9d1d7fcabfdf2196
+      type: action
+      subtype: double
+      trigger: device
+      id: trigger double
+    - domain: mqtt
+      device_id: ad7e33ba164f20aa9d1d7fcabfdf2196
+      type: action
+      subtype: hold
+      trigger: device
+      id: trigger hold
+  conditions: []
+  actions:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger single
+          sequence:
+            - action: cover.open_cover
+              data: {}
+              target:
+                entity_id:
+                  - cover.garage_door
+                  - cover.driveway_gate
+            - action: input_datetime.set_datetime
+              metadata: {}
+              data:
+                datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+              target:
+                entity_id: input_datetime.garage_door_button_last_pressed
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger double
+          sequence:
+            - action: cover.toggle
+              metadata: {}
+              data: {}
+              target:
+                entity_id: cover.driveway_gate
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger hold
+          sequence:
+            - action: cover.close_cover
+              data: {}
+              target:
+                entity_id:
+                  - cover.driveway_gate
+                  - cover.garage_door
+  mode: single
+- id: "1735960974497"
+  alias: Button Patrick bedside
+  description: ""
+  triggers:
+    - domain: mqtt
+      device_id: 0677bec4f0eb2446fa3216dd66782823
+      type: action
+      subtype: single
+      trigger: device
+      id: trigger single
+    - domain: mqtt
+      device_id: 0677bec4f0eb2446fa3216dd66782823
+      type: action
+      subtype: double
+      trigger: device
+      id: trigger double
+    - domain: mqtt
+      device_id: 0677bec4f0eb2446fa3216dd66782823
+      type: action
+      subtype: hold
+      trigger: device
+      id: trigger hold
+  conditions: []
+  actions:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger single
+          sequence:
+            - action: light.toggle
+              metadata: {}
+              data:
+                brightness_pct: 7
+              target:
+                entity_id: light.led_strip_kitchen_kicker
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger double
+          sequence:
+            - action: light.turn_on
+              metadata: {}
+              data: {}
+              target:
+                entity_id:
+                  - light.front_yard_lights
+                  - light.back_yard_lights
+                  - light.courtyard_flood_light
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger hold
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id: light.all_lights
+              data: {}
+            - if:
+                - condition: state
+                  entity_id: binary_sensor.workshop_window_contact
+                  state: "on"
+              then:
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Workshop window is open
+                    title: Window open
+            - if:
+                - condition: state
+                  entity_id: binary_sensor.alfresco_door_contact
+                  state: "on"
+              then:
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Alfresco door is open
+                    title: Door open
+            - if:
+                - condition: state
+                  entity_id: binary_sensor.front_door_aqara_contact
+                  state: "on"
+              then:
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Front door is open
+                    title: Door open
+            - if:
+                - condition: time
+                  after: "21:00:00"
+                  before: 06:00:00
+              then:
+                - action: input_boolean.turn_on
+                  data: {}
+                  target:
+                    entity_id: input_boolean.sleep_mode
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Sleep mode turned on with long press of Patrick's bedside button
+                    title: Sleep mode ON
+            - if:
+                - condition: state
+                  state: "on"
+                  entity_id: binary_sensor.small_roller_door_contact
+              then:
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Harvey roller door is open
+                    title: Harvey roller door
+            - action: switch.turn_off
+              target:
+                entity_id: switch.gas_heater
+              data: {}
+            - action: switch.turn_off
+              data: {}
+              target:
+                entity_id: switch.pool_pump
+            - action: fan.turn_off
+              metadata: {}
+              data: {}
+              target:
+                entity_id:
+                  - fan.pwm_fanctrl_fan1_speed
+                  - fan.pwm_fanctrl_fan2_speed
+                  - fan.pwm_fanctrl_fan3_speed
+                  - fan.pwm_fanctrl_fan4_speed
+  mode: single
+- id: "1735962895487"
+  alias: Button Kathleen bedside
+  description: ""
+  triggers:
+    - domain: mqtt
+      device_id: 91bb27cb2c42260c94f57d1e70f26ed4
+      type: action
+      subtype: single
+      trigger: device
+      id: trigger single
+    - domain: mqtt
+      device_id: 91bb27cb2c42260c94f57d1e70f26ed4
+      type: action
+      subtype: double
+      trigger: device
+      id: trigger double
+    - domain: mqtt
+      device_id: 91bb27cb2c42260c94f57d1e70f26ed4
+      type: action
+      subtype: hold
+      trigger: device
+      id: trigger hold
+  conditions: []
+  actions:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger single
+          sequence:
+            - action: light.toggle
+              metadata: {}
+              data:
+                brightness_pct: 7
+              target:
+                entity_id: light.bedside_lamp_kathleen
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger double
+          sequence:
+            - action: light.turn_on
+              metadata: {}
+              data: {}
+              target:
+                entity_id:
+                  - light.front_yard_lights
+                  - light.back_yard_lights
+                  - light.courtyard_flood_light
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger hold
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id: light.all_lights
+              data: {}
+            - if:
+                - condition: state
+                  entity_id: binary_sensor.workshop_window_contact
+                  state: "on"
+              then:
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Workshop window is open
+                    title: Window open
+            - if:
+                - condition: state
+                  entity_id: binary_sensor.alfresco_door_contact
+                  state: "on"
+              then:
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Alfresco door is open
+                    title: Door open
+            - if:
+                - condition: state
+                  entity_id: binary_sensor.front_door_aqara_contact
+                  state: "on"
+              then:
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Front door is open
+                    title: Door open
+            - if:
+                - condition: time
+                  after: "21:00:00"
+                  before: 06:00:00
+              then:
+                - action: input_boolean.turn_on
+                  data: {}
+                  target:
+                    entity_id: input_boolean.sleep_mode
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Sleep mode turned on with long press of Patrick's bedside button
+                    title: Sleep mode ON
+            - if:
+                - condition: state
+                  state: "on"
+                  entity_id: binary_sensor.small_roller_door_contact
+              then:
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Harvey roller door is open
+                    title: Harvey roller door
+            - action: switch.turn_off
+              target:
+                entity_id: switch.gas_heater
+              data: {}
+            - action: switch.turn_off
+              data: {}
+              target:
+                entity_id: switch.pool_pump
+            - action: fan.turn_off
+              metadata: {}
+              data: {}
+              target:
+                entity_id:
+                  - fan.pwm_fanctrl_fan1_speed
+                  - fan.pwm_fanctrl_fan2_speed
+                  - fan.pwm_fanctrl_fan3_speed
+                  - fan.pwm_fanctrl_fan4_speed
+  mode: single
+- id: "1735962959543"
+  alias: Button Jess bedside
+  description: ""
+  triggers:
+    - domain: mqtt
+      device_id: f0fff143a53273caf42a95d9216f2f0d
+      type: action
+      subtype: single
+      trigger: device
+      id: trigger single
+    - domain: mqtt
+      device_id: f0fff143a53273caf42a95d9216f2f0d
+      type: action
+      subtype: double
+      trigger: device
+      id: trigger double
+    - domain: mqtt
+      device_id: f0fff143a53273caf42a95d9216f2f0d
+      type: action
+      subtype: hold
+      trigger: device
+      id: trigger hold
+  conditions: []
+  actions:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger single
+          sequence:
+            - action: light.toggle
+              metadata: {}
+              data:
+                brightness_pct: 7
+              target:
+                entity_id: light.led_strip_kitchen_kicker
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger double
+          sequence:
+            - action: light.turn_on
+              metadata: {}
+              data: {}
+              target:
+                entity_id:
+                  - light.front_yard_lights
+                  - light.back_yard_lights
+                  - light.courtyard_flood_light
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger hold
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id: light.all_lights
+              data: {}
+            - if:
+                - condition: state
+                  entity_id: binary_sensor.workshop_window_contact
+                  state: "on"
+              then:
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Workshop window is open
+                    title: Window open
+            - if:
+                - condition: state
+                  entity_id: binary_sensor.alfresco_door_contact
+                  state: "on"
+              then:
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Alfresco door is open
+                    title: Door open
+            - if:
+                - condition: state
+                  entity_id: binary_sensor.front_door_aqara_contact
+                  state: "on"
+              then:
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Front door is open
+                    title: Door open
+            - if:
+                - condition: time
+                  after: "21:00:00"
+                  before: 06:00:00
+              then:
+                - action: input_boolean.turn_on
+                  data: {}
+                  target:
+                    entity_id: input_boolean.sleep_mode
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Sleep mode turned on with long press of Patrick's bedside button
+                    title: Sleep mode ON
+            - if:
+                - condition: state
+                  state: "on"
+                  entity_id: binary_sensor.small_roller_door_contact
+              then:
+                - action: notify.mobile_app_patricks_iphone
+                  data:
+                    message: Harvey roller door is open
+                    title: Harvey roller door
+            - action: switch.turn_off
+              target:
+                entity_id: switch.gas_heater
+              data: {}
+            - action: switch.turn_off
+              data: {}
+              target:
+                entity_id: switch.pool_pump
+            - action: fan.turn_off
+              metadata: {}
+              data: {}
+              target:
+                entity_id:
+                  - fan.pwm_fanctrl_fan1_speed
+                  - fan.pwm_fanctrl_fan2_speed
+                  - fan.pwm_fanctrl_fan3_speed
+                  - fan.pwm_fanctrl_fan4_speed
+  mode: single
+- id: "1735964177692"
+  alias: Button washing machine
+  description: ""
+  triggers:
+    - domain: mqtt
+      device_id: 0d699650342d3324d899009224eec05d
+      type: action
+      subtype: single
+      trigger: device
+      id: trigger single
+    - domain: mqtt
+      device_id: 0d699650342d3324d899009224eec05d
+      type: action
+      subtype: double
+      trigger: device
+      id: trigger double
+    - domain: mqtt
+      device_id: 0d699650342d3324d899009224eec05d
+      type: action
+      subtype: hold
+      trigger: device
+      id: trigger hold
+  conditions: []
+  actions:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger single
+          sequence:
+            - if:
+                - condition: or
+                  conditions:
+                    - condition: numeric_state
+                      entity_id: sun.sun
+                      attribute: elevation
+                      above: 5
+                    - condition: state
+                      entity_id: input_boolean.sleep_mode
+                      state: "on"
+              then:
+                - action: light.turn_off
+                  data: {}
+                  target:
+                    entity_id: light.back_lounge_sideboard_lamp
+              else:
+                - if: []
+                  then:
+                    - action: light.turn_on
+                      data:
+                        brightness_pct: 35
+                        color_temp_kelvin: 2900
+                      target:
+                        entity_id: light.back_lounge_sideboard_lamp
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger double
+          sequence:
+            - action: light.toggle
+              metadata: {}
+              data: {}
+              target:
+                entity_id:
+                  - light.laundry_bunker_light
+                  - light.laundry_downlight
+  mode: single
+- id: "1735965624928"
+  alias: Button hall stand
+  description: ""
+  triggers:
+    - domain: mqtt
+      device_id: f1eccd15be4815075fcd5ae5d98d4b22
+      type: action
+      subtype: single
+      trigger: device
+      id: trigger single
+    - domain: mqtt
+      device_id: f1eccd15be4815075fcd5ae5d98d4b22
+      type: action
+      subtype: double
+      trigger: device
+      id: trigger double
+    - domain: mqtt
+      device_id: f1eccd15be4815075fcd5ae5d98d4b22
+      type: action
+      subtype: hold
+      trigger: device
+      id: trigger hold
+  conditions: []
+  actions:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id:
+                - trigger single
+          sequence:
+            - action: cover.open_cover
+              metadata: {}
+              data: {}
+              target:
+                entity_id: cover.pedestrian_gate
   mode: single

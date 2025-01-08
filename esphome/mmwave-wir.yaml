@@ -1,5 +1,5 @@
 esphome:
-  name: "ld2410-esp32c3-b"
+  name: "mmwave-wir"
   friendly_name: MMWave WIR
   comment: Pat's own PCB, ESP32-c3 and VEML-7700 light sensor
   on_boot:

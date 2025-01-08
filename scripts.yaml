@@ -277,3 +277,37 @@ confirmable_notification_turn_off_high_power_notifications:
             entity_id: input_boolean.grid_power_alert
           action: input_boolean.turn_off
   description: ""
+fetch_ch70:
+  alias: Fetch Ch7
+  sequence:
+    - action: remote.send_command
+      data:
+        delay_secs: 0.7
+        device: lgtv
+        command:
+          - 7
+          - 0
+        num_repeats: 1
+        hold_secs: 0.3
+      target:
+        device_id: 688ca04b397fd4dcdf3b94135f4a157d
+  mode: single
+  icon: mdi:television
+  description: ""
+fetch_ch9:
+  alias: Fetch Ch9
+  sequence:
+    - action: remote.send_command
+      data:
+        delay_secs: 0.7
+        device: lgtv
+        command:
+          - 9
+          - 0
+        num_repeats: 1
+        hold_secs: 0.3
+      target:
+        device_id: 688ca04b397fd4dcdf3b94135f4a157d
+  mode: single
+  icon: mdi:television
+  description: ""
