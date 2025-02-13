@@ -35,7 +35,7 @@
     - action: tts.cloud_say
       data:
         message: Blinds are about to close
-        entity_id: media_player.homepod_mini_back_lounge
+        entity_id: media_player.back_lounge
         cache: true
     - delay:
         hours: 0
@@ -65,7 +65,7 @@
   actions:
     - action: tts.cloud_say
       data:
-        entity_id: media_player.homepod_mini_back_lounge
+        entity_id: media_player.back_lounge
         message: Blinds are about to open
     - delay:
         hours: 0
@@ -205,6 +205,7 @@
         - condition: time
           weekday:
             - wed
+            - fri
           before: 07:00:00
   actions:
     - data: {}
@@ -224,16 +225,19 @@
             brightness_pct: 100
           target:
             entity_id: light.main_hall_downlights
+      enabled: false
     - delay:
         hours: 0
         minutes: 4
         seconds: 0
         milliseconds: 0
+      enabled: false
     - action: light.turn_off
       data:
         transition: 45
       target:
         entity_id: light.main_hall_downlights
+      enabled: false
     - delay:
         hours: 0
         minutes: 3
@@ -247,6 +251,7 @@
           - light.meterbox_bunker
           - light.front_north_side_flood
       action: light.turn_off
+      enabled: true
     - if:
         - condition: or
           conditions:
@@ -812,7 +817,7 @@
     - action: tts.cloud_say
       data:
         entity_id:
-          - media_player.back_longe_speaker
+          - media_player.back_lounge_speaker
           - media_player.workshop_speaker
         message: "{{ trigger.entity_id | replace('person.', '') }} is home"
   mode: single
@@ -1003,7 +1008,7 @@
     - action: tts.cloud_say
       data:
         entity_id:
-          - media_player.homepod_mini_back_lounge
+          - media_player.back_lounge
           - media_player.workshop_speaker
         message:
           Put out {{ trigger.calendar_event.summary }} for collection tomorrow
@@ -1011,7 +1016,7 @@
   mode: queued
   max: 10
 - id: "1671250102998"
-  alias: Input booleans and counters - Reset at 7am
+  alias: Input booleans and automations - Reset at 7am
   description: ""
   triggers:
     - trigger: time
@@ -1032,6 +1037,7 @@
           - automation.notify_motion_in_front_yard
           - automation.front_door_open_turn_front_yard_lights_on
           - automation.lights_front_yard_lights_on_when_anyone_arrives_home
+          - automation.air_con_on_when_hot_back_lounge_people_at_home_v2
       action: automation.turn_on
   mode: single
 - id: "1671333862212"
@@ -1317,7 +1323,7 @@
     - action: tts.cloud_say
       data:
         entity_id:
-          - media_player.homepod_mini_back_lounge
+          - media_player.back_lounge
           - media_player.workshop_speaker
         message:
           Water is leaking in the {{ trigger.to_state.name | replace("leak sensor
@@ -2331,7 +2337,7 @@
     - action: tts.cloud_say
       data:
         cache: true
-        entity_id: media_player.homepod_mini_back_lounge
+        entity_id: media_player.back_lounge
         message: Pool robot just turned off
   mode: single
 - id: "1693826918399"
@@ -2379,6 +2385,7 @@
           Turned on pool pump and heater because exporting more than 2.1kW ({{
           -(trigger.to_state.state | float | round(1)) }}kW) and pump is ON.
       action: notify.mobile_app_patricks_iphone
+      enabled: false
   mode: single
 - id: "1693827066966"
   alias:
@@ -2564,7 +2571,7 @@
     - trigger: time
       at: 08:00:00
       id: trigger_time
-  condition:
+  conditions:
     - condition: state
       entity_id: switch.pool_pump
       state: "off"
@@ -2579,7 +2586,7 @@
         message:
           Pool pump turned ON at {{ trigger.now | as_timestamp | timestamp_custom('%I:%M
           %p') }}
-      enabled: true
+      enabled: false
   mode: single
 - id: "1694847669808"
   alias: Pool pump - OFF at 5pm (Spring / Summer)
@@ -2780,7 +2787,7 @@
             - action: tts.cloud_say
               data:
                 entity_id:
-                  - media_player.homepod_mini_back_lounge
+                  - media_player.back_lounge
                   - media_player.workshop_speaker
                 message:
                   Front door has been unlocked for {{ (((trigger.for.seconds) | int)
@@ -2819,7 +2826,7 @@
             - action: tts.cloud_say
               data:
                 entity_id:
-                  - media_player.homepod_mini_back_lounge
+                  - media_player.back_lounge
                   - media_player.workshop_speaker
                 message:
                   Front door has been open for {{ (((trigger.for.seconds) | int)
@@ -2856,7 +2863,7 @@
             - action: tts.cloud_say
               data:
                 entity_id:
-                  - media_player.homepod_mini_back_lounge
+                  - media_player.back_lounge
                   - media_player.workshop_speaker
                 message:
                   Garage door has been open for {{ (((trigger.for.seconds) | int)
@@ -2893,7 +2900,7 @@
             - action: tts.cloud_say
               data:
                 entity_id:
-                  - media_player.homepod_mini_back_lounge
+                  - media_player.back_lounge
                   - media_player.workshop_speaker
                 message:
                   Driveway gate has been open for {{ (((trigger.for.seconds) | int)
@@ -3517,7 +3524,7 @@
         - 255
         - 0
         - 0
-      scroll: true
+      scroll: false
       my_icon:
         "{% if states('sensor.solarnet_power_grid') | float < 0 %} 56656{%
         else %} 56657{% endif %}"
@@ -3565,16 +3572,14 @@
       awtrix_displays:
         - 90c7f72628fd10fb50e521f03eab0814
       toggle_helper: input_boolean.awtrix_toggle_room_temperature
-      my_sensor: sensor.back_lounge_temperature_from_ac
-      my_template_sensor:
-        "{{ states('sensor.back_lounge_temperature_from_ac') }}
-        C"
+      my_sensor: sensor.ac_back_lounge_temperature
       my_icon: "2355"
       push_icon: "0"
       text_color:
         - 0
         - 255
         - 51
+      scroll: false
 - id: "1703655196966"
   alias: Button - workshop
   description: ""
@@ -4090,7 +4095,12 @@
         - POST
       local_only: true
       webhook_id: aB3$eFg7!hIj9KlMn0PqRsTuVwX
-  condition: []
+      enabled: false
+    - trigger: state
+      entity_id:
+        - binary_sensor.courtyard_person_detected
+      to: "on"
+  conditions: []
   actions:
     - action: notify.mobile_app_patricks_iphone
       metadata: {}
@@ -4125,7 +4135,12 @@
         - POST
       local_only: true
       webhook_id: OvyU3vgPH2l9AgSdTJVeZmASf0t
-  condition: []
+      enabled: false
+    - trigger: state
+      entity_id:
+        - binary_sensor.back_yard_person_detected
+      to: "on"
+  conditions: []
   actions:
     - action: notify.mobile_app_patricks_iphone
       metadata: {}
@@ -4160,7 +4175,12 @@
         - POST
       local_only: true
       webhook_id: 5fGh6IjK7!lMn8OpQr9StUvWxY
-  condition: []
+      enabled: false
+    - trigger: state
+      entity_id:
+        - binary_sensor.driveway_person_detected
+      to: "on"
+  conditions: []
   actions:
     - action: notify.mobile_app_patricks_iphone
       metadata: {}
@@ -4193,8 +4213,13 @@
       allowed_methods:
         - POST
       local_only: true
-      webhook_id: 9of{RCd2H'&Qq'>d1EQS)f;FDf`
-  condition: []
+      webhook_id: hfjdkhafulsrhyugjffhguryt78645wo
+      enabled: false
+    - trigger: state
+      entity_id:
+        - binary_sensor.front_yard_person_detected
+      to: "on"
+  conditions: []
   actions:
     - action: notify.mobile_app_patricks_iphone
       metadata: {}
@@ -4228,7 +4253,12 @@
         - POST
       local_only: true
       webhook_id: -_8MpGAtC7VoBX2m9aa90vbY5
-  condition: []
+      enabled: false
+    - trigger: state
+      entity_id:
+        - binary_sensor.pool_and_alfresco_person_detected
+      to: "on"
+  conditions: []
   actions:
     - action: notify.mobile_app_patricks_iphone
       metadata: {}
@@ -4427,25 +4457,25 @@
   description: ""
   triggers:
     - value_template:
-        "{{ (as_timestamp(states('sensor.back_lawn_sprinklers_rain_bird_sprinkler_back_next_run'))
-        | timestamp_custom('%Y-%m-%d %H:%M:%S', true) \n      == (now() + timedelta(hours=0,
-        minutes=5)).strftime('%Y-%m-%d %H:%M:%S') ) }}"
+        "{{ (as_timestamp(states('sensor.next_run')) | timestamp_custom('%Y-%m-%d
+        %H:%M:%S', true) \n      == (now() + timedelta(hours=0, minutes=5)).strftime('%Y-%m-%d
+        %H:%M:%S') ) }}"
       trigger: template
       id: first warning
     - value_template:
-        "{{ (as_timestamp(states('sensor.back_lawn_sprinklers_rain_bird_sprinkler_back_next_run'))
-        | timestamp_custom('%Y-%m-%d %H:%M:%S', true) \n      == (now() + timedelta(hours=0,
-        minutes=2)).strftime('%Y-%m-%d %H:%M:%S') ) }}"
+        "{{ (as_timestamp(states('sensor.next_run')) | timestamp_custom('%Y-%m-%d
+        %H:%M:%S', true) \n      == (now() + timedelta(hours=0, minutes=2)).strftime('%Y-%m-%d
+        %H:%M:%S') ) }}"
       trigger: template
       id: second warning
     - trigger: state
       entity_id:
-        - switch.back_lawn_sprinklers
+        - switch.back_lawns_program
       to: "on"
       id: on now
     - trigger: state
       entity_id:
-        - switch.back_lawn_sprinklers
+        - switch.back_lawns_program
       to: "off"
       id: finished
   conditions:
@@ -4462,7 +4492,7 @@
             - action: tts.cloud_say
               data:
                 message: Back lawn sprinkler on in five minutes!
-                entity_id: media_player.back_longe_speaker
+                entity_id: media_player.back_lounge_speaker
         - conditions:
             - condition: trigger
               id:
@@ -4470,7 +4500,7 @@
           sequence:
             - action: tts.cloud_say
               data:
-                entity_id: media_player.back_longe_speaker
+                entity_id: media_player.back_lounge_speaker
                 message: Back lawn sprinkler on in two minutes!
         - conditions:
             - condition: trigger
@@ -4479,7 +4509,7 @@
           sequence:
             - action: tts.cloud_say
               data:
-                entity_id: media_player.back_longe_speaker
+                entity_id: media_player.back_lounge_speaker
                 message: Back lawn sprinklers on NOW!
             - action: light.turn_on
               metadata: {}
@@ -4495,15 +4525,27 @@
           sequence:
             - action: tts.cloud_say
               data:
-                entity_id: media_player.back_longe_speaker
+                entity_id: media_player.back_lounge_speaker
                 message: Back lawn sprinklers finished
-            - action: light.turn_on
-              metadata: {}
-              data:
-                color_temp_kelvin: 2900
-                brightness_pct: 35
-              target:
-                entity_id: light.back_lounge_sideboard_lamp
+            - if:
+                - condition: numeric_state
+                  entity_id: sun.sun
+                  attribute: elevation
+                  below: 5
+              then:
+                - action: light.turn_on
+                  metadata: {}
+                  data:
+                    color_temp_kelvin: 2900
+                    brightness_pct: 35
+                  target:
+                    entity_id: light.back_lounge_sideboard_lamp
+              else:
+                - action: light.turn_off
+                  metadata: {}
+                  target:
+                    entity_id: light.back_lounge_sideboard_lamp
+                  data: {}
   mode: single
 - id: "1730458549995"
   alias: Hall lamp RED when garge or gate open
@@ -4898,7 +4940,7 @@
                     entity_id: input_boolean.sleep_mode
                 - action: notify.mobile_app_patricks_iphone
                   data:
-                    message: Sleep mode turned on with long press of Patrick's bedside button
+                    message: Sleep mode turned on with long press of Kathleen's bedside button
                     title: Sleep mode ON
             - if:
                 - condition: state
@@ -5154,4 +5196,245 @@
               data: {}
               target:
                 entity_id: cover.pedestrian_gate
+  mode: single
+- id: "1737950486072"
+  alias: Awtrix - pool pump
+  description: ""
+  use_blueprint:
+    path: smarthomejunkie/awtrix_create_sensor_app.yaml
+    input:
+      awtrix_displays:
+        - 90c7f72628fd10fb50e521f03eab0814
+      toggle_helper: input_boolean.awtrix_pool_pump
+      my_sensor: sensor.pool_pump_status
+      my_template_sensor:
+        Pump {% if states('sensor.pool_pump_status') != 'Off' %}On{%
+        else %}Off{% endif %}
+      text_case: "2"
+      text_color:
+        - 148
+        - 234
+        - 255
+      scroll: false
+- id: "1737953704993"
+  alias: Pool pump - set awtrix display toggle helper
+  description: ""
+  triggers:
+    - trigger: state
+      entity_id:
+        - switch.pool_pump
+  conditions: []
+  actions:
+    - if:
+        - condition: state
+          entity_id: switch.pool_pump
+          state: "on"
+      then:
+        - action: input_boolean.turn_on
+          metadata: {}
+          data: {}
+          target:
+            entity_id: input_boolean.awtrix_pool_pump
+      else:
+        - action: input_boolean.turn_off
+          metadata: {}
+          data: {}
+          target:
+            entity_id: input_boolean.awtrix_pool_pump
+  mode: single
+- id: "1737955662765"
+  alias: Pool heater - set awtrix display toggle helper
+  description: ""
+  triggers:
+    - trigger: state
+      entity_id:
+        - climate.rostrevor_pool
+  conditions: []
+  actions:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: climate.rostrevor_pool
+              state: heat
+          sequence:
+            - action: input_boolean.turn_on
+              metadata: {}
+              data: {}
+              target:
+                entity_id: input_boolean.awtrix_toggle_pool_heater
+        - conditions:
+            - condition: state
+              entity_id: climate.rostrevor_pool
+              state: "off"
+          sequence:
+            - action: input_boolean.turn_off
+              metadata: {}
+              data: {}
+              target:
+                entity_id: input_boolean.awtrix_toggle_pool_heater
+  mode: single
+- id: "1737956116677"
+  alias: Awtrix - pool heater
+  description: ""
+  use_blueprint:
+    path: smarthomejunkie/awtrix_create_sensor_app.yaml
+    input:
+      awtrix_displays:
+        - 90c7f72628fd10fb50e521f03eab0814
+      toggle_helper: input_boolean.awtrix_toggle_pool_heater
+      my_sensor: climate.rostrevor_pool
+      my_template_sensor:
+        PHtr {% if states('climate.rostrevor_pool') == "heat" %}On{%
+        else %}Off{% endif %}
+      text_color:
+        - 148
+        - 234
+        - 255
+      scroll: false
+      text_case: "2"
+- id: "1738965009475"
+  alias: Fr24 - Parafield 1
+  description: ""
+  triggers:
+    - trigger: event
+      event_type: flightradar24_entry
+  conditions:
+    - condition: template
+      value_template:
+        "{{ trigger.event.data.tracked_by_device == 'Fr24-Parafield'
+        and 'Flight Train' not in trigger.event.data.airline }}"
+      enabled: true
+  actions:
+    - data:
+        title: Fr24 Parafield
+        message:
+          '{%- if trigger.event.data.airline and trigger.event.data.airline !=
+          "None" %}{{ trigger.event.data.airline }}{% endif -%} {%- if trigger.event.data.aircraft_model
+          and trigger.event.data.aircraft_model != "None" %} {{ trigger.event.data.aircraft_model
+          }}{% endif -%} {%- if trigger.event.data.flight_number and trigger.event.data.flight_number
+          != "None" %} {{ trigger.event.data.flight_number }}{% endif -%} {%- if trigger.event.data.aircraft_registration
+          and trigger.event.data.aircraft_registration != "None" %} {{ trigger.event.data.aircraft_registration
+          }}{% endif -%} {%- if trigger.event.data.airport_origin_city and trigger.event.data.airport_origin_city
+          != "None" %} from {{ trigger.event.data.airport_origin_city }}{% endif -%}
+          {%- if trigger.event.data.airport_destination_city and trigger.event.data.airport_destination_city
+          != "None" %} to {{ trigger.event.data.airport_destination_city }}{% endif
+          -%}. [Open FlightRadar](https://www.flightradar24.com/{{ trigger.event.data.callsign
+          }})'
+        data:
+          url:
+            https://fr24.com/{{ trigger.event.data.callsign }}/{{ trigger.event.data.id
+            }}
+          image: "{{ trigger.event.data.aircraft_photo_medium }}"
+      action: notify.mobile_app_patricks_iphone
+  mode: single
+- id: "1738966912134"
+  alias: Fr24 - Aircraft in home area
+  description: ""
+  triggers:
+    - trigger: event
+      event_type: flightradar24_entry
+  conditions:
+    - condition: template
+      value_template:
+        "{{ trigger.event.data.tracked_by_device == 'Fr24-Home' and\n
+        \  (\n     'Qantas' not in trigger.event.data.airline and\n     'Qatar' not
+        in trigger.event.data.airline and\n     'Rex' not in trigger.event.data.airline
+        and\n     'Jet Express' not in trigger.event.data.airline and\n     'Virgin'
+        not in trigger.event.data.airline and\n     'Singapore' not in trigger.event.data.airline
+        and\n     'Emirates' not in trigger.event.data.airline and\n     'Alliance'
+        not in trigger.event.data.airline and\n     'Jetstar' not in trigger.event.data.airline\n
+        \  )\n}}"
+      enabled: true
+  actions:
+    - data:
+        title: Fr24 Home
+        message:
+          '{%- if trigger.event.data.airline and trigger.event.data.airline !=
+          "None" %}{{ trigger.event.data.airline }}{% endif -%} {%- if trigger.event.data.aircraft_model
+          and trigger.event.data.aircraft_model != "None" %} {{ trigger.event.data.aircraft_model
+          }}{% endif -%} {%- if trigger.event.data.flight_number and trigger.event.data.flight_number
+          != "None" %} {{ trigger.event.data.flight_number }}{% endif -%} {%- if trigger.event.data.aircraft_registration
+          and trigger.event.data.aircraft_registration != "None" %} {{ trigger.event.data.aircraft_registration
+          }}{% endif -%} {%- if trigger.event.data.airport_origin_city and trigger.event.data.airport_origin_city
+          != "None" %} from {{ trigger.event.data.airport_origin_city }}{% endif -%}
+          {%- if trigger.event.data.airport_destination_city and trigger.event.data.airport_destination_city
+          != "None" %} to {{ trigger.event.data.airport_destination_city }}{% endif
+          -%}. [Open FlightRadar](https://www.flightradar24.com/{{ trigger.event.data.callsign
+          }})'
+        data:
+          url:
+            https://fr24.com/{{ trigger.event.data.callsign }}/{{ trigger.event.data.id
+            }}
+          image: "{{ trigger.event.data.aircraft_photo_medium }}"
+      action: notify.mobile_app_patricks_iphone
+  mode: single
+- id: "1738968088935"
+  alias: Fr24 - Fire water bomber near home
+  description: ""
+  triggers:
+    - trigger: event
+      event_type: flightradar24_entry
+  conditions:
+    - condition: template
+      value_template:
+        "{{ trigger.event.data.tracked_by_device == 'Fr24-Home' and
+        'Aerotech' in trigger.event.data.airline }}"
+  actions:
+    - data:
+        title: Possible bushfire near home
+        message:
+          At {{ trigger.event.data.tracked_by_device | replace('Fr24-', '') }},
+          {{ trigger.event.data.airline }} {{ trigger.event.data.callsign }} to {{ trigger.event.data.airport_destination_city
+          }} entered the area. [Open FlightRadar](https://www.flightradar24.com/{{ trigger.event.data.callsign
+          }})
+        data:
+          url:
+            https://fr24.com/{{ trigger.event.data.callsign }}/{{ trigger.event.data.id
+            }}
+          image: "{{ trigger.event.data.aircraft_photo_medium }}"
+      action: notify.mobile_app_patricks_iphone
+  mode: single
+- id: "1738985635426"
+  alias: Fr24 - Claremont CFS Airport
+  description: ""
+  triggers:
+    - trigger: event
+      event_type: flightradar24_entry
+      enabled: true
+    - trigger: numeric_state
+      entity_id:
+        - sensor.flightradar24_exited_area_3
+      above: 0
+      enabled: false
+  conditions:
+    - condition: template
+      value_template:
+        '{{ ''Claremont'' in trigger.event.data.tracked_by_device and
+        "Aerotech" in trigger.event.data.airline }}'
+      alias: From Claremont airport and aircraft is Aerotech
+    - condition: template
+      value_template: "{{ trigger.event.data.vertical_speed > 50 }}"
+      alias: Aircraft is taking off
+  actions:
+    - data:
+        title: Fr24 Claremont CFS
+        message:
+          '{%- if trigger.event.data.airline and trigger.event.data.airline !=
+          "None" %}{{ trigger.event.data.airline }}{% endif -%} {%- if trigger.event.data.aircraft_model
+          and trigger.event.data.aircraft_model != "None" %} {{ trigger.event.data.aircraft_model
+          }}{% endif -%} {%- if trigger.event.data.flight_number and trigger.event.data.flight_number
+          != "None" %} {{ trigger.event.data.flight_number }}{% endif -%} {%- if trigger.event.data.aircraft_registration
+          and trigger.event.data.aircraft_registration != "None" %} {{ trigger.event.data.aircraft_registration
+          }}{% endif -%} {%- if trigger.event.data.airport_origin_city and trigger.event.data.airport_origin_city
+          != "None" %} from {{ trigger.event.data.airport_origin_city }}{% endif -%}
+          {%- if trigger.event.data.airport_destination_city and trigger.event.data.airport_destination_city
+          != "None" %} to {{ trigger.event.data.airport_destination_city }}{% endif
+          -%}. [Open FlightRadar](https://www.flightradar24.com/{{ trigger.event.data.callsign
+          }})'
+        data:
+          url:
+            https://fr24.com/{{ trigger.event.data.callsign }}/{{ trigger.event.data.id
+            }}
+          image: "{{ trigger.event.data.aircraft_photo_medium }}"
+      action: notify.mobile_app_patricks_iphone
   mode: single

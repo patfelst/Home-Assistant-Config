@@ -302,7 +302,7 @@ light:
       - light.back_lounge_pendant
       - light.back_lounge_sideboard_lamp
       - light.lamp_rhs_fireplace
-      - light.twinkly_back_lounge
+      # - light.twinkly_back_lounge
 
       # Group: Back yard lights
       - light.alfresco_downlights
