@@ -11,6 +11,8 @@
       # - script.tv_on
       # - script.tv_news
       # - script.tv_off
+
+      # Covers
       - cover.garage_door
       - cover.driveway_gate
       - cover.pedestrian_gate
@@ -21,13 +23,24 @@
       - cover.blind_4
       - cover.blind_5
       - cover.interior_roller_blind # workshop blind
+
+      # Climate
+      - climate.ac
+      - climate.ac_back_lounge
+      - climate.ac_kitchen
+
+      # Fans
       - fan.workshop_ceiling_fan
       - fan.ensuite_fan
+      - fan.jess_toilet_fan
+
+      # Switches
       - switch.workshop_power_strip
       - switch.gas_heater
       - switch.pool_robot
       - switch.pool_pump
 
+      # Lights
       - light.all_lights
 
       - light.front_yard_lights # group defined in helpers
@@ -56,7 +69,7 @@
 
       - light.garage_downlights
 
-      - light.front_xmas_tree
+      - light.jess_toilet_light
 
   entity_config:
     light.pool_light_controller_pool_lights:

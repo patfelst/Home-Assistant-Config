@@ -6,8 +6,12 @@ google_actions:
       - script.tv_news
       - script.tv_off
 
+      # Climate
       - climate.ac
+      - climate.ac_back_lounge
+      - climate.ac_kitchen
 
+      # Covers
       - cover.all_blinds
       - cover.blind_1
       - cover.blind_2
@@ -19,26 +23,31 @@ google_actions:
       - cover.garage_door
       - cover.driveway_gate
 
+      # Fans
       - fan.19_rack_fans
       - fan.workshop_ceiling_fan
+      - fan.ensuite_fan
+      - fan.jess_toilet_fan
 
+      # Switches
       - switch.workshop_power_strip
       - switch.gas_heater
       - switch.pool_robot
 
+      # Lights
       - light.all_lights
 
-      - light.front_yard_lights # Group
+      - light.front_yard_lights
       - light.front_garden_lights
 
-      - light.kitchen_lights # group defined in helpers
+      - light.kitchen_lights
       - light.dining_downlight
 
       - light.back_lounge_downlights
       - light.back_lounge_pendant
       - light.back_lounge_sideboard_lamp
 
-      - light.back_yard_lights # Group
+      - light.back_yard_lights
       - light.alfresco_downlights
       - light.pool_perimeter_downlights
       - light.rear_flood_light
@@ -50,7 +59,7 @@ google_actions:
       - light.led_strip_workshop_shelf_dimmer
       - light.pool_light_controller_pool_lights
 
-      - light.front_xmas_tree
+      - light.jess_toilet_light
 
   # entity_config:
   #   script.sunset_lights:
