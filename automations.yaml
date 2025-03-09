@@ -206,6 +206,8 @@
       - wed
       - fri
       before: 07:00:00
+      after: 04:15:00
+    alias: Not Wed or Fri 4:15AM to 7:00AM
   actions:
   - data: {}
     target:
@@ -628,96 +630,6 @@
       option: Noise 2
     enabled: false
   mode: restart
-- id: '1669545204042'
-  alias: Button - Patrick's bedside
-  description: ''
-  use_blueprint:
-    path: CrazyCoder/zigbee2mqtt_aqara_wireless_switch.yaml
-    input:
-      action_sensor: sensor.button_patrick_bedside_action
-      press_single:
-      - action: light.toggle
-        metadata: {}
-        data:
-          brightness_pct: 7
-        target:
-          entity_id: light.led_strip_kitchen_kicker
-      press_double:
-      - action: light.turn_on
-        metadata: {}
-        data: {}
-        target:
-          entity_id:
-          - light.front_yard_lights
-          - light.back_yard_lights
-          - light.courtyard_flood_light
-      press_hold:
-      - action: light.turn_off
-        target:
-          entity_id: light.all_lights
-        data: {}
-      - action: switch.turn_off
-        metadata: {}
-        data: {}
-        target:
-          entity_id: switch.19_rack_fans
-      - if:
-        - condition: state
-          entity_id: binary_sensor.workshop_window_contact
-          state: 'on'
-        then:
-        - action: notify.mobile_app_patricks_iphone
-          data:
-            message: Workshop window is open
-            title: Window open
-      - if:
-        - condition: state
-          entity_id: binary_sensor.alfresco_door_contact
-          state: 'on'
-        then:
-        - action: notify.mobile_app_patricks_iphone
-          data:
-            message: Alfresco door is open
-            title: Door open
-      - if:
-        - condition: state
-          entity_id: binary_sensor.front_door_aqara_contact
-          state: 'on'
-        then:
-        - action: notify.mobile_app_patricks_iphone
-          data:
-            message: Front door is open
-            title: Door open
-      - if:
-        - condition: time
-          after: '21:00:00'
-          before: 06:00:00
-        then:
-        - action: input_boolean.turn_on
-          data: {}
-          target:
-            entity_id: input_boolean.sleep_mode
-        - action: notify.mobile_app_patricks_iphone
-          data:
-            message: Sleep mode turned on with long press of Patrick's bedside button
-            title: Sleep mode ON
-      - if:
-        - condition: state
-          state: 'on'
-          entity_id: binary_sensor.small_roller_door_contact
-        then:
-        - action: notify.mobile_app_patricks_iphone
-          data:
-            message: Harvey roller door is open
-            title: Harvey roller door
-      - action: switch.turn_off
-        target:
-          entity_id: switch.gas_heater
-        data: {}
-      - action: switch.turn_off
-        data: {}
-        target:
-          entity_id: switch.pool_pump
 - id: '1669631569864'
   alias: Lights - House lights ON when anyone arrives home
   description: ''
@@ -1021,6 +933,8 @@
       - automation.front_door_open_turn_front_yard_lights_on
       - automation.lights_front_yard_lights_on_when_anyone_arrives_home
       - automation.air_con_on_when_hot_back_lounge_people_at_home_v2
+      - automation.automatic_open_garage_and_gate_when_kathleen_arrives_home_in_when_driving
+      - automation.automatic_open_garage_when_person_arrives_home_in_when_driving
     action: automation.turn_on
   mode: single
 - id: '1671333862212'
@@ -1070,33 +984,6 @@
     target:
       entity_id: fan.workshop_ceiling_fan
   mode: single
-- id: '1671794465452'
-  alias: Button - Jess bedside
-  description: ''
-  use_blueprint:
-    path: CrazyCoder/zigbee2mqtt_aqara_wireless_switch.yaml
-    input:
-      action_sensor: sensor.button_jess_bedroom_action
-      press_single: []
-      press_double: []
-      press_hold:
-      - action: light.turn_off
-        data: {}
-        target:
-          entity_id: light.all_lights
-      - action: switch.turn_off
-        data: {}
-        target:
-          entity_id: switch.19_rack_fans
-      - action: switch.turn_off
-        data: {}
-        target:
-          entity_id: switch.gas_heater
-      - action: input_boolean.turn_on
-        metadata: {}
-        data: {}
-        target:
-          entity_id: input_boolean.sleep_mode
 - id: '1672344646174'
   alias: Lights - Side lights when Courtyard CCTV motion
   description: When sun elevation is < 0°
@@ -1408,94 +1295,6 @@
       - light.rear_garden_lights
       - light.front_lounge_sideboard_lamp
   mode: single
-- id: '1677793921989'
-  alias: Button - Kathleen's bedside
-  description: ''
-  use_blueprint:
-    path: CrazyCoder/zigbee2mqtt_aqara_wireless_switch.yaml
-    input:
-      press_single:
-      - action: light.toggle
-        data: {}
-        target:
-          entity_id:
-          - light.bedside_lamp_kathleen
-      press_double:
-      - action: light.turn_on
-        data: {}
-        target:
-          entity_id:
-          - light.front_yard_lights
-          - light.back_yard_lights
-          - light.courtyard_flood_light
-      press_hold:
-      - action: light.turn_off
-        data: {}
-        target:
-          entity_id: light.all_lights
-      - action: switch.turn_off
-        data: {}
-        target:
-          entity_id: switch.19_rack_fans
-      - if:
-        - condition: state
-          entity_id: binary_sensor.workshop_window_contact
-          state: 'on'
-        then:
-        - action: notify.mobile_app_patricks_iphone
-          data:
-            message: Workshop window is open
-            title: Window open
-      - if:
-        - condition: state
-          entity_id: binary_sensor.alfresco_door_contact
-          state: 'on'
-        then:
-        - action: notify.mobile_app_patricks_iphone
-          data:
-            message: Alfresco door is open
-            title: Door open
-      - if:
-        - condition: state
-          entity_id: binary_sensor.front_door_aqara_contact
-          state: 'on'
-        then:
-        - action: notify.mobile_app_patricks_iphone
-          data:
-            message: Front door is open
-            title: Door open
-      - if:
-        - condition: time
-          after: '21:00:00'
-          before: 06:00:00
-        then:
-        - action: input_boolean.turn_on
-          data: {}
-          target:
-            entity_id: input_boolean.sleep_mode
-        - action: notify.mobile_app_patricks_iphone
-          data:
-            message: Sleep mode turned on with long press of Kathleen's bedside button
-            title: Sleep mode ON
-      - if:
-        - condition: state
-          state: 'on'
-          entity_id: binary_sensor.small_roller_door_contact
-        then:
-        - action: notify.mobile_app_patricks_iphone
-          data:
-            message: Harvey roller door is open
-            title: Harvey roller door
-      - action: switch.turn_off
-        data: {}
-        target:
-          entity_id: switch.gas_heater
-      - action: switch.turn_off
-        metadata: {}
-        data: {}
-        target:
-          entity_id: switch.pool_pump
-      action_sensor: sensor.button_kathleen_bedside_action
 - id: '1678303773548'
   alias: Light - Courtyard follows bunker light
   description: ''
@@ -1681,49 +1480,6 @@
   - action: script.open_gate_and_garage
     data: {}
   mode: single
-- id: '1679792693634'
-  alias: Button - Garage, control gate and garage door
-  description: ''
-  use_blueprint:
-    path: CrazyCoder/zigbee2mqtt_aqara_wireless_switch.yaml
-    input:
-      action_sensor: sensor.button_garage_action
-      press_single:
-      - action: cover.open_cover
-        data: {}
-        target:
-          entity_id:
-          - cover.garage_door
-          - cover.driveway_gate
-      - action: input_datetime.set_datetime
-        metadata: {}
-        data:
-          datetime: '{{ now().strftime(''%Y-%m-%d %H:%M:%S'') }}'
-        target:
-          entity_id: input_datetime.garage_door_button_last_pressed
-      - if:
-        - condition: zone
-          entity_id: person.patrick
-          zone: zone.home
-        then:
-        - action: lock.unlock
-          metadata: {}
-          data: {}
-          target:
-            entity_id: lock.patrick_s_tesla_model_3_lock
-        enabled: false
-      press_hold:
-      - action: cover.close_cover
-        data: {}
-        target:
-          entity_id:
-          - cover.driveway_gate
-          - cover.garage_door
-      press_double:
-      - action: cover.toggle
-        data: {}
-        target:
-          entity_id: cover.driveway_gate
 - id: '1680405230305'
   alias: Octoprint - Start
   description: ''
@@ -1991,7 +1747,7 @@
     to: 'on'
     id: back yard
     enabled: false
-  condition:
+  conditions:
   - condition: state
     entity_id: input_boolean.sleep_mode
     state: 'on'
@@ -2004,6 +1760,15 @@
   - condition: template
     value_template: '{{ now() - states.cover.garage_door.last_changed > timedelta(seconds=120)
       }}'
+  - condition: not
+    conditions:
+    - condition: time
+      weekday:
+      - wed
+      - fri
+      before: 07:00:00
+      after: 04:15:00
+    alias: Not Wed or Fri 4:15AM to 7:00AM
   actions:
   - choose:
     - conditions:
@@ -2207,31 +1972,6 @@
 
         '
   mode: single
-- id: '1688620863158'
-  alias: Button - Hall stand
-  description: ''
-  use_blueprint:
-    path: CrazyCoder/zigbee2mqtt_aqara_wireless_switch.yaml
-    input:
-      action_sensor: sensor.button_hall_stand_action
-      press_double:
-      - action: cover.open_cover
-        metadata: {}
-        data: {}
-        target:
-          entity_id: cover.pedestrian_gate
-      press_single:
-      - action: cover.open_cover
-        metadata: {}
-        data: {}
-        target:
-          entity_id: cover.pedestrian_gate
-      press_hold:
-      - action: light.turn_on
-        metadata: {}
-        data: {}
-        target:
-          entity_id: light.front_yard_lights
 - id: '1689412431203'
   alias: Air con turn off timer
   description: ''
@@ -2909,51 +2649,6 @@
       target:
         entity_id: light.front_hall_lamp
   mode: single
-- id: '1698489586090'
-  alias: Button - washing machine
-  description: Turn off PURPLE washing machine light
-  use_blueprint:
-    path: CrazyCoder/zigbee2mqtt_aqara_wireless_switch.yaml
-    input:
-      action_sensor: sensor.button_washing_machine_action
-      press_double:
-      - action: light.toggle
-        data: {}
-        target:
-          entity_id:
-          - light.laundry_downlight
-          - light.laundry_path_bunker_light
-      press_single:
-      - if:
-        - condition: or
-          conditions:
-          - condition: numeric_state
-            entity_id: sun.sun
-            attribute: elevation
-            above: 5
-          - condition: state
-            entity_id: input_boolean.sleep_mode
-            state: 'on'
-        then:
-        - action: light.turn_on
-          data:
-            color_temp_kelvin: 2900
-            brightness_pct: 40
-          target:
-            entity_id: light.back_lounge_sideboard_lamp
-        - action: light.turn_off
-          data: {}
-          target:
-            entity_id: light.back_lounge_sideboard_lamp
-        else:
-        - if: []
-          then:
-          - action: light.turn_on
-            data:
-              brightness_pct: 35
-              color_temp_kelvin: 2900
-            target:
-              entity_id: light.back_lounge_sideboard_lamp
 - id: '1698533404217'
   alias: Motion - butlers pantry lights
   description: ''
@@ -3507,29 +3202,6 @@
       - 255
       - 51
       scroll: false
-- id: '1703655196966'
-  alias: Button - workshop
-  description: ''
-  use_blueprint:
-    path: CrazyCoder/zigbee2mqtt_aqara_wireless_switch.yaml
-    input:
-      action_sensor: sensor.button_soldering_iron_action
-      press_single:
-      - action: switch.toggle
-        target:
-          entity_id: switch.workshop_power_strip
-        data: {}
-      press_double:
-      - action: light.toggle
-        target:
-          entity_id: light.led_strip_workshop_shelf_dimmer
-        data:
-          brightness_pct: 100
-      press_hold:
-      - action: light.turn_off
-        target:
-          area_id: electronics_lab
-        data: {}
 - id: '1704841406186'
   alias: Backup to NAS
   description: Daily 6am backup to Synology NAS
@@ -5110,6 +4782,30 @@
         data: {}
         target:
           entity_id: cover.pedestrian_gate
+      alias: Open ped gate
+    - conditions:
+      - condition: trigger
+        id:
+        - trigger double
+      sequence:
+      - action: light.toggle
+        metadata: {}
+        data:
+          effect: Warm White
+        target:
+          entity_id: light.front_hall_lamp
+      alias: Toggle front hall lamp
+    - conditions:
+      - condition: trigger
+        id:
+        - trigger hold
+      sequence:
+      - action: light.toggle
+        metadata: {}
+        data: {}
+        target:
+          entity_id: light.front_yard_lights
+      alias: Toggle front yard lights
   mode: single
 - id: '1737950486072'
   alias: Awtrix - pool pump

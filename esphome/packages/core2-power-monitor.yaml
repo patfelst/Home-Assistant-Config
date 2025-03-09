@@ -36,9 +36,9 @@ external_components:
   #     url: https://github.com/esphome/esphome
   #     ref: dev
   #   components: [ graph ]
-  # - source: github://pr#6055
-  #   components: [ ft63x6 ]
-  #   refresh: 0s
+  - source: github://pr#8296
+    components: [ touchscreen ]
+    refresh: 0s
   # - source: github://pr#5997
   #   components: [ display, touchscreen, ft63x6 ]
   #   refresh: 0s
@@ -52,10 +52,10 @@ esp32:
 
 logger:
   level: DEBUG
-  logs:
-    component: ERROR # Filter out "time taken too long errors"
-    homeassistant.sensor: INFO
-    axp192.sensor: INFO
+  # logs:
+  #   component: ERROR # Filter out "time taken too long errors"
+  #   homeassistant.sensor: INFO
+  #   axp192.sensor: INFO
 
 api:
   encryption:
@@ -246,9 +246,11 @@ touchscreen:
     i2c_id: bus_a
     interrupt_pin: 39
     id: touch_screen
-    # calibration:
-    #   y_min: 0
-    #   y_max: 240
+    calibration:
+      x_min: 0
+      x_max: 320
+      y_min: 0
+      y_max: 240
     on_touch:
       # M5Stack Core2 is 320 x 240 + 40 pixels below display active area for 3x red circular touch buttons
       - lambda: |-
@@ -268,10 +270,11 @@ binary_sensor:
     name: Button A
     id: btn_a
     internal: True
+    use_raw: true
     x_min: 0
     x_max: 106
-    y_min: 120 # should be 240, but is half due to bug in ESPHome touch y-coordinate
-    y_max: 140 # should be 280
+    y_min: 240 # should be 240, but is half due to bug in ESPHome touch y-coordinate
+    y_max: 280 # should be 280
     filters:
       - delayed_on: ${touch_delay}
     on_press:
@@ -282,10 +285,11 @@ binary_sensor:
     name: Button B
     id: btn_b
     internal: True
+    use_raw: true
     x_min: 107
     x_max: 213
-    y_min: 120
-    y_max: 140
+    y_min: 240
+    y_max: 280
     filters:
       - delayed_on: ${touch_delay}
     on_press:
@@ -296,10 +300,11 @@ binary_sensor:
     name: Button C
     id: btn_c
     internal: True
+    use_raw: true
     x_min: 214
     x_max: 319
-    y_min: 120
-    y_max: 140
+    y_min: 240
+    y_max: 280
     filters:
       - delayed_on: ${touch_delay}
     on_press:
@@ -353,6 +358,8 @@ color:
     red: 0%
     green: 100%
     blue: 100%
+
+psram:
 
 display:
   - platform: ili9xxx
@@ -715,15 +722,15 @@ image:
   - file: "images/sun.png"
     id: img_sun
     resize: ${icon_size}X${icon_size}
-    type: RGB24
+    type: RGB
     dither: FLOYDSTEINBERG
   - file: "images/house.png"
     id: img_house
     resize: ${icon_size}X${icon_size}
-    type: RGB24
+    type: RGB
     dither: FLOYDSTEINBERG
   - file: "images/power3.png"
     id: img_powerlines
     resize: ${icon_size}X${icon_size}
-    type: RGB24
+    type: RGB
     dither: FLOYDSTEINBERG

@@ -274,6 +274,8 @@ binary_sensor:
     on_release:
       - lambda: "id(axp192_id).set_brightness(0.5);"
 
+psram:
+
 display:
   - platform: ili9xxx
     model: M5STACK
