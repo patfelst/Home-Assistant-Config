@@ -30,7 +30,7 @@ logbook:
       - automation.awtrix*
 
 recorder:
-  purge_keep_days: 14 # default is 10 days
+  purge_keep_days: 10 # default is 10 days
   exclude:
     entities:
       - sensor.symo_10_0_3_m_1_error_code
