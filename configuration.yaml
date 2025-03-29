@@ -9,9 +9,9 @@ scene: !include scenes.yaml
 homekit: !include homekit_entities.yaml
 cloud: !include google_home_entities.yaml
 
-frontend:
-  extra_module_url:
-    - local/card-mod.js
+# frontend:
+#   extra_module_url:
+#     - local/card-mod.js
 
 zone:
   - name: Home
@@ -30,11 +30,21 @@ logbook:
       - automation.awtrix*
 
 recorder:
-  purge_keep_days: 10 # default is 10 days
+  purge_keep_days: 7 # default is 10 days
   exclude:
     entities:
       - sensor.symo_10_0_3_m_1_error_code
       - sensor.symo_10_0_3_m_1_status_code
+      - sensor.time
+      - sensor.date
+      - sensor.cpu_temperature
+      - sensor.memory_use_percent
+      - sensor.load_1m
+    domains:
+      - weather
+      - media_player
+      - sun
+      - updater
 
 notify:
   - name: "patrick and kathleen"
