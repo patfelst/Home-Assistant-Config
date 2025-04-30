@@ -1,0 +1,173 @@
+esphome:
+  name: "tesla-battery-jumbo-display"
+  friendly_name: Tesla Battery Jumbo Display
+  min_version: 2024.11.0
+  name_add_mac_suffix: false
+  comment: Jumbo Seven Segment Display with 22x WS2812B LED string
+
+esp32:
+  board: um_tinys3
+  framework:
+    type: arduino
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/daweizhangau/esphome_addressable_light_digital_display
+      ref: main
+    refresh: 0s
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+# Allow Over-The-Air updates
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  manual_ip:
+    static_ip: 192.168.20.155
+    gateway: 192.168.20.1
+    subnet: 255.255.255.0
+
+button:
+  - platform: restart
+    name: ESP32 restart
+  
+number:
+  - platform: template
+    name: Simulate Battery
+    id: sim_batt
+    initial_value: 40
+    optimistic: True
+    min_value: 0
+    max_value: 100
+    step: 1
+    mode: slider
+    # on_value:
+    #   then:
+    #     - lambda: |-
+    #         ESP_LOGW("", "Tesla batt = %.1f", x);
+    #         if (x < 40.0) {
+    #           id(digital_display_light).turn_on().set_rgb(1.0, 0.0, 0.0).perform();  // Red
+    #         } else if (x >= 40.0 && x < 60.0) {
+    #           id(digital_display_light).turn_on().set_rgb(1.0, 0.5, 0.0).perform();  // Orange
+    #         } else if (x >= 60.0 && x <= 100.0) {
+    #           id(digital_display_light).turn_on().set_rgb(0.0, 1.0, 0.0).perform();  // Green
+    #         } else {
+    #           id(digital_display_light).turn_on().set_rgb(1.0, 0.0, 1.0).perform();  // Pink
+    #         }
+
+text_sensor:
+  - platform: homeassistant
+    internal: true
+    id: ha_tesla_charging
+    entity_id: sensor.patrick_s_tesla_model_3_charging
+    filters:
+      - to_lower: # ensure lower case text
+    on_value:
+      then:
+        - lambda: |-
+            bool charging = (x == "charging");
+            ESP_LOGW("Text Sensor", "Tesla charging state (text) = %s, boolean = %s", x.c_str(), charging ? "Yes" : "No");
+        - if:
+            condition:
+              text_sensor.state:
+                id: ha_tesla_charging
+                state: 'stopped'
+            then:
+              - light.turn_on:
+                  id: digital_display_light
+                  brightness: 100%
+
+sensor:
+  - platform: homeassistant
+    internal: true
+    id: ha_tesla_battery
+    entity_id: sensor.patrick_s_tesla_model_3_battery_level
+    filters:
+      - heartbeat: 10s
+    on_value:
+      then:
+        - lambda: |-
+            // bool charging = (id(ha_tesla_charging).state == "charging");
+            // ESP_LOGW("", "Tesla batt = %.1f, Charging = %s", x, charging ? "Yes" : "No");
+            if (x < 40.0) {
+              id(digital_display_light).turn_on().set_rgb(1.0, 0.0, 0.0).perform();  // Red
+            } else if (x >= 40.0 && x < 60.0) {
+              id(digital_display_light).turn_on().set_rgb(1.0, 0.5, 0.0).perform();  // Orange
+            } else if (x >= 60.0 && x <= 100.0) {
+              id(digital_display_light).turn_on().set_rgb(0.0, 1.0, 0.0).perform();  // Green
+            } else {
+              id(digital_display_light).turn_on().set_rgb(1.0, 0.0, 1.0).perform();  // Pink
+            }
+
+interval:
+  - interval: 1.0s
+    then:
+      # Blink display while Tesla is charging
+      - if:
+          condition:
+            text_sensor.state:
+              id: ha_tesla_charging
+              state: 'charging'
+          then:
+            # - light.toggle: digital_display_light
+            if:
+              condition:
+                lambda: |-
+                  static bool toggle = false;
+                  toggle = !toggle;
+                  return toggle;
+              then:
+                - light.turn_on:
+                    id: digital_display_light
+                    brightness: 60%
+              else:
+                - light.turn_on:
+                    id: digital_display_light
+                    brightness: 100%
+
+light:
+  - platform: fastled_clockless
+    internal: true
+    id: seven_seg_light
+    chipset: WS2812B
+    pin: GPIO1
+    num_leds: 44
+    rgb_order: GRB
+    default_transition_length: 0s
+
+display:
+  - platform: addressable_light_digital_display
+    id: seven_semgnet_display
+    name: Seven Segment Display
+    light_id: digital_display_light
+    icon: "mdi:clock-digital"
+    restore_mode: ALWAYS_ON
+    default_transition_length: 0s
+    reverse: false # Digits arranged left to right
+    addressable_light_id: seven_seg_light
+    #      A
+    #     ---
+    #  F |   | B
+    #     -G-
+    #  E |   | C
+    #     ---
+    #      D
+    led_map: "FFFAAABBBCCCDDDEEEGGG . FFFAAABBBCCCDDDEEEGGG ."
+    update_interval: 1s
+    lambda: |-
+      // float battery = id(ha_tesla_battery).state;
+      int battery = (int)id(ha_tesla_battery).state;
+
+      if (battery < 100) {
+        it.printf("%2d", battery);
+      } else if (battery >= 100) {
+        it.print("F");
+      }
