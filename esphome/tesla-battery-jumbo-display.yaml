@@ -107,6 +107,21 @@ sensor:
               id(digital_display_light).turn_on().set_rgb(1.0, 0.0, 1.0).perform();  // Pink
             }
 
+binary_sensor:
+  # Dim the display when the room lights are OFF, bright when room lights are ON
+  - platform: homeassistant
+    internal: true
+    id: presence
+    entity_id: light.garage_downlights
+    on_press: 
+      - light.turn_on:
+          id: digital_display_light
+          brightness: 100%
+    on_release:
+      - light.turn_on:
+          id: digital_display_light
+          brightness: 50%
+
 interval:
   - interval: 1.0s
     then:
