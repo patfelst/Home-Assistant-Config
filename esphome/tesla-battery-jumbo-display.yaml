@@ -97,6 +97,10 @@ sensor:
         - lambda: |-
             // bool charging = (id(ha_tesla_charging).state == "charging");
             // ESP_LOGW("", "Tesla batt = %.1f, Charging = %s", x, charging ? "Yes" : "No");
+
+            // Only display if the garage light is ON
+            if (!id(presence).state) return;
+
             if (x < 40.0) {
               id(digital_display_light).turn_on().set_rgb(1.0, 0.0, 0.0).perform();  // Red
             } else if (x >= 40.0 && x < 60.0) {
@@ -107,20 +111,30 @@ sensor:
               id(digital_display_light).turn_on().set_rgb(1.0, 0.0, 1.0).perform();  // Pink
             }
 
+script:
+  - id: display_off_timer
+    mode: restart
+    then:
+      - delay: 5min
+      - light.turn_off: digital_display_light
+
 binary_sensor:
-  # Dim the display when the room lights are OFF, bright when room lights are ON
   - platform: homeassistant
     internal: true
     id: presence
     entity_id: light.garage_downlights
-    on_press: 
+
+    on_press:  # Light turned ON
       - light.turn_on:
           id: digital_display_light
           brightness: 100%
-    on_release:
+      - script.stop: display_off_timer  # Cancel any pending shutdown
+
+    on_release:  # Light turned OFF
       - light.turn_on:
           id: digital_display_light
           brightness: 50%
+      - script.execute: display_off_timer  # Start 5-minute timer
 
 interval:
   - interval: 1.0s
@@ -180,6 +194,9 @@ display:
     lambda: |-
       // float battery = id(ha_tesla_battery).state;
       int battery = (int)id(ha_tesla_battery).state;
+
+      // Only display if the garage light is ON
+      if (!id(presence).state) return;
 
       if (battery < 100) {
         it.printf("%2d", battery);
