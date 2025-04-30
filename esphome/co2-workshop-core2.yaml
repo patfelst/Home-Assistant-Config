@@ -32,6 +32,9 @@ external_components:
   - source: github://Pionizer/pionizer-axp192
     components: [axp192]
     refresh: 1days
+  - source: github://pr#8296
+    components: [ touchscreen ]
+    refresh: 0s
 
 esp32:
   board: m5stack-core-esp32
@@ -225,10 +228,11 @@ binary_sensor:
     name: Button A
     id: btn_a
     internal: True
+    use_raw: true
     x_min: 0
     x_max: 106
-    y_min: 120 # should be 240, but is half due to bug in ESPHome touch y-coordinate
-    y_max: 140 # should be 280
+    y_min: 240 # should be 240, but is half due to bug in ESPHome touch y-coordinate
+    y_max: 280 # should be 280
     filters:
       - delayed_on: ${touch_delay}
     on_press:
@@ -239,10 +243,11 @@ binary_sensor:
     name: Button B
     id: btn_b
     internal: True
+    use_raw: true
     x_min: 107
     x_max: 213
-    y_min: 120
-    y_max: 140
+    y_min: 240
+    y_max: 280
     filters:
       - delayed_on: ${touch_delay}
     # on_press:
@@ -253,10 +258,11 @@ binary_sensor:
     name: Button C
     id: btn_c
     internal: True
+    use_raw: true
     x_min: 214
     x_max: 319
-    y_min: 120
-    y_max: 140
+    y_min: 240
+    y_max: 280
     filters:
       - delayed_on: ${touch_delay}
     on_press:

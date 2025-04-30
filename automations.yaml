@@ -209,6 +209,7 @@
           before: 07:00:00
           after: 04:15:00
       alias: Not Wed or Fri 4:15AM to 7:00AM
+      enabled: false
   actions:
     - data: {}
       target:
@@ -416,31 +417,23 @@
         - input_boolean.pool_alfresco_camera_person
       to: "on"
   conditions:
-    - condition: numeric_state
-      entity_id: sun.sun
-      attribute: elevation
-      below: 0
+    - condition: sun
+      after: sunset
+      after_offset: -01:00:00
+    - condition: time
+      before: "21:30:00"
   actions:
     - data: {}
       target:
         entity_id:
           - light.alfresco_downlights
           - light.rear_flood_light
+      action: light.turn_on
+    - data: {}
+      target:
+        entity_id:
           - light.laundry_bunker_light
       action: light.turn_on
-    - if:
-        - condition: and
-          conditions:
-            - condition: time
-              before: "22:00:00"
-            - condition: sun
-              after: sunset
-      then:
-        - action: light.turn_on
-          metadata: {}
-          data: {}
-          target:
-            entity_id: light.courtyard_flood_light
     - delay:
         hours: 0
         minutes: 4
@@ -1013,26 +1006,22 @@
         - input_boolean.courtyard_camera_person
       to: "on"
   conditions:
-    - condition: numeric_state
-      entity_id: sun.sun
-      attribute: elevation
-      below: 0
-      enabled: true
+    - condition: sun
+      after: sunset
+      after_offset: -01:00:00
+    - condition: time
+      before: "21:30:00"
   actions:
     - data: {}
       target:
         entity_id:
           - light.laundry_bunker_light
       action: light.turn_on
-    - if:
-        - condition: time
-          before: "22:00:00"
-      then:
-        - action: light.turn_on
-          metadata: {}
-          data: {}
-          target:
-            entity_id: light.courtyard_flood_light
+    - action: light.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: light.courtyard_flood_light
     - delay:
         hours: 0
         minutes: 4
@@ -1728,6 +1717,7 @@
           before: 07:00:00
           after: 04:15:00
       alias: Not Wed or Fri 4:15AM to 7:00AM
+      enabled: false
   actions:
     - choose:
         - conditions:
@@ -2695,68 +2685,6 @@
               - light.butlers_downlight
               - light.led_strip_butlers_overhead_cupboards
   mode: single
-- id: "1698534798412"
-  alias: Motion - WIR downlights
-  description: ""
-  triggers:
-    - trigger: state
-      entity_id:
-        - binary_sensor.wir_sensor_occupancy
-      to: "on"
-      id: motion detected
-    - trigger: state
-      entity_id:
-        - binary_sensor.wir_sensor_occupancy
-      to: "off"
-      for:
-        hours: 0
-        minutes: 2
-        seconds: 0
-  condition: []
-  actions:
-    - if:
-        - condition: trigger
-          id:
-            - motion detected
-      then:
-        - if:
-            - condition: state
-              entity_id: input_boolean.sleep_mode
-              state: "on"
-          then:
-            - action: light.turn_on
-              data:
-                brightness_pct: 7
-              target:
-                entity_id: light.wir_downlight
-              enabled: false
-            - action: light.turn_on
-              metadata: {}
-              data:
-                brightness_pct: 24
-              target:
-                entity_id: light.led_strip_wir
-          else:
-            - action: light.turn_on
-              data:
-                brightness_pct: 100
-              target:
-                entity_id: light.wir_downlight
-            - action: light.turn_on
-              metadata: {}
-              data:
-                brightness_pct: 60
-              target:
-                entity_id: light.led_strip_wir
-      else:
-        - action: light.turn_off
-          data:
-            transition: 5
-          target:
-            entity_id:
-              - light.wir_downlight
-              - light.led_strip_wir
-  mode: single
 - id: "1698537751935"
   alias: Motion - Hallway turn lights
   description: ""
@@ -3368,7 +3296,7 @@
       to: "off"
       for:
         hours: 0
-        minutes: 3
+        minutes: 5
         seconds: 0
       enabled: true
     - trigger: state
@@ -3376,7 +3304,7 @@
         - binary_sensor.wir_sensor_occupancy
       to: "on"
       id: motion detected
-      enabled: false
+      enabled: true
     - trigger: state
       entity_id:
         - binary_sensor.wir_sensor_occupancy
@@ -3424,7 +3352,7 @@
             entity_id:
               - light.wir_downlight
               - light.led_strip_wir
-  mode: single
+  mode: restart
 - id: "1708818178334"
   alias: Notify - zigbee devices offline
   description: ""
@@ -3526,7 +3454,7 @@
         milliseconds: 0
   mode: single
 - id: "1709935543205"
-  alias: Air con ON when HOT back lounge (people at home) v2
+  alias: Air con ON when HOT back lounge (people at home)
   description: ""
   triggers:
     - trigger: time_pattern
