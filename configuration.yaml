@@ -9,10 +9,6 @@ scene: !include scenes.yaml
 homekit: !include homekit_entities.yaml
 cloud: !include google_home_entities.yaml
 
-# frontend:
-#   extra_module_url:
-#     - local/card-mod.js
-
 zone:
   - name: Home
     latitude: !secret home_lat
@@ -101,7 +97,7 @@ cover:
           {% endif %}
         open_cover:
           - condition: state
-            entity_id: binary_sensor.garage_door_bottom_magnet
+            entity_id: binary_sensor.garage_door_bottom_contact
             state: "off"
           - action: switch.turn_on
             target:
@@ -157,12 +153,12 @@ template:
       - trigger: state
         entity_id:
           - binary_sensor.garage_door_top_magnet
-          - binary_sensor.garage_door_bottom_magnet
+          - binary_sensor.garage_door_bottom_contact
     sensor:
       - name: Garage door state
         state: >
           {# garage_door: on means open, off means closed #}
-          {% set close_on = is_state('binary_sensor.garage_door_bottom_magnet','off') %}
+          {% set close_on = is_state('binary_sensor.garage_door_bottom_contact','off') %}
           {% set open_on = is_state('binary_sensor.garage_door_top_magnet','off') %}
           {% if open_on and not close_on %}
             open
@@ -171,7 +167,7 @@ template:
           {% elif open_on and close_on %}
             sensor error
           {% else %}
-            {% if trigger.entity_id == 'binary_sensor.garage_door_bottom_magnet' %}
+            {% if trigger.entity_id == 'binary_sensor.garage_door_bottom_contact' %}
               opening
             {% else %}
               closing
@@ -277,7 +273,7 @@ light:
       - light.front_lounge_downlight
       - light.front_lounge_pendant
       - light.front_hall_lamp
-      - light.led_strip_front_hall_dimmer
+      - light.led_strip_front_hall
       - light.front_lounge_sideboard_lamp
 
       - light.garage_downlights

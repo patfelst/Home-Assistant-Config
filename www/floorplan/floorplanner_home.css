@@ -31,12 +31,12 @@ svg tspan {
 /* Light Control */
 
 path[id*="area."].light-off{
-  opacity: 0.65 !important;
+  opacity: 0.6 !important;
   /* fill: #1dc11d !important; */
 }
 
 path[id*="area."].light-on{
-  opacity: 0 !important;
+  opacity: 0.1 !important;
   /* fill: #d32f2f !important; */
   transition: opacity .25s;
   -moz-transition: opacity .25s;

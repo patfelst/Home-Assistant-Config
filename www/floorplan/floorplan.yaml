@@ -100,6 +100,15 @@ config:
         service_data:
           element: temp-workshop
           text: ${functions.FormatTemperature(Number(entity.state))}
+    - entity: sensor.rack_temperature_ds18b20_external
+      element: temp-networking
+      tap_action: more-info
+    - entity: sensor.rack_temperature_ds18b20_external
+      state_action:
+        service: floorplan.text_set
+        service_data:
+          element: temp-networking
+          text: ${functions.FormatTemperature(Number(entity.state))}
     - name: Heaters
       entity: switch.gas_heater
       element: gas-heater
@@ -152,8 +161,6 @@ config:
               return style;
     - name: RGB Lights
       entities:
-        - entity: light.workshop_rgb_light
-          element: light.workshop-lamp-rgb
         - entity: light.front_hall_lamp
           element: light.front-hall-lamp
         - entity: light.back_lounge_sideboard_lamp
@@ -204,6 +211,8 @@ config:
           element: light.kathleen-bedside
         - entity: light.wir_downlight
           element: area.wir
+        - entity: light.main_hall_downlights
+          element: area.hallway
         - entity: light.stairs_light
           element: area.stairs
         - entity: light.kitchen_downlights
@@ -266,9 +275,7 @@ config:
           element: area.garage
         - entity: light.front_porch
           element: light.front-porch
-        - entity: light.led_strip_workshop_shelf_dimmer
-          element: light.workshop-shelf-leds
-        - entity: light.led_strip_front_hall_dimmer
+        - entity: light.led_strip_front_hall
           element: light.front-hall-leds
         - entity: light.led_strip_butlers_overhead_cupboards
           element: light.butlers-leds
@@ -282,8 +289,6 @@ config:
           element: alfresco_door_contact
         - entity: binary_sensor.workshop_window_contact
           element: workshop-window
-        - entity: binary_sensor.workshop_door_contact
-          element: workshop-door
         - entity: binary_sensor.front_door_aqara_contact
           element: front-door
       state_action:

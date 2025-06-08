@@ -128,7 +128,7 @@ binary_sensor:
       #- delayed_on_off: 2s
     threshold:
       upper: 140 # magnet is far from ESP32, magnet value has to be below to transition garage door to open
-      lower: 170 # magnet is close to ESP32, magnet value has to be above to transition garage door to closed
+      lower: -270 # magnet is close to ESP32, magnet value has to be above to transition garage door to closed
     on_press: 
       then:
         # Garage door is open
