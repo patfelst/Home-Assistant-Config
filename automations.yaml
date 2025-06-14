@@ -113,7 +113,7 @@
       - light.front_hall_lamp
   - action: light.turn_on
     data:
-      brightness_pct: 8
+      brightness_pct: 19
     target:
       entity_id: light.led_strip_front_hall
   - action: light.turn_on
@@ -1550,36 +1550,6 @@
         of {{ states('sensor.ensuite_humidity_average_linear_24h', with_unit=True)
         }}
   mode: single
-- id: '1682297014844'
-  alias: Ensuite fan - control by humidity
-  description: ''
-  use_blueprint:
-    path: Blackshome/bathroom-humidity-exhaust-fan.yaml
-    input:
-      triggers: sensor.ensuite_humidity_rate_of_change
-      rising_humidity: 1.5
-      falling_humidity: -1
-      by_pass: sensor.ensuite_humidity_rate_of_change
-      include_ha_restart: restart_enabled
-      fan_switch:
-        entity_id: switch.ensuite_fan
-      bathroom_humidity_sensor: sensor.ensuite_environmental_humidity
-      include_max_humidity: maximum_humidity_enabled
-      time_delay: 1
-      time_out: 8
-      include_winter_mode: winter_mode_enabled
-      month_winter_mode:
-      - '6'
-      - '7'
-      - '8'
-      - '5'
-      - '9'
-      winter_rising_humidity: 1.5
-      winter_time_out: 8
-      winter_time_delay: 1
-      winter_include_max_humidity: maximum_humidity_enabled
-      include_manual_fan_switch: enable_manual_fan_switch_auto_off
-      manual_fan_switch_time_delay: 20
 - id: '1682297394195'
   alias: Ensuite fan - control by humidity (notify for testing)
   description: ''

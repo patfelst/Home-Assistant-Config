@@ -69,15 +69,6 @@ sensor:
         time_constant: 60
         precision: 4
 
-  - platform: statistics
-    # From https://community.home-assistant.io/t/quick-bathroom-fan-humidity-switch-control/421996
-    name: Ensuite Humidity Average Linear 24h
-    unique_id: id_ensuite_humidity_average
-    entity_id: sensor.ensuite_environmental_humidity
-    state_characteristic: average_linear
-    max_age:
-      hours: 24
-
 cover:
   - platform: template
     covers:
