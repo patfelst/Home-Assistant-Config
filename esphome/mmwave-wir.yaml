@@ -67,7 +67,6 @@ light:
     name: RGB LED
     internal: False
     # variant: WS2812
-    rmt_channel: 0
     chipset: WS2812
     pin: 10
     num_leds: 2

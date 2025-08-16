@@ -287,7 +287,7 @@ config:
       entities:
         - entity: binary_sensor.alfresco_door_contact
           element: alfresco_door_contact
-        - entity: binary_sensor.workshop_window_contact
+        - entity: binary_sensor.bedroom_4_window_contact
           element: workshop-window
         - entity: binary_sensor.front_door_aqara_contact
           element: front-door

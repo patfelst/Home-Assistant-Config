@@ -7,9 +7,9 @@ esphome:
   name: co2-workshop-core2
   friendly_name: CO2 Workshop
   comment: M5Stack Core2 and custom PCB with SCD-41 CO2 sensor and 10x WS2812 RGB LED strips
-  platformio_options:
-    board_build.f_flash: 80000000L # set FLASH frequency to 80MHz
-    board_build.partitions: default_16MB.csv
+  # platformio_options:
+  #   board_build.f_flash: 80000000L # set FLASH frequency to 80MHz
+  #   board_build.partitions: default_16MB.csv
   on_boot: 
     priority: 600
     then:
@@ -31,7 +31,7 @@ esphome:
 external_components:
   - source: github://Pionizer/pionizer-axp192
     components: [axp192]
-    refresh: 1days
+    refresh: 0s
   - source: github://pr#8296
     components: [ touchscreen ]
     refresh: 0s
@@ -555,7 +555,6 @@ light:
     pin: GPIO25
     default_transition_length: 50ms
     num_leds: 10
-    rmt_channel: 0
     chipset: ws2812
     id: rgb
     name: "RGB LED x10"

@@ -35,7 +35,6 @@
       - fan.jess_toilet_fan
 
       # Switches
-      - switch.workshop_power_strip
       - switch.gas_heater
       - switch.pool_robot
       - switch.pool_pump
@@ -64,7 +63,6 @@
       - light.main_hall_downlights
 
       - light.workshop_downlight
-      - light.led_strip_workshop_shelf_dimmer
       - light.pool_light_controller_pool_lights
 
       - light.garage_downlights
@@ -74,5 +72,7 @@
   entity_config:
     light.pool_light_controller_pool_lights:
       name: Swimming Pool Lights
-    switch.workshop_power_strip:
-      name: Soldering iron
+    # cover.pedestrian_gate:
+    #   name: Ped Gate
+    # switch.pool_robot:
+    #   name: Pool Robot

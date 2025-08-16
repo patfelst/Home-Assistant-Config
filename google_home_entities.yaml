@@ -24,13 +24,11 @@ google_actions:
       - cover.driveway_gate
 
       # Fans
-      - fan.19_rack_fans
       - fan.workshop_ceiling_fan
       - fan.ensuite_fan
       - fan.jess_toilet_fan
 
       # Switches
-      - switch.workshop_power_strip
       - switch.gas_heater
       - switch.pool_robot
 
@@ -56,7 +54,6 @@ google_actions:
       - light.main_hall_downlights
 
       - light.workshop_downlight
-      - light.led_strip_workshop_shelf_dimmer
       - light.pool_light_controller_pool_lights
 
       - light.jess_toilet_light
@@ -64,5 +61,13 @@ google_actions:
   # entity_config:
   #   script.sunset_lights:
   #     name: Evening lights
+  #     room: Back Lounge
   #     aliases:
   #       - Evening lights
+  #       - Sunset lights
+  #   script.tv_on:
+  #     name: Turn TV on
+  #     room: Back Lounge
+  #     aliases:
+  #       - TV On
+  #       - Turn on tv
