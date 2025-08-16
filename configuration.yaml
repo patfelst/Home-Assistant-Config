@@ -85,13 +85,13 @@ cover:
         friendly_name: "Garage Door"
         value_template: >-
           {% if is_state('sensor.garage_door_state','open') %}
-            Open
+            open
           {% elif is_state('sensor.garage_door_state','closed') %}
-            Closed
+            closed
           {% elif is_state('sensor.garage_door_state','opening') %}
-            Opening
+            opening
           {% else %}
-            Closing
+            closing
           {% endif %}
         open_cover:
           - condition: state
